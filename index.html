@@ -21,6 +21,8 @@
             --text-primary: #ffffff;
             --text-secondary: #a8b5a8;
             --border-color: #2d3d2d;
+            --success: #4CAF50;
+            --danger: #f44336;
         }
 
         * {
@@ -37,7 +39,6 @@
             overflow-x: hidden;
         }
 
-        /* Loading Screen */
         .loading-screen {
             position: fixed;
             top: 0;
@@ -70,7 +71,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Header */
         .header {
             background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
             border-bottom: 1px solid var(--border-color);
@@ -162,14 +162,114 @@
             color: var(--polaris-gold);
         }
 
-        /* Main Content */
         .main-content {
             max-width: 1600px;
             margin: 0 auto;
             padding: 2rem;
         }
 
-        /* Stats Grid */
+        .comparison-banner {
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--polaris-green-dark) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .comparison-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .comparison-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .comparison-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .comparison-period {
+            background: var(--bg-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--polaris-gold);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+
+        .comparison-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .comparison-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-values {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-current {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .comparison-previous {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-decoration: line-through;
+        }
+
+        .comparison-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .comparison-change.positive {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--success);
+        }
+
+        .comparison-change.negative {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--danger);
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -202,18 +302,6 @@
             background: linear-gradient(90deg, var(--polaris-green) 0%, var(--polaris-gold) 100%);
         }
 
-        .stat-card.gold::before {
-            background: var(--polaris-gold);
-        }
-
-        .stat-card.platinum::before {
-            background: var(--platinum);
-        }
-
-        .stat-card.silver::before {
-            background: var(--silver);
-        }
-
         .stat-label {
             font-size: 0.8rem;
             color: var(--text-secondary);
@@ -234,7 +322,6 @@
             color: var(--text-secondary);
         }
 
-        /* Charts Section */
         .charts-section {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -266,7 +353,19 @@
             height: 300px;
         }
 
-        /* Plan Breakdown */
+        .trend-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .trend-chart-container {
+            height: 250px;
+            position: relative;
+        }
+
         .plan-breakdown {
             display: flex;
             flex-direction: column;
@@ -318,7 +417,6 @@
             color: var(--polaris-gold);
         }
 
-        /* Clients Table */
         .clients-section {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -398,27 +496,14 @@
             font-size: 0.8rem;
         }
 
-        .plan-badge {
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
+        .period-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
-        }
-
-        .plan-badge.gold {
-            background: rgba(255, 215, 0, 0.2);
-            color: var(--polaris-gold);
-        }
-
-        .plan-badge.platinum {
-            background: rgba(229, 228, 226, 0.2);
-            color: var(--platinum);
-        }
-
-        .plan-badge.silver {
-            background: rgba(158, 158, 158, 0.2);
-            color: var(--silver);
+            background: rgba(27, 94, 32, 0.3);
+            color: var(--polaris-green-light);
         }
 
         .currency {
@@ -426,55 +511,21 @@
             color: var(--polaris-gold);
         }
 
-        .cost-indicator {
-            display: flex;
+        .trend-indicator {
+            display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-        }
-
-        .cost-bar {
-            height: 6px;
-            background: var(--bg-secondary);
-            border-radius: 3px;
-            flex: 1;
-            max-width: 80px;
-            overflow: hidden;
-        }
-
-        .cost-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--polaris-green) 0%, var(--polaris-gold) 100%);
-            border-radius: 3px;
-            transition: width 0.5s ease-out;
-        }
-
-        /* Year Filter */
-        .year-filter {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .year-btn {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-family: inherit;
+            gap: 0.3rem;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.85rem;
-            transition: all 0.3s;
+            font-weight: 600;
         }
 
-        .year-btn.active, .year-btn:hover {
-            background: var(--polaris-green);
-            border-color: var(--polaris-green);
-            color: var(--text-primary);
-        }
+        .trend-indicator.up { color: var(--danger); }
+        .trend-indicator.down { color: var(--success); }
+        .trend-indicator.neutral { color: var(--text-secondary); }
 
-        /* Responsive */
         @media (max-width: 1200px) {
-            .stats-grid {
+            .stats-grid, .comparison-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
             .charts-section {
@@ -483,7 +534,7 @@
         }
 
         @media (max-width: 768px) {
-            .stats-grid {
+            .stats-grid, .comparison-grid {
                 grid-template-columns: 1fr;
             }
             .header-content {
@@ -493,27 +544,14 @@
             .main-content {
                 padding: 1rem;
             }
-            .clients-table {
-                font-size: 0.85rem;
-            }
         }
 
-        /* Animations */
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .animate-in {
-            animation: fadeInUp 0.6s ease-out forwards;
-        }
-
+        .animate-in { animation: fadeInUp 0.6s ease-out forwards; }
         .delay-1 { animation-delay: 0.1s; }
         .delay-2 { animation-delay: 0.2s; }
         .delay-3 { animation-delay: 0.3s; }
@@ -521,12 +559,10 @@
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
     <div class="loading-screen" id="loadingScreen">
         <div class="loader"></div>
     </div>
 
-    <!-- Header -->
     <header class="header">
         <div class="header-content">
             <div class="logo">
@@ -540,29 +576,72 @@
                 <div class="exchange-rate">
                     PHP/USD: <span id="exchangeRate">0.0168</span>
                 </div>
-                <div class="year-filter">
-                    <button class="year-btn active" data-year="2025">2025</button>
-                    <button class="year-btn" data-year="2024">2024</button>
-                    <button class="year-btn" data-year="all">All</button>
-                </div>
                 <button class="refresh-btn" onclick="loadAllData()">
-                    ↻ Refresh
+                    ↻ Refresh Data
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="main-content">
-        <!-- Stats Grid -->
+        <div class="comparison-banner animate-in">
+            <div class="comparison-header">
+                <h2 class="comparison-title">📊 Period Comparison</h2>
+                <div class="comparison-period" id="comparisonPeriod">Loading...</div>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <div class="comparison-label">Total Claims</div>
+                    <div class="comparison-values">
+                        <span class="comparison-current" id="cmpClaims">-</span>
+                        <span class="comparison-previous" id="cmpClaimsPrev">-</span>
+                    </div>
+                    <span class="comparison-change" id="cmpClaimsChange">-</span>
+                </div>
+                <div class="comparison-item">
+                    <div class="comparison-label">Total Members</div>
+                    <div class="comparison-values">
+                        <span class="comparison-current" id="cmpMembers">-</span>
+                        <span class="comparison-previous" id="cmpMembersPrev">-</span>
+                    </div>
+                    <span class="comparison-change" id="cmpMembersChange">-</span>
+                </div>
+                <div class="comparison-item">
+                    <div class="comparison-label">Approved USD</div>
+                    <div class="comparison-values">
+                        <span class="comparison-current" id="cmpApproved">-</span>
+                        <span class="comparison-previous" id="cmpApprovedPrev">-</span>
+                    </div>
+                    <span class="comparison-change" id="cmpApprovedChange">-</span>
+                </div>
+                <div class="comparison-item">
+                    <div class="comparison-label">Cost/Member</div>
+                    <div class="comparison-values">
+                        <span class="comparison-current" id="cmpCost">-</span>
+                        <span class="comparison-previous" id="cmpCostPrev">-</span>
+                    </div>
+                    <span class="comparison-change" id="cmpCostChange">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="trend-section animate-in delay-1">
+            <div class="chart-header">
+                <h3 class="chart-title">📈 Cost per Member Trend</h3>
+            </div>
+            <div class="trend-chart-container">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
         <div class="stats-grid">
             <div class="stat-card animate-in delay-1">
-                <div class="stat-label">Total Members</div>
+                <div class="stat-label">Current Period Members</div>
                 <div class="stat-value" id="totalMembers">-</div>
                 <div class="stat-subtext">Effective population</div>
             </div>
             <div class="stat-card animate-in delay-2">
-                <div class="stat-label">Total Claims</div>
+                <div class="stat-label">Current Period Claims</div>
                 <div class="stat-value" id="totalClaims">-</div>
                 <div class="stat-subtext">Processed claims</div>
             </div>
@@ -572,13 +651,12 @@
                 <div class="stat-subtext">USD value</div>
             </div>
             <div class="stat-card animate-in delay-4">
-                <div class="stat-label">Avg Cost/Member</div>
+                <div class="stat-label">Cost/Member</div>
                 <div class="stat-value" id="avgCost">-</div>
-                <div class="stat-subtext">Annualized USD</div>
+                <div class="stat-subtext">Current period USD</div>
             </div>
         </div>
 
-        <!-- Charts Section -->
         <div class="charts-section">
             <div class="chart-card animate-in delay-2">
                 <div class="chart-header">
@@ -592,103 +670,179 @@
                 <div class="chart-header">
                     <h3 class="chart-title">Plan Distribution</h3>
                 </div>
-                <div class="plan-breakdown" id="planBreakdown">
-                    <!-- Dynamic content -->
-                </div>
+                <div class="plan-breakdown" id="planBreakdown"></div>
             </div>
         </div>
 
-        <!-- Clients Table -->
         <div class="clients-section animate-in delay-4">
             <div class="section-header">
-                <h3 class="section-title">All Clients Overview</h3>
+                <h3 class="section-title">All Clients - Period Comparison</h3>
                 <input type="text" class="search-box" placeholder="Search clients..." id="searchInput" onkeyup="filterClients()">
             </div>
             <table class="clients-table">
                 <thead>
                     <tr>
                         <th>Client</th>
-                        <th>Plan</th>
+                        <th>Period</th>
                         <th>Members</th>
                         <th>Claims</th>
                         <th>Approved (USD)</th>
                         <th>Cost/Member</th>
+                        <th>Cost Trend</th>
                     </tr>
                 </thead>
-                <tbody id="clientsTableBody">
-                    <!-- Dynamic content -->
-                </tbody>
+                <tbody id="clientsTableBody"></tbody>
             </table>
         </div>
     </main>
 
     <script>
-        // API Configuration
         const API_URL = 'https://script.google.com/macros/s/AKfycbxg83W_1DARho7eqGOcLC1sbu1t1NPFW9StzTaQTEMjasi2_E7rVvGOUSEXBdIc_DYk/exec';
         
         let clientsData = [];
-        let masterData = null;
-        let currentYear = '2025';
+        let comparisonData = null;
         let clientsChart = null;
+        let trendChart = null;
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadAllData();
-            setupYearFilter();
-        });
+        document.addEventListener('DOMContentLoaded', () => loadAllData());
 
-        // Year filter
-        function setupYearFilter() {
-            document.querySelectorAll('.year-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentYear = btn.dataset.year;
-                    loadAllData();
-                });
-            });
-        }
-
-        // Load all data
         async function loadAllData() {
             showLoading(true);
             try {
-                const yearParam = currentYear === 'all' ? '' : currentYear;
+                const compResponse = await fetch(`${API_URL}?action=getMasterComparison`);
+                comparisonData = await compResponse.json();
                 
-                // Fetch master overview
-                const masterResponse = await fetch(`${API_URL}?action=getMasterOverview&year=${yearParam}`);
-                masterData = await masterResponse.json();
-                
-                if (masterData.success) {
-                    updateStats(masterData.data);
-                    updatePlanBreakdown(masterData.data.plan_breakdown);
-                    updateClientsTable(masterData.data.client_summaries);
-                    updateChart(masterData.data.client_summaries);
+                if (comparisonData.success) {
+                    updateComparisonBanner(comparisonData.data);
+                    updateStats(comparisonData.data);
+                    updateClientsTable(comparisonData.data.client_comparisons);
+                    updateTrendChart(comparisonData.data.all_periods);
                 }
                 
-                // Fetch exchange rate
+                const overviewResponse = await fetch(`${API_URL}?action=getMasterOverview`);
+                const overviewData = await overviewResponse.json();
+                
+                if (overviewData.success) {
+                    updatePlanBreakdown(overviewData.data.plan_breakdown);
+                    updateChart(overviewData.data.client_summaries);
+                }
+                
                 const rateResponse = await fetch(`${API_URL}?action=getExchangeRate`);
                 const rateData = await rateResponse.json();
                 if (rateData.success) {
                     document.getElementById('exchangeRate').textContent = rateData.data.rate.toFixed(4);
                 }
-                
             } catch (error) {
                 console.error('Error loading data:', error);
             }
             showLoading(false);
         }
 
-        // Update stats cards
-        function updateStats(data) {
-            const gt = data.grand_total;
-            document.getElementById('totalMembers').textContent = formatNumber(gt.total_members);
-            document.getElementById('totalClaims').textContent = formatNumber(gt.total_claims);
-            document.getElementById('totalApproved').textContent = '$' + formatNumber(gt.total_approved_usd, 0);
-            document.getElementById('avgCost').textContent = '$' + gt.cost_per_member.toFixed(2);
+        function updateComparisonBanner(data) {
+            if (!data.current_period || !data.previous_period) {
+                document.getElementById('comparisonPeriod').textContent = 'Insufficient data';
+                return;
+            }
+            
+            const current = data.current_period;
+            const previous = data.previous_period;
+            const changes = data.changes;
+            
+            document.getElementById('comparisonPeriod').textContent = 
+                `${current.period_label} vs ${previous.period_label}`;
+            
+            document.getElementById('cmpClaims').textContent = formatNumber(current.claims);
+            document.getElementById('cmpClaimsPrev').textContent = formatNumber(previous.claims);
+            updateChangeIndicator('cmpClaimsChange', changes.claims);
+            
+            document.getElementById('cmpMembers').textContent = formatNumber(current.members);
+            document.getElementById('cmpMembersPrev').textContent = formatNumber(previous.members);
+            updateChangeIndicator('cmpMembersChange', changes.members);
+            
+            document.getElementById('cmpApproved').textContent = '$' + formatNumber(current.approved_usd, 0);
+            document.getElementById('cmpApprovedPrev').textContent = '$' + formatNumber(previous.approved_usd, 0);
+            updateChangeIndicator('cmpApprovedChange', changes.approved_usd);
+            
+            document.getElementById('cmpCost').textContent = '$' + current.cost_per_member.toFixed(2);
+            document.getElementById('cmpCostPrev').textContent = '$' + previous.cost_per_member.toFixed(2);
+            updateChangeIndicator('cmpCostChange', changes.cost_per_member);
         }
 
-        // Update plan breakdown
+        function updateChangeIndicator(elementId, change) {
+            const element = document.getElementById(elementId);
+            if (!change || change.percentage === null) {
+                element.textContent = 'N/A';
+                element.className = 'comparison-change';
+                return;
+            }
+            
+            const isPositive = change.percentage > 0;
+            const arrow = isPositive ? '↑' : '↓';
+            const percentage = Math.abs(change.percentage).toFixed(1);
+            
+            element.innerHTML = `<span class="arrow">${arrow}</span> ${percentage}%`;
+            element.className = `comparison-change ${change.is_good ? 'positive' : 'negative'}`;
+        }
+
+        function updateStats(data) {
+            if (!data.current_period) return;
+            const current = data.current_period;
+            document.getElementById('totalMembers').textContent = formatNumber(current.members);
+            document.getElementById('totalClaims').textContent = formatNumber(current.claims);
+            document.getElementById('totalApproved').textContent = '$' + formatNumber(current.approved_usd, 0);
+            document.getElementById('avgCost').textContent = '$' + current.cost_per_member.toFixed(2);
+        }
+
+        function updateTrendChart(periods) {
+            if (!periods || periods.length === 0) return;
+            
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if (trendChart) trendChart.destroy();
+            
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: periods.map(p => p.period_label),
+                    datasets: [
+                        {
+                            label: 'Cost per Member ($)',
+                            data: periods.map(p => p.cost_per_member),
+                            borderColor: '#FFD700',
+                            backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#FFD700',
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'Claims',
+                            data: periods.map(p => p.claims),
+                            borderColor: '#1B5E20',
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            pointBackgroundColor: '#1B5E20',
+                            pointRadius: 4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#a8b5a8', usePointStyle: true } },
+                        tooltip: { backgroundColor: '#162016', titleColor: '#fff', bodyColor: '#a8b5a8', borderColor: '#2d3d2d', borderWidth: 1 }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(45,61,45,0.5)' }, ticks: { color: '#a8b5a8' } },
+                        y: { position: 'left', grid: { color: 'rgba(45,61,45,0.5)' }, ticks: { color: '#FFD700', callback: v => '$' + v.toFixed(0) }, title: { display: true, text: 'Cost/Member ($)', color: '#FFD700' } },
+                        y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#1B5E20' }, title: { display: true, text: 'Claims', color: '#1B5E20' } }
+                    }
+                }
+            });
+        }
+
         function updatePlanBreakdown(plans) {
             const container = document.getElementById('planBreakdown');
             const totalMembers = plans.reduce((sum, p) => sum + p.members, 0);
@@ -696,7 +850,6 @@
             container.innerHTML = plans.map(plan => {
                 const percentage = totalMembers > 0 ? ((plan.members / totalMembers) * 100).toFixed(1) : 0;
                 const planClass = plan.plan_id.toLowerCase().replace('_', '');
-                
                 return `
                     <div class="plan-item">
                         <div class="plan-color ${planClass === 'goldplat' ? 'gold' : planClass}"></div>
@@ -710,129 +863,72 @@
             }).join('');
         }
 
-        // Update clients table
         function updateClientsTable(clients) {
-            clientsData = clients.sort((a, b) => b.approved_usd - a.approved_usd);
+            clientsData = clients.sort((a, b) => (b.cost_change || 0) - (a.cost_change || 0));
             renderClientsTable(clientsData);
         }
 
         function renderClientsTable(clients) {
             const tbody = document.getElementById('clientsTableBody');
-            const maxCost = Math.max(...clients.map(c => c.cost_per_member || 0));
             
             tbody.innerHTML = clients.map(client => {
                 const initials = client.client_name.split(' ').map(w => w[0]).join('').substring(0, 2);
-                const costWidth = maxCost > 0 ? ((client.cost_per_member || 0) / maxCost * 100) : 0;
+                const current = client.current_period;
+                const costChange = client.cost_change;
+                
+                let trendClass = 'neutral', trendArrow = '—', trendValue = 'N/A';
+                if (costChange !== null) {
+                    if (costChange > 0) { trendClass = 'up'; trendArrow = '↑'; trendValue = `+${costChange.toFixed(1)}%`; }
+                    else if (costChange < 0) { trendClass = 'down'; trendArrow = '↓'; trendValue = `${costChange.toFixed(1)}%`; }
+                    else { trendValue = '0%'; }
+                }
                 
                 return `
                     <tr>
-                        <td>
-                            <div class="client-name">
-                                <div class="client-avatar">${initials}</div>
-                                ${client.client_name}
-                            </div>
-                        </td>
-                        <td><span class="plan-badge gold">Multiple</span></td>
-                        <td>${formatNumber(client.members)}</td>
-                        <td>${formatNumber(client.claims)}</td>
-                        <td><span class="currency">$${formatNumber(client.approved_usd, 0)}</span></td>
-                        <td>
-                            <div class="cost-indicator">
-                                <span class="currency">$${(client.cost_per_member || 0).toFixed(2)}</span>
-                                <div class="cost-bar">
-                                    <div class="cost-bar-fill" style="width: ${costWidth}%"></div>
-                                </div>
-                            </div>
-                        </td>
+                        <td><div class="client-name"><div class="client-avatar">${initials}</div>${client.client_name}</div></td>
+                        <td><span class="period-badge">${client.period_type}</span></td>
+                        <td>${formatNumber(current?.members || 0)}</td>
+                        <td>${formatNumber(current?.claims || 0)}</td>
+                        <td><span class="currency">$${formatNumber(current?.approved_usd || 0, 0)}</span></td>
+                        <td><span class="currency">$${(current?.cost_per_member || 0).toFixed(2)}</span></td>
+                        <td><span class="trend-indicator ${trendClass}">${trendArrow} ${trendValue}</span></td>
                     </tr>
                 `;
             }).join('');
         }
 
-        // Update chart
         function updateChart(clients) {
             const top10 = clients.sort((a, b) => b.approved_usd - a.approved_usd).slice(0, 10);
-            
             const ctx = document.getElementById('clientsChart').getContext('2d');
-            
-            if (clientsChart) {
-                clientsChart.destroy();
-            }
+            if (clientsChart) clientsChart.destroy();
             
             clientsChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: top10.map(c => c.client_name.length > 20 ? c.client_name.substring(0, 20) + '...' : c.client_name),
-                    datasets: [{
-                        label: 'Approved Amount (USD)',
-                        data: top10.map(c => c.approved_usd),
-                        backgroundColor: 'rgba(27, 94, 32, 0.8)',
-                        borderColor: '#1B5E20',
-                        borderWidth: 1,
-                        borderRadius: 6,
-                    }]
+                    datasets: [{ label: 'Approved Amount (USD)', data: top10.map(c => c.approved_usd), backgroundColor: 'rgba(27,94,32,0.8)', borderColor: '#1B5E20', borderWidth: 1, borderRadius: 6 }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     indexAxis: 'y',
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: '#162016',
-                            titleColor: '#ffffff',
-                            bodyColor: '#FFD700',
-                            borderColor: '#2d3d2d',
-                            borderWidth: 1,
-                            callbacks: {
-                                label: (ctx) => '$' + formatNumber(ctx.raw, 0)
-                            }
-                        }
-                    },
+                    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#162016', titleColor: '#fff', bodyColor: '#FFD700', borderColor: '#2d3d2d', borderWidth: 1, callbacks: { label: ctx => '$' + formatNumber(ctx.raw, 0) } } },
                     scales: {
-                        x: {
-                            grid: {
-                                color: 'rgba(45, 61, 45, 0.5)'
-                            },
-                            ticks: {
-                                color: '#a8b5a8',
-                                callback: (value) => '$' + formatNumber(value, 0)
-                            }
-                        },
-                        y: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                color: '#ffffff',
-                                font: {
-                                    size: 11
-                                }
-                            }
-                        }
+                        x: { grid: { color: 'rgba(45,61,45,0.5)' }, ticks: { color: '#a8b5a8', callback: v => '$' + formatNumber(v, 0) } },
+                        y: { grid: { display: false }, ticks: { color: '#fff', font: { size: 11 } } }
                     }
                 }
             });
         }
 
-        // Filter clients
         function filterClients() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = clientsData.filter(c => 
-                c.client_name.toLowerCase().includes(searchTerm)
-            );
-            renderClientsTable(filtered);
+            renderClientsTable(clientsData.filter(c => c.client_name.toLowerCase().includes(searchTerm)));
         }
 
-        // Utility functions
         function formatNumber(num, decimals = 0) {
             if (num === undefined || num === null) return '-';
-            return num.toLocaleString('en-US', {
-                minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals
-            });
+            return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
         }
 
         function showLoading(show) {
