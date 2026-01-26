@@ -9889,14 +9889,12 @@
             
             showClientStatus('Saving client...', 'info');
             
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'createClient', clientData: clientData })
-                });
-                const result = await response.json();
-                
+           try {
+    // Use GET request to avoid CORS issues
+    const url = API_URL + '?action=addClient&client=' + encodeURIComponent(JSON.stringify(clientData));
+    console.log('Creating client via GET:', url.substring(0, 150) + '...');
+    const response = await fetch(url);
+    const result = await response.json();
                 if (result.success) {
                     showClientStatus('✅ ' + result.message, 'success');
                     // Reload both dropdowns
