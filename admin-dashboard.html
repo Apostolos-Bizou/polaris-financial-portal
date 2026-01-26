@@ -9869,10 +9869,14 @@
             if (!contactPerson) { showClientStatus('Contact Person is required', 'error'); return; }
             if (!email) { showClientStatus('Email is required', 'error'); return; }
             if (!signatoryName || !signatoryTitle) { showClientStatus('Signatory Name and Title are required', 'error'); return; }
-            
-            const clientData = {
+
+const clientData = {
     client_name: clientName,
-    client_short: clientName.substring(0, 20),
+    client_short: document.getElementById('clientShort').value.trim() || clientName.substring(0, 20),
+    plan_id: document.getElementById('clientPlanId').value || '',
+    contract_start: document.getElementById('clientContractStart').value || '',
+    contract_end: document.getElementById('clientContractEnd').value || '',
+    status: document.getElementById('clientStatus').value || 'active',
     tin_number: document.getElementById('clientTIN').value.trim(),
     registered_address: document.getElementById('clientRegAddress').value.trim(),
     operating_address: document.getElementById('clientOpAddress').value.trim(),
@@ -9885,8 +9889,12 @@
     fax: document.getElementById('clientFax').value.trim(),
     authorized_signatory_name: signatoryName,
     authorized_signatory_title: signatoryTitle,
-    status: 'active'
+    portal_url: document.getElementById('clientPortalUrl').value.trim(),
+    portal_username: document.getElementById('clientPortalUsername').value.trim(),
+    portal_password: document.getElementById('clientPortalPassword').value.trim(),
+    is_primary: 'TRUE'
 };
+
             
             showClientStatus('Saving client...', 'info');
             
@@ -11362,58 +11370,306 @@
             }
         }
     </script>
-<!-- ADD NEW CLIENT MODAL - Outside all other modals -->
-<div id="addClientModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; align-items:center; justify-content:center;">
-    <div style="background:#1a2332; border:1px solid #2d3748; border-radius:16px; width:90%; max-width:800px; max-height:90vh; overflow-y:auto;">
-        <div style="background:linear-gradient(135deg, #1E3A5F, #2d5a87); padding:1.5rem 2rem; display:flex; justify-content:space-between; align-items:center; border-radius:16px 16px 0 0;">
-            <h2 style="color:white; margin:0; font-size:1.5rem;">🏢 Add New Client</h2>
-            <button onclick="closeAddClientModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.2rem;">✕</button>
+<!-- ADD NEW CLIENT MODAL - IMPROVED VERSION -->
+<div id="addClientModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:99999; align-items:center; justify-content:center; padding:10px;">
+    <div style="background:linear-gradient(135deg, #1a2332 0%, #0f1724 100%); border:1px solid #2d3748; border-radius:20px; width:100%; max-width:1000px; max-height:95vh; overflow-y:auto; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+        
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, #1E3A5F, #2d5a87); padding:1.5rem 2rem; display:flex; justify-content:space-between; align-items:center; border-radius:20px 20px 0 0; position:sticky; top:0; z-index:10;">
+            <h2 style="color:white; margin:0; font-size:1.75rem; display:flex; align-items:center; gap:12px;">
+                <span style="font-size:2rem;">🏢</span> Add New Client
+            </h2>
+            <button onclick="closeAddClientModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; width:44px; height:44px; border-radius:50%; cursor:pointer; font-size:1.5rem; transition:all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✕</button>
         </div>
-        <div style="padding:1.5rem 2rem;">
-            <!-- Company Info -->
-            <div style="margin-bottom:1.5rem;">
-                <h4 style="color:#d4a843; margin-bottom:1rem;">📋 Company Information</h4>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                    <div style="grid-column:span 2;"><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Company Name *</label><input type="text" id="clientName" placeholder="e.g., Alpha Marine Ltd" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Country *</label><input type="text" id="clientCountry" placeholder="e.g., Greece" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">TIN Number</label><input type="text" id="clientTIN" placeholder="Tax Identification Number" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div style="grid-column:span 2;"><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Registered Address</label><input type="text" id="clientRegAddress" placeholder="Full registered address" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div style="grid-column:span 2;"><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Operating Address</label><input type="text" id="clientOpAddress" placeholder="Operating address (if different)" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">VAT Number</label><input type="text" id="clientVAT" placeholder="Value Added Tax number" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
+        
+        <!-- Form Content -->
+        <div style="padding:2rem;">
+            
+            <!-- SECTION 1: Company Information -->
+            <div style="margin-bottom:2rem;">
+                <h3 style="color:#d4a843; margin-bottom:1.25rem; font-size:1.25rem; display:flex; align-items:center; gap:10px; border-bottom:1px solid #3d4a5c; padding-bottom:0.75rem;">
+                    <span>📋</span> Company Information
+                </h3>
+                <div style="display:grid; grid-template-columns:1fr; gap:1.25rem;">
+                    <!-- Row 1: Company Name (full width) -->
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Company Name <span style="color:#e74c3c;">*</span></label>
+                        <input type="text" id="clientName" placeholder="e.g., Alpha Marine Ltd" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                    
+                    <!-- Row 2: Short Name, Country -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1.25rem;">
+                        <div>
+                            <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Short Name</label>
+                            <input type="text" id="clientShort" placeholder="e.g., ALPHA" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                        </div>
+                        <div>
+                            <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Country <span style="color:#e74c3c;">*</span></label>
+                            <input type="text" id="clientCountry" placeholder="e.g., Greece" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                        </div>
+                    </div>
+                    
+                    <!-- Row 3: TIN, VAT -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1.25rem;">
+                        <div>
+                            <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">TIN Number</label>
+                            <input type="text" id="clientTIN" placeholder="Tax Identification Number" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                        </div>
+                        <div>
+                            <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">VAT Number</label>
+                            <input type="text" id="clientVAT" placeholder="Value Added Tax Number" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                        </div>
+                    </div>
+                    
+                    <!-- Row 4: Registered Address (full width) -->
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Registered Address</label>
+                        <input type="text" id="clientRegAddress" placeholder="Full registered address" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                    
+                    <!-- Row 5: Operating Address (full width) -->
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Operating Address</label>
+                        <input type="text" id="clientOpAddress" placeholder="Operating address (if different)" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
                 </div>
             </div>
             
-            <!-- Contact Info -->
-            <div style="margin-bottom:1.5rem;">
-                <h4 style="color:#d4a843; margin-bottom:1rem;">👤 Contact Information</h4>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Contact Person *</label><input type="text" id="clientContactPerson" placeholder="Full name" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Capacity / Title</label><input type="text" id="clientCapacity" placeholder="e.g., Fleet Manager" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Email *</label><input type="email" id="clientEmail" placeholder="email@company.com" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Phone</label><input type="text" id="clientPhone" placeholder="+30 xxx xxx xxxx" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Mobile</label><input type="text" id="clientMobile" placeholder="+30 xxx xxx xxxx" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Fax</label><input type="text" id="clientFax" placeholder="+30 xxx xxx xxxx" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
+            <!-- SECTION 2: Contract Information -->
+            <div style="margin-bottom:2rem;">
+                <h3 style="color:#d4a843; margin-bottom:1.25rem; font-size:1.25rem; display:flex; align-items:center; gap:10px; border-bottom:1px solid #3d4a5c; padding-bottom:0.75rem;">
+                    <span>📄</span> Contract Information
+                </h3>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1.25rem;">
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Healthcare Plan</label>
+                        <select id="clientPlanId" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; cursor:pointer; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                            <option value="">-- Select Plan --</option>
+                            <option value="bronze">Bronze</option>
+                            <option value="silver">Silver</option>
+                            <option value="gold">Gold</option>
+                            <option value="gold_plus">Gold+</option>
+                            <option value="platinum">Platinum</option>
+                            <option value="diamond">Diamond</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Contract Start</label>
+                        <input type="date" id="clientContractStart" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Contract End</label>
+                        <input type="date" id="clientContractEnd" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Status</label>
+                        <select id="clientStatus" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; cursor:pointer; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                            <option value="active">Active</option>
+                            <option value="pending">Pending</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             
-            <!-- Signatory Info -->
-            <div style="margin-bottom:1.5rem;">
-                <h4 style="color:#d4a843; margin-bottom:1rem;">✍️ Authorized Signatory</h4>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Signatory Name *</label><input type="text" id="clientSignatoryName" placeholder="Full legal name" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
-                    <div><label style="display:block; color:#a0aec0; font-size:0.85rem; margin-bottom:0.5rem;">Signatory Title *</label><input type="text" id="clientSignatoryTitle" placeholder="e.g., CEO, Director" style="width:100%; padding:0.75rem; background:#2d3748; border:1px solid #4a5568; border-radius:8px; color:white; font-size:1rem;"></div>
+            <!-- SECTION 3: Contact Information -->
+            <div style="margin-bottom:2rem;">
+                <h3 style="color:#d4a843; margin-bottom:1.25rem; font-size:1.25rem; display:flex; align-items:center; gap:10px; border-bottom:1px solid #3d4a5c; padding-bottom:0.75rem;">
+                    <span>👤</span> Contact Information
+                </h3>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1.25rem;">
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Contact Person <span style="color:#e74c3c;">*</span></label>
+                        <input type="text" id="clientContactPerson" placeholder="Full name" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Capacity / Title</label>
+                        <input type="text" id="clientCapacity" placeholder="e.g., Fleet Manager" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Email <span style="color:#e74c3c;">*</span></label>
+                        <input type="email" id="clientEmail" placeholder="email@company.com" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Phone</label>
+                        <input type="tel" id="clientPhone" placeholder="+30 xxx xxx xxxx" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Mobile</label>
+                        <input type="tel" id="clientMobile" placeholder="+30 xxx xxx xxxx" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Fax</label>
+                        <input type="tel" id="clientFax" placeholder="+30 xxx xxx xxxx" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
                 </div>
             </div>
             
-            <div id="addClientStatus" style="margin-top:1rem;"></div>
+            <!-- SECTION 4: Authorized Signatory -->
+            <div style="margin-bottom:2rem;">
+                <h3 style="color:#d4a843; margin-bottom:1.25rem; font-size:1.25rem; display:flex; align-items:center; gap:10px; border-bottom:1px solid #3d4a5c; padding-bottom:0.75rem;">
+                    <span>✍️</span> Authorized Signatory
+                </h3>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1.25rem;">
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Signatory Name <span style="color:#e74c3c;">*</span></label>
+                        <input type="text" id="clientSignatoryName" placeholder="Full legal name" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                    <div>
+                        <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Signatory Title <span style="color:#e74c3c;">*</span></label>
+                        <input type="text" id="clientSignatoryTitle" placeholder="e.g., CEO, Director" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                    </div>
+                </div>
+            </div>
             
-            <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1.5rem;">
-                <button onclick="closeAddClientModal()" style="padding:0.75rem 1.5rem; background:#4a5568; color:white; border:none; border-radius:8px; cursor:pointer; font-size:1rem;">Cancel</button>
-                <button onclick="saveNewClientWithOffersUpdate()" style="padding:0.75rem 1.5rem; background:#27ae60; color:white; border:none; border-radius:8px; cursor:pointer; font-size:1rem; font-weight:600;">💾 Save Client</button>
+            <!-- SECTION 5: Portal Access (Collapsible) -->
+            <div style="margin-bottom:2rem;">
+                <h3 onclick="togglePortalSection()" style="color:#d4a843; margin-bottom:1.25rem; font-size:1.25rem; display:flex; align-items:center; gap:10px; border-bottom:1px solid #3d4a5c; padding-bottom:0.75rem; cursor:pointer; user-select:none;">
+                    <span>🔐</span> Portal Access <span style="font-size:0.9rem; color:#718096; margin-left:auto;">(Optional - Click to expand)</span>
+                    <span id="portalToggleIcon" style="transition:transform 0.3s;">▼</span>
+                </h3>
+                <div id="portalSection" style="display:none; animation: fadeIn 0.3s;">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1.25rem;">
+                        <div style="grid-column: 1 / -1;">
+                            <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Portal URL</label>
+                            <input type="url" id="clientPortalUrl" placeholder="https://portal.example.com" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                        </div>
+                        <div>
+                            <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Portal Username</label>
+                            <input type="text" id="clientPortalUsername" placeholder="Username" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                        </div>
+                        <div>
+                            <label style="display:block; color:#a0aec0; font-size:1rem; margin-bottom:0.5rem; font-weight:500;">Portal Password</label>
+                            <input type="password" id="clientPortalPassword" placeholder="Password" style="width:100%; padding:1rem 1.25rem; background:#2d3748; border:2px solid #4a5568; border-radius:10px; color:white; font-size:1.1rem; transition:border-color 0.3s;" onfocus="this.style.borderColor='#d4a843'" onblur="this.style.borderColor='#4a5568'">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Message -->
+            <div id="addClientStatus" style="margin-bottom:1.5rem;"></div>
+            
+            <!-- Action Buttons -->
+            <div style="display:flex; gap:1rem; justify-content:flex-end; flex-wrap:wrap; padding-top:1rem; border-top:1px solid #3d4a5c;">
+                <button onclick="closeAddClientModal()" style="padding:1rem 2rem; background:#4a5568; color:white; border:none; border-radius:10px; cursor:pointer; font-size:1.1rem; font-weight:500; transition:all 0.3s; min-width:140px;" onmouseover="this.style.background='#5a6578'" onmouseout="this.style.background='#4a5568'">
+                    Cancel
+                </button>
+                <button onclick="saveNewClientWithOffersUpdate()" style="padding:1rem 2rem; background:linear-gradient(135deg, #27ae60, #1e8449); color:white; border:none; border-radius:10px; cursor:pointer; font-size:1.1rem; font-weight:600; transition:all 0.3s; min-width:180px; display:flex; align-items:center; justify-content:center; gap:8px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(39,174,96,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                    <span>💾</span> Save Client
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Toggle Portal Section
+function togglePortalSection() {
+    const section = document.getElementById('portalSection');
+    const icon = document.getElementById('portalToggleIcon');
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        section.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Auto-generate short name from company name
+document.getElementById('clientName').addEventListener('input', function() {
+    const shortField = document.getElementById('clientShort');
+    if (!shortField.value) { // Only auto-fill if empty
+        const words = this.value.trim().split(' ');
+        if (words.length >= 2) {
+            // Take first letter of each word (up to 4 words)
+            shortField.value = words.slice(0, 4).map(w => w[0]).join('').toUpperCase();
+        } else {
+            shortField.value = this.value.substring(0, 10).toUpperCase();
+        }
+    }
+});
+
+// Auto-set contract end date (1 year from start)
+document.getElementById('clientContractStart').addEventListener('change', function() {
+    const endField = document.getElementById('clientContractEnd');
+    if (!endField.value && this.value) {
+        const startDate = new Date(this.value);
+        startDate.setFullYear(startDate.getFullYear() + 1);
+        endField.value = startDate.toISOString().split('T')[0];
+    }
+});
+</script>
+
+<style>
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #addClientModal > div {
+        margin: 5px;
+        max-height: 98vh;
+        border-radius: 15px;
+    }
+    
+    #addClientModal > div > div:first-child {
+        padding: 1rem 1.25rem;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    #addClientModal > div > div:first-child h2 {
+        font-size: 1.4rem;
+    }
+    
+    #addClientModal > div > div:last-child {
+        padding: 1.25rem;
+    }
+    
+    #addClientModal input,
+    #addClientModal select {
+        padding: 0.875rem 1rem !important;
+        font-size: 1rem !important;
+    }
+    
+    #addClientModal label {
+        font-size: 0.95rem !important;
+    }
+    
+    #addClientModal h3 {
+        font-size: 1.1rem !important;
+    }
+    
+    #addClientModal button {
+        width: 100%;
+        padding: 1rem !important;
+    }
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom scrollbar */
+#addClientModal > div::-webkit-scrollbar {
+    width: 8px;
+}
+
+#addClientModal > div::-webkit-scrollbar-track {
+    background: #1a2332;
+    border-radius: 10px;
+}
+
+#addClientModal > div::-webkit-scrollbar-thumb {
+    background: #4a5568;
+    border-radius: 10px;
+}
+
+#addClientModal > div::-webkit-scrollbar-thumb:hover {
+    background: #5a6578;
+}
+</style>
 
 <!-- OFFER EMAIL PREVIEW MODAL -->
 <div id="offerEmailModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:99999; align-items:stretch; justify-content:stretch; padding: 0;">
