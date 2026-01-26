@@ -8619,8 +8619,8 @@
                 params.append('action', action);
                 
                 // For createClient, flatten the clientData
-                if (action === 'createClient' && data.clientData) {
-                    params.append('data', JSON.stringify(data.clientData));
+                if ((action === 'createClient' || action === 'addClient') && data.clientData) {
+                    params.append('client', JSON.stringify(data.clientData));
                 }
                 // For createContractWithDocuments, flatten the params
                 else if (action === 'createContractWithDocuments' && data.params) {
@@ -8732,7 +8732,7 @@
                     .createClient(clientData);
             } else {
                 // Use API call
-                postContractAPIWithCallback('createClient', { clientData: clientData }, function(result) {
+                postContractAPIWithCallback('addClient', { clientData: clientData }, function(result) {
                     if (result && result.success) {
                         showClientStatus('✅ ' + result.message, 'success');
                         loadClientsForContractDropdowns();
