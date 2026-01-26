@@ -9743,8 +9743,9 @@
                 const response = await fetch(API_URL + '?action=getClients');
                 const clients = await response.json();
                 
-                if (Array.isArray(clients)) {
-                    clients.forEach(c => {
+                const clientList = clients.data || clients;
+                if (Array.isArray(clientList)) {
+                    clientList.forEach(c => {
                         const option = document.createElement('option');
                         option.value = c.client_id;
                         option.textContent = c.client_name;
