@@ -9681,7 +9681,26 @@
                 if (linkEl) linkEl.innerHTML = '<span style="color:#e74c3c;">❌</span>';
             }
         }
-        
+        async function generateProposalFromOffer(offerId, clientId) {
+            const linkEl = document.getElementById('proposalLink-' + offerId);
+            if (linkEl) linkEl.innerHTML = '<span style="color:#f39c12;">⏳ ...</span>';
+            
+            try {
+                const url = API_URL + '?action=createProposalFromOffer&offerId=' + encodeURIComponent(offerId);
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (linkEl) linkEl.innerHTML = `<a href="${result.fileUrl}" target="_blank" style="color:#9b59b6;">📄 Open</a>`;
+                } else {
+                    if (linkEl) linkEl.innerHTML = '<span style="color:#e74c3c;">❌</span>';
+                }
+            } catch (error) {
+                console.error('Proposal generation error:', error);
+                if (linkEl) linkEl.innerHTML = '<span style="color:#e74c3c;">❌</span>';
+            }
+        }
+
         async function generateAllDocsFromOffer(offerId, clientId) {
             const ndaLink = document.getElementById('ndaLink-' + offerId);
             const dpaLink = document.getElementById('dpaLink-' + offerId);
