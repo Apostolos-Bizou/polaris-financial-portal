@@ -9456,7 +9456,7 @@
                     offersData = result.data;
                     renderOffersTable();
                     // Load document links after table is rendered
-                    setTimeout(() => loadOfferDocumentLinks(), 500);
+                    setTimeout(() => loadOfferDocumentLinksFromDB(), 500);
                 } else {
                     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">No offers found</td></tr>';
                 }
@@ -9708,7 +9708,47 @@
                 if (linkEl) linkEl.innerHTML = '<span style="color:#e74c3c;">❌</span>';
             }
         }
-
+// ============================================
+        // AUTO-LOAD DOCUMENT LINKS FROM DATABASE
+        // ============================================
+        async function loadOfferDocumentLinksFromDB() {
+            try {
+                const url = API_URL + '?action=getAllOffersDocuments';
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const docsMap = result.data;
+                    
+                    Object.keys(docsMap).forEach(offerId => {
+                        const docs = docsMap[offerId];
+                        
+                        const ndaLink = document.getElementById('ndaLink-' + offerId);
+                        if (ndaLink && docs.nda) {
+                            ndaLink.innerHTML = `<a href="${docs.nda}" target="_blank" style="color:#e67e22;">📜 Open</a>`;
+                        }
+                        
+                        const dpaLink = document.getElementById('dpaLink-' + offerId);
+                        if (dpaLink && docs.dpa) {
+                            dpaLink.innerHTML = `<a href="${docs.dpa}" target="_blank" style="color:#9b59b6;">🔒 Open</a>`;
+                        }
+                        
+                        const asaLink = document.getElementById('asaLink-' + offerId);
+                        if (asaLink && docs.asa) {
+                            asaLink.innerHTML = `<a href="${docs.asa}" target="_blank" style="color:#27ae60;">📋 Open</a>`;
+                        }
+                        
+                        const proposalLink = document.getElementById('proposalLink-' + offerId);
+                        if (proposalLink && docs.proposal) {
+                            proposalLink.innerHTML = `<a href="${docs.proposal}" target="_blank" style="color:#1e3a5f;">📄 Open</a>`;
+                        }
+                    });
+                    console.log('Document links loaded for', Object.keys(docsMap).length, 'offers');
+                }
+            } catch (error) {
+                console.error('Error loading document links:', error);
+            }
+        }
         async function generateAllDocsFromOffer(offerId, clientId) {
             const ndaLink = document.getElementById('ndaLink-' + offerId);
             const dpaLink = document.getElementById('dpaLink-' + offerId);
