@@ -9871,21 +9871,22 @@
             if (!signatoryName || !signatoryTitle) { showClientStatus('Signatory Name and Title are required', 'error'); return; }
             
             const clientData = {
-                client_name: clientName,
-                country: document.getElementById('clientCountry').value.trim(),
-                tin_number: document.getElementById('clientTIN').value.trim(),
-                registered_address: document.getElementById('clientRegAddress').value.trim(),
-                operating_address: document.getElementById('clientOpAddress').value.trim(),
-                vat_number: document.getElementById('clientVAT').value.trim(),
-                contact_person: contactPerson,
-                contact_capacity: document.getElementById('clientCapacity').value.trim(),
-                email: email,
-                phone: document.getElementById('clientPhone').value.trim(),
-                mobile: document.getElementById('clientMobile').value.trim(),
-                fax: document.getElementById('clientFax').value.trim(),
-                authorized_signatory_name: signatoryName,
-                authorized_signatory_title: signatoryTitle
-            };
+    client_name: clientName,
+    client_short: clientName.substring(0, 20),
+    tin_number: document.getElementById('clientTIN').value.trim(),
+    registered_address: document.getElementById('clientRegAddress').value.trim(),
+    operating_address: document.getElementById('clientOpAddress').value.trim(),
+    vat_number: document.getElementById('clientVAT').value.trim(),
+    contact_name: contactPerson,
+    contact_capacity: document.getElementById('clientCapacity').value.trim(),
+    contact_email: email,
+    contact_phone: document.getElementById('clientPhone').value.trim(),
+    mobile: document.getElementById('clientMobile').value.trim(),
+    fax: document.getElementById('clientFax').value.trim(),
+    authorized_signatory_name: signatoryName,
+    authorized_signatory_title: signatoryTitle,
+    status: 'active'
+};
             
             showClientStatus('Saving client...', 'info');
             
