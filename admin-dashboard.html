@@ -9388,7 +9388,7 @@
         const isGoogleAppsScript = typeof google !== 'undefined' && google.script && google.script.run;
         
         // Web App API URL for Vercel deployment
-        const CONTRACT_API_URL = 'https://script.google.com/macros/s/AKfycbxg83W_1DARho7eqGOcLC1sbu1t1NPFW9StzTaQTEMjasi2_E7rVvGOUSEXBdIc_DYk/exec';
+        const CONTRACT_API_URL = API_URL;
         
         // API Helper function
         async function callContractAPI(action, params = {}) {
@@ -9719,15 +9719,20 @@
                 }).withFailureHandler(function(e){console.error(e);}).getContractDashboardStats();
             } else {
                 // Use Web App API
-                const stats = await callContractAPI('getStats');
-                if (stats) {
-                    document.getElementById('contractStatTotal').textContent = stats.total || 0;
-                    document.getElementById('contractStatActive').textContent = stats.byStatus?.active || 0;
-                    document.getElementById('contractStatPending').textContent = (stats.byStatus?.draft || 0) + (stats.byStatus?.sent || 0) + (stats.byStatus?.negotiating || 0);
-                    document.getElementById('contractStatExpiring').textContent = stats.expiringSoon || 0;
+                try {
+                    const response = await fetch(`${API_URL}?action=getContractStats`);
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        const stats = result.data;
+                        document.getElementById('contractStatTotal').textContent = stats.total || 0;
+                        document.getElementById('contractStatActive').textContent = stats.active || 0;
+                        document.getElementById('contractStatPending').textContent = stats.pending || 0;
+                        document.getElementById('contractStatExpiring').textContent = stats.expiring_soon || 0;
+                    }
+                } catch (e) {
+                    console.error('Error loading stats:', e);
                 }
             }
-        }
 
         async function loadContracts() {
             const tbody = document.getElementById('contractTableBody');
@@ -9737,19 +9742,20 @@
                 google.script.run.withSuccessHandler(function(c) { allContractsData = c; renderContractsTable(c); }).withFailureHandler(function(e){console.error(e);tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#e74c3c;">Error loading</td></tr>';}).getAllContracts();
             } else {
                 // Use Web App API
-                const contracts = await callContractAPI('getContracts');
-                if (contracts && Array.isArray(contracts)) {
-                    allContractsData = contracts;
-                    renderContractsTable(contracts);
-                } else if (contracts && contracts.error) {
-                    console.error('API Error:', contracts.error);
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#e74c3c;">Error: ' + contracts.error + '</td></tr>';
-                } else {
-                    allContractsData = [];
+                try {
+                    const response = await fetch(`${API_URL}?action=getContracts`);
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        allContractsData = result.data;
+                        renderContractsTable(result.data);
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#e74c3c;">Error: ' + (result.error || 'Unknown error') + '</td></tr>';
+                    }
+                } catch (e) {
+                    console.error('Error loading contracts:', e);
                     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#e74c3c;">Error loading contracts</td></tr>';
                 }
             }
-        }
 
         function renderContractsTable(contracts) {
             const tbody = document.getElementById('contractTableBody');
