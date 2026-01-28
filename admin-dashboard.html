@@ -9756,7 +9756,8 @@
                     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#e74c3c;">Error loading contracts</td></tr>';
                 }
             }
-
+        }
+        
         function renderContractsTable(contracts) {
             const tbody = document.getElementById('contractTableBody');
             if(!contracts||contracts.length===0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted);">No contracts found</td></tr>'; return; }
