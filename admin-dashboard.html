@@ -10632,7 +10632,7 @@
             
             try {
                 // 1. Generate NDA
-                const ndaUrl = API_URL + '?action=createNDA&clientId=' + encodeURIComponent(clientId);
+                const ndaUrl = API_URL + '?action=createNDA&clientId=' + encodeURIComponent(clientId) + '&offerId=' + encodeURIComponent(offerId);
                 const ndaResponse = await fetch(ndaUrl);
                 const ndaResult = await ndaResponse.json();
                 if (ndaResult.success && ndaLink) {
@@ -10640,7 +10640,7 @@
                 }
                 
                 // 2. Generate DPA
-                const dpaUrl = API_URL + '?action=createDPA&clientId=' + encodeURIComponent(clientId);
+                const dpaUrl = API_URL + '?action=createDPA&clientId=' + encodeURIComponent(clientId) + '&offerId=' + encodeURIComponent(offerId);
                 const dpaResponse = await fetch(dpaUrl);
                 const dpaResult = await dpaResponse.json();
                 if (dpaResult.success && dpaLink) {
