@@ -17154,15 +17154,34 @@ function highlightOfferPrograms(offer) {
         return;
     }
     
-    // Parse offer items to get programs
+   // Parse offer items or comparison_data to get programs
     let programs = [];
     try {
+        // First try items (standard offers)
         if (offer.items) {
             const items = typeof offer.items === 'string' ? JSON.parse(offer.items) : offer.items;
             programs = items.map(item => (item.plan_name || item.program || '').toLowerCase().trim()).filter(Boolean);
         }
+        
+        // Then try comparison_data (Comparison Quotes)
+        if (programs.length === 0 && offer.comparison_data) {
+            let compData = offer.comparison_data;
+            if (typeof compData === 'string') {
+                compData = JSON.parse(compData);
+            }
+            if (Array.isArray(compData)) {
+                programs = compData.map(plan => (plan.planName || '').toLowerCase().trim()).filter(Boolean);
+            } else if (compData.planName) {
+                programs.push(compData.planName.toLowerCase().trim());
+            }
+        }
+        
+        // Also check offer.programs if passed directly
+        if (programs.length === 0 && offer.programs && Array.isArray(offer.programs)) {
+            programs = offer.programs.map(p => p.toLowerCase().trim());
+        }
     } catch (e) {
-        console.log('Could not parse offer items:', e);
+        console.log('Could not parse offer items/comparison_data:', e);
     }
     
     console.log('Offer programs to highlight:', programs);
