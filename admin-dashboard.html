@@ -18469,20 +18469,34 @@ async function submitSendDocs() {
     // Collect all data
     const sendData = collectSendDocsData();
     
+    // DETAILED LOGGING
+    console.log('═══════════════════════════════════════════');
+    console.log('📧 SEND DOCUMENTS DATA:');
+    console.log('  offerId:', sendData.offerId);
+    console.log('  clientName:', sendData.clientName);
+    console.log('  documents:', JSON.stringify(sendData.documents));
+    console.log('  programs:', JSON.stringify(sendData.programs));
+    console.log('  recipients:', JSON.stringify(sendData.recipients));
+    console.log('  attachments total:', sendData.attachments.length);
+    console.log('  documentFormat:', sendData.documentFormat);
+    console.log('═══════════════════════════════════════════');
+    
     // Validate
     if (sendData.attachments.length === 0) {
         showSendDocsStatus('Please select at least one document to send.', 'error');
+        hideGlobalStatus();
         return;
     }
     
     if (sendData.recipients.length === 0) {
         showSendDocsStatus('Please select at least one recipient.', 'error');
+        hideGlobalStatus();
         return;
     }
     
-    if (!sendData.template) {
-        showSendDocsStatus('Please select an email template.', 'error');
-        return;
+    // Template is optional now - just warn if missing
+    if (!sendData.template && !sendData.emailBody) {
+        console.warn('No template selected and no email body');
     }
     
     console.log('Sending documents:', sendData);
@@ -18504,15 +18518,17 @@ async function submitSendDocs() {
                 signDocs: sendData.signDocs,
                 signatory: sendData.signatoryId,
                 signatureFileId: sendData.signatureFileId,
-                documentFormat: sendData.documentFormat,  // 'word' or 'pdf'
+                documentFormat: sendData.documentFormat,
                 newStatus: sendData.newStatus
             })
         });
         
         const result = await response.json();
+        console.log('📧 Server response:', result);
         
         if (result.success) {
-            showSendDocsStatus('✅ Documents sent successfully to ' + sendData.recipients.map(r => r.email).join(', '), 'success');
+            const attachCount = result.attachments || result.attachmentCount || 'unknown';
+            showSendDocsStatus(`✅ Documents sent successfully to ${sendData.recipients.map(r => r.email).join(', ')} (${attachCount} attachments)`, 'success');
             hideGlobalStatus();
             
             // Update offer status if selected
