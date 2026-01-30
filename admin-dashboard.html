@@ -17137,12 +17137,20 @@ async function loadOfferDocumentsForSendDocs(offerId) {
 
 // Highlight programs from the selected offer
 function highlightOfferPrograms(offer) {
+    // Use currentViewOffer if no offer passed
+    offer = offer || window.currentViewOffer;
+    
+    if (!offer) {
+        console.log('No offer to highlight programs');
+        return;
+    }
+    
     // Parse offer items to get programs
     let programs = [];
     try {
         if (offer.items) {
             const items = typeof offer.items === 'string' ? JSON.parse(offer.items) : offer.items;
-            programs = items.map(item => item.plan_name || item.program).filter(Boolean);
+            programs = items.map(item => (item.plan_name || item.program || '').toLowerCase().trim()).filter(Boolean);
         }
     } catch (e) {
         console.log('Could not parse offer items:', e);
@@ -17150,29 +17158,32 @@ function highlightOfferPrograms(offer) {
     
     console.log('Offer programs to highlight:', programs);
     
-    // Highlight matching program brochures
+    // First, deselect all
     document.querySelectorAll('.send-docs-program-item').forEach(item => {
-        const programName = item.dataset.program;
-        const checkbox = item.querySelector('input');
-        
-        const isInOffer = programs.some(p => 
-            p.toLowerCase().includes(programName?.toLowerCase()) ||
-            programName?.toLowerCase().includes(p.toLowerCase())
-        );
-        
-        if (isInOffer) {
-            item.style.borderColor = '#d4af37';
-            item.style.background = 'rgba(212, 175, 55, 0.15)';
-            if (checkbox) checkbox.checked = true;
-            item.classList.add('checked');
-        }
-        // Note: else case already handled by clearAllDocumentSelections()
+        item.classList.remove('selected');
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        if (checkbox) checkbox.checked = false;
     });
     
-    // Update attachment count after programs are set
-    updateSendDocsCount();
+    // Then select only EXACT matches
+    document.querySelectorAll('.send-docs-program-item').forEach(item => {
+        const nameEl = item.querySelector('.send-docs-program-name');
+        if (!nameEl) return;
+        
+        const name = nameEl.textContent.toLowerCase().trim();
+        
+        // Exact match or dental benefits match
+        const shouldSelect = programs.includes(name) || 
+            programs.some(p => p.replace(/\s+/g, '') === name.replace(/\s+/g, ''));
+        
+        if (shouldSelect) {
+            item.classList.add('selected');
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            if (checkbox) checkbox.checked = true;
+            console.log('✅ Auto-selected program:', name);
+        }
+    });
 }
-
 // View offer preview from Send Docs
 function viewOfferFromSendDocs(offerId) {
     console.log('Viewing offer from Send Docs:', offerId);
