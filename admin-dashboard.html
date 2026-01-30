@@ -17186,12 +17186,27 @@ function highlightOfferPrograms(offer) {
         // Flexible matching for dental and program variations
         const nameClean = name.replace(/\s+/g, '');
         const shouldSelect = programs.some(p => {
-            const progClean = p.replace(/\s+/g, '').replace('benefits', '');
-            return progClean === nameClean || 
-                   progClean === name ||
-                   (progClean.includes('dental') && nameClean.includes('dental')) ||
-                   (progClean === 'gold+' && nameClean === 'gold+') ||
-                   (progClean === 'gold++' && nameClean === 'gold++');
+            // Clean program name - remove dental suffix
+            let progBase = p.replace(/\s+/g, '').replace('benefits', '').replace('+dental', '').replace('dental', '');
+            
+            // Direct match
+            if (progBase === nameClean) return true;
+            
+            // Handle Gold variants
+            if (progBase === 'gold++' && nameClean === 'gold++') return true;
+            if (progBase === 'gold+' && nameClean === 'gold+') return true;
+            if (progBase === 'gold' && nameClean === 'gold') return true;
+            
+            // Other plans
+            if (progBase === 'silver' && nameClean === 'silver') return true;
+            if (progBase === 'bronze' && nameClean === 'bronze') return true;
+            if (progBase === 'platinum' && nameClean === 'platinum') return true;
+            if (progBase === 'diamond' && nameClean === 'diamond') return true;
+            
+            // Dental
+            if (p.toLowerCase().includes('dental') && nameClean === 'dental') return true;
+            
+            return false;
         });
         
         if (shouldSelect) {
