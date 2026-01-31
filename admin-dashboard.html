@@ -13175,6 +13175,8 @@
             
             // Update dynamic notes based on performance
             updateCEONotes(grossMargin, lossRatio, combinedRatio, netProfit, corporateTax);
+           // Load from API (NEW!)
+            loadCEODashboardFromAPI(); 
         }
         
         function updateCEONotes(grossMargin, lossRatio, combinedRatio, netProfit, corporateTax) {
@@ -25639,6 +25641,501 @@ async function preloadAllDataWithProgress() {
         updateLoadingProgress(100, 'Ready (some data may load on demand)');
     }
 }
+    // ═══════════════════════════════════════════════════════════════════════════════
+// CEO DASHBOARD - API INTEGRATION
+// Version 1.0 - Connects to getCEODashboard & getCEOFinancials endpoints
+// 
+// INSTRUCTIONS:
+// 1. Add this code to your admin-dashboard.html inside the <script> section
+// 2. Find the function updateCEOFinancialDashboard() (around line 13063)
+// 3. Add this call at the END of that function: loadCEODashboardFromAPI();
+// 4. Or replace the entire updateCEOFinancialDashboard() function with the new one below
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOAD CEO DASHBOARD FROM API (Company-wide overview)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function loadCEODashboardFromAPI() {
+    console.log('🔄 Loading CEO Dashboard from API...');
+    
+    try {
+        const response = await fetch(API_URL + '?action=getCEODashboard');
+        const result = await response.json();
+        
+        if (!result.success) {
+            console.error('❌ CEO Dashboard API error:', result.error);
+            return;
+        }
+        
+        console.log('✅ CEO Dashboard data loaded:', result);
+        updateCEODashboardUI(result);
+        
+    } catch (error) {
+        console.error('❌ Error loading CEO Dashboard:', error);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOAD CEO FINANCIALS FOR SPECIFIC CLIENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function loadCEOFinancialsForClient(clientId) {
+    console.log('🔄 Loading CEO Financials for client:', clientId);
+    
+    try {
+        const response = await fetch(API_URL + '?action=getCEOFinancials&clientId=' + clientId);
+        const result = await response.json();
+        
+        if (!result.success) {
+            console.error('❌ CEO Financials API error:', result.error);
+            return null;
+        }
+        
+        console.log('✅ CEO Financials loaded for', clientId);
+        updateCEOFinancialsUI(result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Error loading CEO Financials:', error);
+        return null;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPDATE CEO DASHBOARD UI (from getCEODashboard response)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function updateCEODashboardUI(data) {
+    const fmt = n => Math.round(n || 0).toLocaleString();
+    const fmtCurrency = n => '$' + fmt(n);
+    
+    const summary = data.summary || {};
+    const tax = data.tax || {};
+    const annualized = data.annualized || {};
+    const movement = data.member_movement || {};
+    const topClients = data.top_clients || [];
+    
+    // ═══════════════════════════════════════════════════════════════
+    // MAIN KPI CARDS (Top row)
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('ceoGrossRevenue', fmtCurrency(summary.gross_revenue));
+    safeSetText('ceoTotalExpenses', fmtCurrency(summary.total_expenses));
+    safeSetText('ceoNetProfit', fmtCurrency(summary.net_profit));
+    safeSetText('ceoTaxLiability', fmtCurrency(tax.total));
+    
+    // ═══════════════════════════════════════════════════════════════
+    // CYPRUS TAX BREAKDOWN
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('ceoTaxableIncome', fmtCurrency(summary.ebit));
+    safeSetText('ceoCorporateTax', '-' + fmtCurrency(tax.cit));
+    safeSetText('ceoSDC', '-' + fmtCurrency(tax.sdc));
+    safeSetText('ceoGHS', '-' + fmtCurrency(tax.ghs));
+    safeSetText('ceoTotalTax', '-' + fmtCurrency(tax.total));
+    
+    // ═══════════════════════════════════════════════════════════════
+    // KEY RATIOS
+    // ═══════════════════════════════════════════════════════════════
+    
+    const grossMargin = summary.gross_margin || 0;
+    const lossRatio = summary.loss_ratio || 0;
+    
+    safeSetText('ceoGrossMargin', grossMargin.toFixed(0) + '%');
+    safeSetText('ceoLossRatio', lossRatio.toFixed(0) + '%');
+    
+    // Update ratio card colors based on performance
+    updateRatioCardColors(grossMargin, lossRatio);
+    
+    // ═══════════════════════════════════════════════════════════════
+    // MEMBER MOVEMENT
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('newEnrollments', '+' + (movement.new_enrollments || 0));
+    safeSetText('cancellations', '-' + (movement.cancellations || 0));
+    const netChange = movement.net_change || 0;
+    safeSetText('netChange', (netChange >= 0 ? '+' : '') + netChange);
+    
+    // ═══════════════════════════════════════════════════════════════
+    // ANNUALIZED PROJECTIONS (if elements exist)
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('ceoAnnualRevenue', fmtCurrency(annualized.revenue));
+    safeSetText('ceoAnnualExpenses', fmtCurrency(annualized.expenses));
+    safeSetText('ceoAnnualProfit', fmtCurrency(annualized.profit));
+    safeSetText('ceoAnnualTax', fmtCurrency(annualized.tax));
+    
+    // ═══════════════════════════════════════════════════════════════
+    // TOP CLIENTS TABLE (if exists)
+    // ═══════════════════════════════════════════════════════════════
+    
+    updateTopClientsTable(topClients);
+    
+    // ═══════════════════════════════════════════════════════════════
+    // PERIOD DISPLAY
+    // ═══════════════════════════════════════════════════════════════
+    
+    const now = new Date();
+    const quarter = Math.ceil((now.getMonth() + 1) / 3);
+    safeSetText('ceoFinancePeriod', 'Q' + quarter + ' ' + now.getFullYear());
+    
+    console.log('✅ CEO Dashboard UI updated successfully!');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPDATE CEO FINANCIALS UI (from getCEOFinancials response - per client)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function updateCEOFinancialsUI(data) {
+    const fmt = n => Math.round(n || 0).toLocaleString();
+    const fmtCurrency = n => '$' + fmt(n);
+    
+    const revenue = data.revenue || {};
+    const expenses = data.expenses || {};
+    const profit = data.profit || {};
+    const ratios = data.ratios || {};
+    const operations = data.operations || {};
+    const cyprusTax = profit.cyprus_tax || {};
+    
+    // ═══════════════════════════════════════════════════════════════
+    // MAIN KPI CARDS
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('ceoGrossRevenue', fmtCurrency(revenue.gross_revenue));
+    safeSetText('ceoTotalExpenses', fmtCurrency(expenses.total_expenses));
+    safeSetText('ceoNetProfit', fmtCurrency(profit.net_profit));
+    safeSetText('ceoTaxLiability', fmtCurrency(cyprusTax.total));
+    
+    // ═══════════════════════════════════════════════════════════════
+    // REVENUE BREAKDOWN
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('ceoPremiumRevenue', fmtCurrency(revenue.premium_revenue));
+    safeSetText('ceoAdminFeeRevenue', fmtCurrency(revenue.fee_revenue));
+    safeSetText('ceoStopLossRevenue', fmtCurrency(revenue.stop_loss_premium));
+    safeSetText('ceoNetworkRevenue', fmtCurrency(revenue.network_access_fees));
+    safeSetText('ceoProcessingRevenue', fmtCurrency(revenue.claim_processing_fees));
+    safeSetText('ceoTotalRevenue', fmtCurrency(revenue.gross_revenue));
+    
+    // ═══════════════════════════════════════════════════════════════
+    // EXPENSE BREAKDOWN
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('ceoClaimsPaid', '-' + fmtCurrency(expenses.claims_paid));
+    safeSetText('ceoExGratia', '-' + fmtCurrency(expenses.claims_paid * 0.08)); // Estimated
+    safeSetText('ceoProviderCosts', '-' + fmtCurrency(expenses.stop_loss_cost));
+    safeSetText('ceoOperatingExp', '-' + fmtCurrency(expenses.operating_expenses));
+    safeSetText('ceoBankFees', '-' + fmtCurrency(expenses.bank_fees));
+    safeSetText('ceoTotalExpensesSum', '-' + fmtCurrency(expenses.total_expenses));
+    
+    // ═══════════════════════════════════════════════════════════════
+    // CYPRUS TAX BREAKDOWN
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('ceoTaxableIncome', fmtCurrency(profit.ebit));
+    safeSetText('ceoCorporateTax', '-' + fmtCurrency(cyprusTax.cit));
+    safeSetText('ceoSDC', '-' + fmtCurrency(cyprusTax.sdc));
+    safeSetText('ceoGHS', '-' + fmtCurrency(cyprusTax.ghs));
+    safeSetText('ceoTotalTax', '-' + fmtCurrency(cyprusTax.total));
+    
+    // ═══════════════════════════════════════════════════════════════
+    // KEY RATIOS
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('ceoGrossMargin', ratios.gross_margin.toFixed(0) + '%');
+    safeSetText('ceoLossRatio', ratios.loss_ratio.toFixed(0) + '%');
+    safeSetText('ceoCombinedRatio', ratios.combined_ratio.toFixed(0) + '%');
+    safeSetText('ceoARPM', '$' + ratios.arpm_monthly.toFixed(0));
+    
+    // Update ratio card colors
+    updateRatioCardColors(ratios.gross_margin, ratios.loss_ratio, ratios.combined_ratio);
+    
+    // ═══════════════════════════════════════════════════════════════
+    // CASH FLOW (Estimates)
+    // ═══════════════════════════════════════════════════════════════
+    
+    const cashInflow = revenue.premium_revenue + revenue.fee_revenue;
+    const cashOutflow = expenses.claims_paid + expenses.operating_expenses;
+    const netCash = cashInflow - cashOutflow;
+    
+    safeSetText('ceoCashInflow', fmtCurrency(cashInflow));
+    safeSetText('ceoCashOutflow', '-' + fmtCurrency(cashOutflow));
+    safeSetText('ceoNetCash', (netCash >= 0 ? '+' : '') + fmtCurrency(netCash));
+    
+    // Update cash flow bars
+    updateCashFlowBars(cashInflow, cashOutflow, netCash);
+    
+    // ═══════════════════════════════════════════════════════════════
+    // OPERATIONS
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('newEnrollments', '+' + (operations.new_enrollments || 0));
+    safeSetText('cancellations', '-' + (operations.cancellations || 0));
+    safeSetText('netChange', (operations.net_member_change >= 0 ? '+' : '') + (operations.net_member_change || 0));
+    
+    // ═══════════════════════════════════════════════════════════════
+    // QUARTERLY TREND CHART (if data available)
+    // ═══════════════════════════════════════════════════════════════
+    
+    if (data.quarterly_trend && data.quarterly_trend.length > 0) {
+        updateQuarterlyTrendChart(data.quarterly_trend);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // DYNAMIC NOTES
+    // ═══════════════════════════════════════════════════════════════
+    
+    updateCEONotesFromAPI(ratios, profit, cyprusTax);
+    
+    // ═══════════════════════════════════════════════════════════════
+    // PERIOD DISPLAY
+    // ═══════════════════════════════════════════════════════════════
+    
+    safeSetText('ceoFinancePeriod', data.period || 'Current Quarter');
+    
+    console.log('✅ CEO Financials UI updated for client:', data.client_id);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Safe text setter - won't crash if element doesn't exist
+function safeSetText(elementId, value) {
+    const el = document.getElementById(elementId);
+    if (el) {
+        el.textContent = value;
+    }
+}
+
+// Update ratio card colors based on performance thresholds
+function updateRatioCardColors(grossMargin, lossRatio, combinedRatio) {
+    // Gross Margin: >30% = good, 20-30% = warning, <20% = danger
+    const grossMarginCard = document.getElementById('ceoGrossMarginCard');
+    if (grossMarginCard) {
+        grossMarginCard.className = 'ceo-ratio-card ' + 
+            (grossMargin >= 30 ? 'success' : grossMargin >= 20 ? 'warning' : 'danger');
+    }
+    
+    // Loss Ratio: <70% = good, 70-85% = warning, >85% = danger
+    const lossRatioCard = document.getElementById('ceoLossRatioCard');
+    if (lossRatioCard) {
+        lossRatioCard.className = 'ceo-ratio-card ' + 
+            (lossRatio <= 70 ? 'success' : lossRatio <= 85 ? 'warning' : 'danger');
+    }
+    
+    // Combined Ratio: <95% = good, 95-100% = warning, >100% = danger
+    if (combinedRatio !== undefined) {
+        const combinedRatioCard = document.getElementById('ceoCombinedRatioCard');
+        if (combinedRatioCard) {
+            combinedRatioCard.className = 'ceo-ratio-card ' + 
+                (combinedRatio < 95 ? 'success' : combinedRatio < 100 ? 'warning' : 'danger');
+        }
+    }
+}
+
+// Update cash flow progress bars
+function updateCashFlowBars(inflow, outflow, netCash) {
+    const maxCash = Math.max(inflow, outflow, Math.abs(netCash)) || 1;
+    
+    const inflowBar = document.getElementById('ceoCashInflowBar');
+    if (inflowBar) inflowBar.style.width = (inflow / maxCash * 80) + '%';
+    
+    const outflowBar = document.getElementById('ceoCashOutflowBar');
+    if (outflowBar) outflowBar.style.width = (outflow / maxCash * 80) + '%';
+    
+    const netCashBar = document.getElementById('ceoNetCashBar');
+    if (netCashBar) {
+        netCashBar.style.width = (Math.abs(netCash) / maxCash * 80) + '%';
+        netCashBar.textContent = (netCash >= 0 ? '+' : '') + Math.round(netCash / maxCash * 100) + '%';
+    }
+}
+
+// Update top clients table
+function updateTopClientsTable(clients) {
+    const tbody = document.getElementById('ceoTopClientsBody');
+    if (!tbody || !clients || clients.length === 0) return;
+    
+    tbody.innerHTML = '';
+    
+    clients.forEach((client, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${client.client_id || 'Unknown'}</td>
+            <td>${client.members?.toLocaleString() || 0}</td>
+            <td>$${Math.round(client.claims_cost || 0).toLocaleString()}</td>
+            <td>${client.contribution_pct || 0}%</td>
+            <td class="${parseFloat(client.loss_ratio) <= 70 ? 'text-success' : 'text-warning'}">${client.loss_ratio || 0}%</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Update quarterly trend chart (if using Chart.js)
+function updateQuarterlyTrendChart(trendData) {
+    const canvas = document.getElementById('ceoQuarterlyChart');
+    if (!canvas) return;
+    
+    const labels = trendData.map(q => q.period);
+    const revenueData = trendData.map(q => q.revenue);
+    const expensesData = trendData.map(q => q.expenses);
+    const profitData = trendData.map(q => q.profit);
+    
+    // Destroy existing chart if exists
+    if (window.ceoQuarterlyChart) {
+        window.ceoQuarterlyChart.destroy();
+    }
+    
+    window.ceoQuarterlyChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Revenue',
+                    data: revenueData,
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Expenses',
+                    data: expensesData,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Profit',
+                    data: profitData,
+                    borderColor: '#d4af37',
+                    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: '#fff' }
+                }
+            },
+            scales: {
+                x: { 
+                    ticks: { color: '#aaa' },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                },
+                y: { 
+                    ticks: { 
+                        color: '#aaa',
+                        callback: value => '$' + (value / 1000).toFixed(0) + 'K'
+                    },
+                    grid: { color: 'rgba(255,255,255,0.1)' }
+                }
+            }
+        }
+    });
+}
+
+// Update dynamic notes based on API data
+function updateCEONotesFromAPI(ratios, profit, tax) {
+    const lossRatio = ratios.loss_ratio || 0;
+    const grossMargin = ratios.gross_margin || 0;
+    const combinedRatio = ratios.combined_ratio || 0;
+    const netProfit = profit.net_profit || 0;
+    const corporateTax = tax.cit || 0;
+    
+    const note1 = document.getElementById('ceoNote1');
+    const note2 = document.getElementById('ceoNote2');
+    const note3 = document.getElementById('ceoNote3');
+    const note4 = document.getElementById('ceoNote4');
+    const note5 = document.getElementById('ceoNote5');
+    
+    if (note1) {
+        if (lossRatio <= 65) {
+            note1.textContent = '✅ Loss Ratio at ' + lossRatio.toFixed(0) + '% is excellent. Industry benchmark for TPA is 60-70%.';
+        } else if (lossRatio <= 75) {
+            note1.textContent = '⚠️ Loss Ratio at ' + lossRatio.toFixed(0) + '% is within acceptable range but trending high.';
+        } else {
+            note1.textContent = '🚨 Loss Ratio at ' + lossRatio.toFixed(0) + '% exceeds target. Immediate review required.';
+        }
+    }
+    
+    if (note2) {
+        if (grossMargin >= 30) {
+            note2.textContent = '✅ Gross Margin of ' + grossMargin.toFixed(0) + '% exceeds target (30%). Strong performance.';
+        } else {
+            note2.textContent = '⚠️ Gross Margin of ' + grossMargin.toFixed(0) + '% below target. Review pricing strategy.';
+        }
+    }
+    
+    if (note3) {
+        if (combinedRatio < 95) {
+            note3.textContent = '✅ Combined Ratio of ' + combinedRatio.toFixed(0) + '% indicates profitable operations.';
+        } else if (combinedRatio < 100) {
+            note3.textContent = '⚠️ Combined Ratio of ' + combinedRatio.toFixed(0) + '% is marginal. Monitor closely.';
+        } else {
+            note3.textContent = '🚨 Combined Ratio of ' + combinedRatio.toFixed(0) + '% exceeds 100%. Operations are unprofitable.';
+        }
+    }
+    
+    if (note4) {
+        note4.textContent = '💰 Net Profit after tax: $' + Math.round(netProfit).toLocaleString() + 
+            '. Cyprus CIT provision: $' + Math.round(corporateTax).toLocaleString();
+    }
+    
+    if (note5) {
+        const now = new Date();
+        const month = now.getMonth();
+        if (month >= 5 && month <= 6) {
+            note5.textContent = '📅 REMINDER: 1st Provisional Tax Payment due 31 July.';
+        } else if (month >= 10 || month <= 0) {
+            note5.textContent = '📅 REMINDER: 2nd Provisional Tax Payment due 31 December.';
+        } else if (month >= 1 && month <= 2) {
+            note5.textContent = '📅 REMINDER: Annual Tax Return due 31 March.';
+        } else {
+            note5.textContent = '📅 Next tax deadline: See Cyprus Tax Calendar for details.';
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INTEGRATION WITH EXISTING DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Call this when switching to CEO view or when client changes
+function refreshCEODashboard(clientId) {
+    if (clientId) {
+        // Load financials for specific client
+        loadCEOFinancialsForClient(clientId);
+    } else {
+        // Load company-wide dashboard
+        loadCEODashboardFromAPI();
+    }
+}
+
+// Auto-load on page load (optional - uncomment if needed)
+// document.addEventListener('DOMContentLoaded', function() {
+//     loadCEODashboardFromAPI();
+// });
+
+console.log('✅ CEO Dashboard API Integration loaded!');
+console.log('📊 Available functions:');
+console.log('   - loadCEODashboardFromAPI() - Load company-wide data');
+console.log('   - loadCEOFinancialsForClient(clientId) - Load specific client');
+console.log('   - refreshCEODashboard(clientId) - Smart refresh');
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// END OF CEO DASHBOARD API INTEGRATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
 
 console.log('📋 POLARIS Portal v4 - Comprehensive preloading enabled');
 console.log('🔥 VERSION: 2026-01-29-CQ-SAVE-FIX');
