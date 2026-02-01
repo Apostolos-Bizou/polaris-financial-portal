@@ -19318,7 +19318,7 @@ const clientData = {
             
            try {
     // Use GET request to avoid CORS issues
-    const url = API_URL + '?action=addClient&client=' + encodeURIComponent(JSON.stringify(clientData));
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzNtZrTfndEPGotMf5oCB07W4uJQ9dWjqilTLuGiJG0zW8wCYVEBgwL3e34OvOOgZpb/exec';
     console.log('📤 Creating client via GET:', clientData);
     console.log('URL:', url.substring(0, 150) + '...');
     const response = await fetch(url);
