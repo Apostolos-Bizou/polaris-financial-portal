@@ -25575,16 +25575,6 @@ function replaceTemplatePlaceholders(content) {
     return processed;
 }
 
-// Reset to original template content
-function resetSendDocsTemplate() {
-    if (currentDriveTemplateContent) {
-        const previewDiv = document.getElementById('sendDocsPreview');
-        if (previewDiv) {
-            previewDiv.innerHTML = replaceTemplatePlaceholders(currentDriveTemplateContent);
-        }
-    }
-}
-
 // Initialize templates when Send Documents modal opens
 function initSendDocsTemplates() {
     // Load Drive templates if not already loaded
