@@ -28313,29 +28313,6 @@ function safeSetText(elementId, value) {
     if (el) el.textContent = value;
 }
 
-function updateTopClientsTable(clients) {
-    const tbody = document.getElementById('ceoTopClientsBody');
-    if (!tbody || !clients || clients.length === 0) {
-        console.log('ℹ️ No top clients table or data to display');
-        return;
-    }
-    
-    tbody.innerHTML = '';
-    clients.forEach((client, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${client.client_id || 'Unknown'}</td>
-            <td>${(client.members || 0).toLocaleString()}</td>
-            <td>$${Math.round(client.claims_cost || 0).toLocaleString()}</td>
-            <td>${client.contribution_pct || 0}%</td>
-            <td style="color: ${parseFloat(client.loss_ratio) <= 70 ? '#4CAF50' : '#f39c12'}">${client.loss_ratio || 0}%</td>
-        `;
-        tbody.appendChild(row);
-    });
-    console.log('✅ Top clients table updated with', clients.length, 'clients');
-}
-
 // v3.24: Updated Top Clients Table with Client Names
 function updateTopClientsTableV324(clients) {
     const tbody = document.getElementById('ceoTopClientsBody');
