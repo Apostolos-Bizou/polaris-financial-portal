@@ -27456,9 +27456,9 @@ async function loadRenewalEmailTemplate() {
             }
             
             if (result.success && result.body_html) {
-                const body = replacePlaceholders(result.body_html, clientName, contactFirstName, contactName);
+                const body = replacePlaceholdersRenewals(result.body_html, clientName, contactFirstName, contactName);
                 preview.innerHTML = body;
-                subjectInput.value = replacePlaceholders(result.subject || '', clientName, contactFirstName, contactName);
+                subjectInput.value = replacePlaceholdersRenewals(result.subject || '', clientName, contactFirstName, contactName);
                 return;
             }
         } catch (e) {
@@ -27553,7 +27553,7 @@ async function loadRenewalEmailTemplate() {
     }
 }
 
-function replacePlaceholders(text, clientName, contactFirstName, contactFullName) {
+function replacePlaceholdersRenewals((text, clientName, contactFirstName, contactFullName) {
     return text
         .replace(/\{\{client_name\}\}/gi, clientName)
         .replace(/\{\{contact_name\}\}/gi, contactFirstName)
