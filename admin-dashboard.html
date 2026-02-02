@@ -25433,7 +25433,6 @@ async function loadDriveTemplates() {
     if (!select) return;
     
     try {
-        const EMAIL_TEMPLATES_FOLDER_ID = '1cj4aLgolPRwJvjRrkiNAUhQ7ZD_HRfE2';
         // Show loading
         select.innerHTML = '<option value="">-- Select Email Template --</option><option value="_loading" disabled>⏳ Loading from Drive...</option>';
         if (statusDiv) statusDiv.innerHTML = '⏳ Fetching templates from Drive...';
