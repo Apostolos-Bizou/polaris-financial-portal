@@ -16107,7 +16107,7 @@
             setTimeout(() => {
                 clearInterval(textInterval);
                 transitionToMainDashboard();
-            }, 3000);
+            }, 500);
         }
         
         // Initialize Dashboard Stars Background
@@ -16669,7 +16669,6 @@
                         (async () => {
                             try {
                                 await preloadAllDataWithProgress();
-                                await loadClientsFromAPI();
                                 populateClientSelector();
                                 loadDataForSelectedQuarters();
                             } catch (e) {
@@ -16679,7 +16678,7 @@
                             // Transition to main dashboard
                             setTimeout(() => {
                                 transitionToMainDashboard();
-                            }, 3000);
+                            }, 500);
                         })();
                         return;
                     }
