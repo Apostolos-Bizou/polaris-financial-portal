@@ -9294,6 +9294,7 @@
         window.addEventListener('unhandledrejection', e => { e.preventDefault(); console.error('Unhandled:', e.reason); });
         document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay, [id$="Modal"], [id$="Center"]').forEach(m => { if (m.style.display !== 'none' && m.style.display !== '') m.style.display = 'none'; }); } });
         window.addEventListener('offline', () => alert('⚠️ No internet connection! Some features may not work.')); window.addEventListener('online', () => alert('✅ Connection restored!'));
+        document.addEventListener('click', e => { const btn = e.target.closest('button'); if (btn && !btn.dataset.noGuard) { if (btn.dataset.busy) { e.stopImmediatePropagation(); e.preventDefault(); return; } btn.dataset.busy = '1'; setTimeout(() => delete btn.dataset.busy, 2000); } }, true);
         const API_URL = 'https://script.google.com/macros/s/AKfycbzNtZrTfndEPGotMf5oCB07W4uJQ9dWjqilTLuGiJG0zW8wCYVEBgwL3e34OvOOgZpb/exec';
         const EMAIL_TEMPLATES_FOLDER_ID = '1cj4aLgolPRwJvjRrkiNAUhQ7ZD_HRfE2';
         
@@ -28026,56 +28027,34 @@ function updateLoadingProgress(percent, details) {
 
 // Master preload function WITH PROGRESS
 async function preloadAllDataWithProgress() {
-    console.log('🚀 Starting comprehensive data preload with progress...');
-    
     const startTime = Date.now();
+    let done = 0;
+    const total = 7;
+    const tick = (label) => { done++; updateLoadingProgress(Math.round(done/total*90), label); };
     
     try {
-        // Phase 1: Critical data (25%)
-        updateLoadingProgress(5, 'Loading offers...');
-        await preloadOffersData().catch(() => {});
+        updateLoadingProgress(5, 'Loading all data...');
         
-        updateLoadingProgress(15, 'Loading programs...');
-        await loadProgramsFromDB().catch(() => {});
-        
-        updateLoadingProgress(25, 'Loading clients...');
-        await Promise.all([
-            loadOfferClients().catch(() => {}),
-            preloadClientsForAll().catch(() => {})
+        await Promise.allSettled([
+            preloadOffersData().then(() => tick('Offers ✓')).catch(() => tick('Offers...')),
+            loadProgramsFromDB().then(() => tick('Programs ✓')).catch(() => tick('Programs...')),
+            loadOfferClients().then(() => tick('Clients ✓')).catch(() => tick('Clients...')),
+            preloadClientsForAll().then(() => tick('Client data ✓')).catch(() => tick('Client data...')),
+            preloadDocumentLinks().then(() => tick('Documents ✓')).catch(() => tick('Documents...')),
+            preloadEmailTemplates().then(() => tick('Templates ✓')).catch(() => tick('Templates...')),
+            preloadEmailHistory().then(() => tick('Email history ✓')).catch(() => tick('Email history...')),
         ]);
-        console.log('✅ Phase 1 complete: Offers, Programs, Clients');
         
-        // Phase 2: Document links and email data (50%)
-        updateLoadingProgress(35, 'Loading document links...');
-        await preloadDocumentLinks().catch(() => {});
-        
-        updateLoadingProgress(45, 'Loading email templates...');
-        await preloadEmailTemplates().catch(() => {});
-        
-        updateLoadingProgress(55, 'Loading email history...');
-        await preloadEmailHistory().catch(() => {});
-        console.log('✅ Phase 2 complete: Documents, Email Templates, History');
-        
-        // Phase 3: Contracts (75%)
-        updateLoadingProgress(70, 'Loading contracts...');
+        updateLoadingProgress(92, 'Loading contracts...');
         await preloadContracts().catch(() => {});
-        console.log('✅ Phase 3 complete: Contracts');
-        
-        // Phase 4: Final setup (100%)
-        updateLoadingProgress(90, 'Finalizing...');
         
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        updateLoadingProgress(100, `Ready! Loaded in ${elapsed}s`);
-        console.log(`🎉 All data preloaded in ${elapsed}s - Modals will open instantly!`);
+        updateLoadingProgress(100, 'Ready! Loaded in ' + elapsed + 's');
         
-        // Auto-load CEO Dashboard
         loadCEODashboardFromAPI();
-        
-        // Small delay to show 100%
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(r => setTimeout(r, 300));
         
     } catch (e) {
-        console.log('⚠️ Some preload errors (non-critical):', e.message);
         updateLoadingProgress(100, 'Ready (some data may load on demand)');
     }
 }
