@@ -16669,6 +16669,7 @@
                         (async () => {
                             try {
                                 await preloadAllDataWithProgress();
+                                await loadClientsFromAPI();      
                                 populateClientSelector();
                                 loadDataForSelectedQuarters();
                             } catch (e) {
