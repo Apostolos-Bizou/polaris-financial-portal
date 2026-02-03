@@ -27806,7 +27806,7 @@ async function loadRenewalEmailTemplate() {
     }
 }
 
-function replacePlaceholdersRenewals((text, clientName, contactFirstName, contactFullName) {
+function replacePlaceholdersRenewals(text, clientName, contactFirstName, contactFullName) {
     return text
         .replace(/\{\{client_name\}\}/gi, clientName)
         .replace(/\{\{contact_name\}\}/gi, contactFirstName)
