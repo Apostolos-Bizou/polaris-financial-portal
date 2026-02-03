@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Admin Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
@@ -9288,6 +9289,7 @@
     <script>
         if (window.location.hostname !== 'localhost') { console.log = function(){}; }
         window.alert = function(msg) { const t = document.createElement('div'); t.innerHTML = '<div style="position:fixed;top:20px;right:20px;background:#2ecc71;color:#000;padding:16px 24px;border-radius:12px;z-index:100000;font-size:14px;font-weight:600;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.5);border:2px solid #27ae60;white-space:pre-line;">' + msg + '</div>'; document.body.appendChild(t); setTimeout(() => t.remove(), 4000); };
+        window.addEventListener('unhandledrejection', e => { e.preventDefault(); console.error('Unhandled:', e.reason); });
         const API_URL = 'https://script.google.com/macros/s/AKfycbzNtZrTfndEPGotMf5oCB07W4uJQ9dWjqilTLuGiJG0zW8wCYVEBgwL3e34OvOOgZpb/exec';
         const EMAIL_TEMPLATES_FOLDER_ID = '1cj4aLgolPRwJvjRrkiNAUhQ7ZD_HRfE2';
         
