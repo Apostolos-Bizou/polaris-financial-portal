@@ -1,12 +1,9 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-04 -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Admin Dashboard</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
-    <link rel="preconnect" href="https://script.google.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
@@ -35,7 +32,6 @@
             --polaris-navy: #0a1628;
             --polaris-navy-light: #1e3a5f;
         }
-        ::selection { background: rgba(212,175,55,0.3); color: #fff; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Open Sans', sans-serif;
@@ -6085,408 +6081,6 @@
             }
         }
         
-/* ═══════════════════════════════════════════════════════════════════════════════
-   POLARIS RESPONSIVE OVERRIDE
-   Covers: Mobile (≤576px), Tablet Portrait (≤768px), Tablet Landscape (≤992px)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* ─── GLOBAL: Prevent horizontal page overflow ─── */
-html, body { overflow-x: hidden; max-width: 100vw; }
-.main-content, .email-center-content, .offers-center-content, 
-.contract-content, .renewals-content, .analytics-content,
-.send-docs-body { overflow-x: hidden; }
-
-/* ─── GLOBAL: Inline grid overrides (need !important for inline styles) ─── */
-@media (max-width: 768px) {
-    [style*="grid-template-columns: repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
-    [style*="grid-template-columns: repeat(5"] { grid-template-columns: repeat(2, 1fr) !important; }
-    [style*="grid-template-columns: repeat(6"] { grid-template-columns: repeat(2, 1fr) !important; }
-    [style*="grid-template-columns:repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
-    [style*="grid-template-columns:repeat(5"] { grid-template-columns: repeat(2, 1fr) !important; }
-    [style*="grid-template-columns:repeat(6"] { grid-template-columns: repeat(2, 1fr) !important; }
-    [style*="grid-template-columns: repeat(3"] { grid-template-columns: repeat(2, 1fr) !important; }
-    [style*="grid-template-columns:repeat(3"] { grid-template-columns: repeat(2, 1fr) !important; }
-    [style*="grid-template-columns:2fr 0.8fr"] { grid-template-columns: 1fr 1fr !important; font-size: 12px !important; }
-}
-@media (max-width: 576px) {
-    [style*="grid-template-columns: repeat("] { grid-template-columns: 1fr !important; }
-    [style*="grid-template-columns:repeat("] { grid-template-columns: 1fr !important; }
-    [style*="grid-template-columns:2fr"] { grid-template-columns: 1fr !important; }
-    [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
-    [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   TABLET LANDSCAPE (≤ 992px)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-@media (max-width: 992px) {
-    /* Dashboard Header */
-    .dashboard-header { padding: 1rem 1.5rem; flex-wrap: wrap; gap: 0.5rem; }
-    .dashboard-logo-text { font-size: 1.4rem; }
-    .dashboard-stats-bar { gap: 1.5rem; padding: 1rem; flex-wrap: wrap; }
-    .dashboard-stat-value { font-size: 1.8rem; }
-    
-    /* Dashboard Cards */
-    .dashboard-cards-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 1rem !important; padding: 1rem !important; }
-    
-    /* Main Header */
-    .header { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
-    .header-left { flex-wrap: wrap; gap: 0.5rem; }
-    .header-center { display: none; }
-    
-    /* KPI Grids */
-    .ceo-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.75rem !important; }
-    .offers-stats { grid-template-columns: repeat(3, 1fr) !important; gap: 0.5rem !important; }
-    .contract-stats { grid-template-columns: repeat(2, 1fr) !important; }
-    .cost-summary-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .financial-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    
-    /* Modal content padding */
-    .email-center-content { padding: 1rem 1.25rem; }
-    .offers-center-content { padding: 1rem 1.25rem; }
-    .send-docs-header { padding: 15px 20px; }
-    .send-docs-body { padding: 15px 20px !important; }
-    
-    /* Global nav buttons */
-    .global-nav-btn { font-size: 0.75rem !important; padding: 0.4rem 0.75rem !important; }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   TABLET PORTRAIT (≤ 768px)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
-    /* Dashboard Portal */
-    .dashboard-header { padding: 0.75rem 1rem; }
-    .dashboard-logo-icon { font-size: 1.8rem; }
-    .dashboard-logo-text { font-size: 1.2rem; }
-    .dashboard-user-avatar { width: 35px; height: 35px; font-size: 1rem; }
-    .dashboard-stats-bar { gap: 1rem; padding: 0.75rem; }
-    .dashboard-stat-value { font-size: 1.4rem; }
-    .dashboard-stat-label { font-size: 0.7rem; letter-spacing: 1px; }
-    .dashboard-cards-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.75rem !important; padding: 0.75rem !important; }
-    .dashboard-card { padding: 1rem !important; }
-    .dashboard-card-icon { font-size: 2rem; }
-    .dashboard-card-title { font-size: 0.85rem; }
-    
-    /* Main Content Header */
-    .header { padding: 0.5rem 0.75rem; }
-    .header h1 { font-size: 1rem; }
-    .header-left { gap: 0.3rem; }
-    .header-actions { gap: 0.3rem; }
-    .header-action-btn { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
-    
-    /* CEO Dashboard */
-    .ceo-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
-    .ceo-kpi-card { padding: 0.75rem !important; }
-    .ceo-kpi-value { font-size: 1.3rem !important; }
-    .ceo-kpi-label { font-size: 0.7rem !important; }
-    .ceo-tax-table { font-size: 0.8rem; }
-    .ceo-tax-table td, .ceo-tax-table th { padding: 6px 8px !important; }
-    
-    /* YOY Summary inline grid */
-    .yoy-summary { grid-template-columns: repeat(2, 1fr) !important; }
-    
-    /* Offers Center */
-    .offers-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
-    .offer-stat-card { padding: 0.75rem 0.5rem; }
-    .offer-stat-value { font-size: 1.3rem; }
-    .offers-tabs { gap: 0.35rem; }
-    .offers-tab { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
-    .offers-center-header h2 { font-size: 1.1rem; }
-    .offers-center-header { padding: 0.75rem 1rem; }
-    .offers-center-content { padding: 0.75rem 1rem; }
-    .offers-table { font-size: 0.75rem; }
-    .offers-table th, .offers-table td { padding: 6px 8px; white-space: nowrap; }
-    
-    /* Email Center */
-    .email-center-box { width: 100%; max-width: 100%; border-radius: 0; max-height: 100vh; }
-    .email-center-header { padding: 0.75rem 1rem; }
-    .email-center-header h2 { font-size: 1.1rem; }
-    .email-center-content { padding: 0.75rem 1rem; max-height: calc(100vh - 60px); }
-    .email-tabs { gap: 0.25rem; }
-    .email-tab { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
-    .email-form-group label { font-size: 0.8rem; }
-    .email-form-group input, .email-form-group select, .email-form-group textarea { font-size: 0.85rem; padding: 0.5rem; }
-    
-    /* Contract Center */
-    .contract-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 0.75rem !important; }
-    .contract-center-header { padding: 0.75rem 1rem; }
-    .contract-center-header h2 { font-size: 1.1rem; }
-    .contract-tabs { gap: 0.25rem; flex-wrap: wrap; }
-    .contract-tab { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
-    .contract-table { font-size: 0.75rem; }
-    .contract-table th, .contract-table td { padding: 6px 8px; white-space: nowrap; }
-    .contract-filter-group { min-width: 120px !important; }
-    .contract-filters { flex-wrap: wrap; gap: 0.5rem; }
-    .financial-grid { grid-template-columns: 1fr !important; }
-    .contract-details-grid { grid-template-columns: 1fr !important; }
-    
-    /* Send Documents */
-    .send-docs-header { padding: 12px 15px; }
-    .send-docs-header h2 { font-size: 1.1rem; }
-    .send-docs-body { padding: 10px 15px !important; }
-    .send-docs-grid { grid-template-columns: 1fr !important; }
-    .send-docs-template-select { font-size: 0.85rem; }
-    
-    /* Renewals */
-    .renewals-header { padding: 0.75rem 1rem; }
-    .renewals-header h2 { font-size: 1.1rem; }
-    .renewals-content { padding: 0.75rem 1rem; }
-    .renewals-stats { grid-template-columns: repeat(2, 1fr) !important; }
-    
-    /* Offer Analytics */
-    .analytics-header { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
-    .analytics-header h2 { font-size: 1.1rem; }
-    .analytics-content { padding: 0.75rem 1rem; }
-    .analytics-kpi-card { padding: 0.75rem !important; }
-    
-    /* Report Builder */
-    .report-builder-content { padding: 0.75rem 1rem; }
-    
-    /* Program Cards */
-    .program-cards { grid-template-columns: 1fr !important; }
-    .program-card-inputs { grid-template-columns: 1fr !important; }
-    .cost-summary-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    
-    /* Charts - constrain and allow scroll */
-    canvas { max-width: 100% !important; height: auto !important; }
-    .chart-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    
-    /* Comparison/View modals */
-    .modal-overlay, [id$="Modal"], [id$="Center"] { border-radius: 0 !important; }
-    
-    /* Navigation buttons */
-    .global-nav-btn { font-size: 0.7rem !important; padding: 0.35rem 0.6rem !important; }
-    
-    /* General spacing reduction */
-    .section-title { font-size: 1rem; }
-    .card { padding: 0.75rem; }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   MOBILE (≤ 576px)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-@media (max-width: 576px) {
-    /* Dashboard Portal */
-    .dashboard-header { padding: 0.5rem 0.75rem; flex-direction: column; align-items: flex-start; }
-    .dashboard-logo { gap: 0.5rem; }
-    .dashboard-logo-icon { font-size: 1.5rem; }
-    .dashboard-logo-text { font-size: 1rem; }
-    .dashboard-user { display: none; }
-    .dashboard-stats-bar { gap: 0.75rem; padding: 0.5rem; justify-content: space-around; }
-    .dashboard-stat-value { font-size: 1.2rem; }
-    .dashboard-stat-label { font-size: 0.6rem; }
-    .dashboard-cards-grid { grid-template-columns: 1fr !important; gap: 0.5rem !important; padding: 0.5rem !important; }
-    .dashboard-card { padding: 0.75rem !important; }
-    .dashboard-card-icon { font-size: 1.5rem; }
-    .dashboard-card-title { font-size: 0.8rem; }
-    .dashboard-card-desc { font-size: 0.65rem; display: none; }
-    
-    /* Main Content Header - stack vertically */
-    .header { padding: 0.4rem 0.5rem; flex-direction: column; align-items: stretch; gap: 0.3rem; }
-    .header h1 { font-size: 0.9rem; }
-    .header-left { justify-content: space-between; }
-    .header-actions { justify-content: center; flex-wrap: wrap; gap: 0.25rem; }
-    .header-action-btn { padding: 0.3rem 0.5rem; font-size: 0.7rem; }
-    .header-action-btn span:not(.btn-icon) { display: none; }
-    
-    /* CEO Dashboard */
-    .ceo-kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 0.4rem !important; }
-    .ceo-kpi-card { padding: 0.5rem !important; border-radius: 8px !important; }
-    .ceo-kpi-value { font-size: 1.1rem !important; }
-    .ceo-kpi-label { font-size: 0.6rem !important; }
-    .ceo-kpi-trend { font-size: 0.6rem !important; }
-    .ceo-section-title { font-size: 0.9rem !important; }
-    
-    /* All modal headers compact */
-    .email-center-header h2, .offers-center-header h2, 
-    .contract-center-header h2, .renewals-header h2,
-    .analytics-header h2, .send-docs-header h2 { font-size: 0.95rem !important; }
-    .email-center-header, .offers-center-header, 
-    .contract-center-header, .renewals-header,
-    .analytics-header, .send-docs-header { padding: 0.5rem 0.75rem !important; }
-    
-    /* Close buttons - bigger touch target */
-    .email-center-close, .offers-center-close, .renewals-close,
-    [class*="-close"] { min-width: 44px !important; min-height: 44px !important; }
-    
-    /* Offers */
-    .offers-stats { grid-template-columns: repeat(2, 1fr) !important; }
-    .offer-stat-card { padding: 0.5rem 0.3rem !important; }
-    .offer-stat-value { font-size: 1.1rem !important; }
-    .offer-stat-label { font-size: 0.65rem !important; }
-    .offers-tabs { gap: 0.2rem; }
-    .offers-tab { padding: 0.35rem 0.5rem; font-size: 0.7rem; }
-    .offers-center-content { padding: 0.5rem 0.75rem !important; }
-    
-    /* Email */
-    .email-center-content { padding: 0.5rem 0.75rem !important; }
-    .email-tabs { gap: 0.15rem; }
-    .email-tab { padding: 0.3rem 0.4rem; font-size: 0.65rem; }
-    
-    /* Contracts */
-    .contract-stats { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
-    .contract-filters { flex-direction: column; gap: 0.4rem; }
-    .contract-filter-group { min-width: 100% !important; width: 100% !important; }
-    .contract-tabs { gap: 0.15rem; }
-    .contract-tab { padding: 0.3rem 0.4rem; font-size: 0.65rem; }
-    
-    /* Send Documents */
-    .send-docs-body { padding: 8px 10px !important; }
-    
-    /* Renewals */
-    .renewals-content { padding: 0.5rem 0.75rem !important; }
-    .renewals-stats { grid-template-columns: 1fr !important; }
-    
-    /* Analytics KPI cards */
-    .analytics-content { padding: 0.5rem 0.75rem !important; }
-    
-    /* Program cards */
-    .program-cards { grid-template-columns: 1fr !important; }
-    .cost-summary-grid { grid-template-columns: 1fr !important; }
-    
-    /* Buttons - touch friendly */
-    button, .btn, [class*="-btn"], [class*="-tab"] { min-height: 36px; }
-    
-    /* Inputs - larger on mobile */
-    input, select, textarea { font-size: 16px !important; }
-    
-    /* Navigation buttons */
-    .global-nav-btn { font-size: 0.65rem !important; padding: 0.3rem 0.5rem !important; }
-    
-    /* Sidebar if visible */
-    .sidebar { width: 100% !important; position: fixed !important; z-index: 9999 !important; }
-    
-    /* Font size floor */
-    * { -webkit-text-size-adjust: 100%; }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SMALL MOBILE (≤ 375px)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-@media (max-width: 375px) {
-    .dashboard-logo-text { font-size: 0.85rem; }
-    .dashboard-stats-bar { gap: 0.5rem; }
-    .dashboard-stat-value { font-size: 1rem; }
-    .dashboard-cards-grid { padding: 0.25rem !important; }
-    
-    .ceo-kpi-grid { grid-template-columns: 1fr !important; }
-    .ceo-kpi-value { font-size: 1rem !important; }
-    
-    .offers-stats { grid-template-columns: 1fr !important; }
-    .contract-stats { grid-template-columns: 1fr !important; }
-    
-    .header-actions { display: none; }
-    .header h1 { font-size: 0.8rem; }
-    
-    .email-tab, .offers-tab, .contract-tab { font-size: 0.6rem; padding: 0.25rem 0.35rem; }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   LANDSCAPE MODE - Horizontal scroll hint for wide content
-   ═══════════════════════════════════════════════════════════════════════════════ */
-@media (max-height: 500px) and (orientation: landscape) {
-    /* Compact headers in landscape */
-    .dashboard-header { padding: 0.3rem 1rem; }
-    .dashboard-stats-bar { padding: 0.3rem 1rem; gap: 1rem; }
-    .dashboard-stat-value { font-size: 1.2rem; }
-    .dashboard-cards-grid { grid-template-columns: repeat(3, 1fr) !important; }
-    
-    .email-center-header, .offers-center-header, 
-    .contract-center-header, .renewals-header,
-    .analytics-header, .send-docs-header { padding: 0.3rem 1rem !important; }
-    
-    .email-center-header h2, .offers-center-header h2,
-    .contract-center-header h2, .renewals-header h2,
-    .analytics-header h2, .send-docs-header h2 { font-size: 1rem !important; }
-    
-    .ceo-kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
-    .offers-stats { grid-template-columns: repeat(5, 1fr) !important; }
-    
-    /* Reduce vertical padding everywhere */
-    .ceo-kpi-card { padding: 0.4rem !important; }
-    .analytics-kpi-card { padding: 0.5rem !important; }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   WIDE TABLES - Horizontal scroll wrapper
-   ═══════════════════════════════════════════════════════════════════════════════ */
-@media (max-width: 992px) {
-    /* Ensure all tables are scrollable */
-    .data-table, .ceo-tax-table, .contract-table, .offers-table {
-        display: block;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        white-space: nowrap;
-    }
-    .data-table thead, .data-table tbody,
-    .ceo-tax-table thead, .ceo-tax-table tbody,
-    .contract-table thead, .contract-table tbody,
-    .offers-table thead, .offers-table tbody { display: table; width: 100%; }
-    
-    /* Scroll shadow hint on right */
-    .data-table, .ceo-tax-table, .contract-table, .offers-table {
-        background: 
-            linear-gradient(to right, var(--bg-card) 30%, transparent),
-            linear-gradient(to left, var(--bg-card) 30%, transparent),
-            linear-gradient(to right, rgba(212,175,55,0.15), transparent 15px),
-            linear-gradient(to left, rgba(212,175,55,0.15), transparent 15px);
-        background-position: left center, right center, left center, right center;
-        background-size: 20px 100%, 20px 100%, 15px 100%, 15px 100%;
-        background-repeat: no-repeat;
-        background-attachment: local, local, scroll, scroll;
-    }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   TOUCH DEVICES - Better hit targets
-   ═══════════════════════════════════════════════════════════════════════════════ */
-@media (pointer: coarse) {
-    /* Minimum touch target 44px */
-    button, .btn, [class*="-btn"], [class*="-tab"], [class*="-close"] {
-        min-height: 40px;
-        min-width: 40px;
-    }
-    
-    /* Larger checkboxes */
-    input[type="checkbox"], input[type="radio"] {
-        width: 22px !important;
-        height: 22px !important;
-    }
-    
-    /* Better select dropdown */
-    select { min-height: 44px; }
-    
-    /* Scrollbar visible on touch */
-    * { scrollbar-width: thin; }
-}
-
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   PRINT - Hide non-essential
-   ═══════════════════════════════════════════════════════════════════════════════ */
-@media print {
-    .global-nav-btn, .dashboard-header, .header-actions,
-    .email-center-close, .offers-center-close, .renewals-close,
-    button { display: none !important; }
-    
-    * { background: white !important; color: black !important; box-shadow: none !important; }
-    table { display: table !important; }
-    thead, tbody { display: table-row-group !important; }
-    tr { display: table-row !important; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   END POLARIS RESPONSIVE OVERRIDE
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
         /* Print Styles */
         @media print {
             .sidebar, .header, .user-section { display: none; }
@@ -8563,7 +8157,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 </select>
                             </div>
                             <div class="contract-filter-group">
-                                <label>Client</label>
+                                <label>Entity</label>
+                                <select id="contractFilterEntity" onchange="filterContracts()">
+                                    <option value="">All Entities</option>
+                                    <option value="parent">🏢 Parents Only</option>
+                                    <option value="subsidiary">└ Subsidiaries Only</option>
+                                </select>
+                            </div>
+                            <div class="contract-filter-group">
+                                <label>Group / Client</label>
                                 <select id="contractFilterClient" onchange="filterContracts()">
                                     <option value="">All Clients</option>
                                 </select>
@@ -8597,7 +8199,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             <table class="contract-table">
                                 <thead>
                                     <tr>
+                                        <th style="width:40px;text-align:center;">#</th>
+                                        <th style="width:130px;">ID</th>
                                         <th>Client</th>
+                                        <th style="width:90px;text-align:center;">Entity</th>
                                         <th>Type</th>
                                         <th>Status</th>
                                         <th>Version</th>
@@ -8607,7 +8212,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                     </tr>
                                 </thead>
                                 <tbody id="contractTableBody">
-                                    <tr><td colspan="7" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.5);">Loading contracts...</td></tr>
+                                    <tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.5);">Loading contracts...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -9690,13 +9295,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     
     <!-- Footer removed -->
     
-    <script>
-        if (window.location.hostname !== 'localhost') { console.log = function(){}; }
-        window.alert = function(msg) { const t = document.createElement('div'); t.innerHTML = '<div style="position:fixed;top:20px;right:20px;background:#2ecc71;color:#000;padding:16px 24px;border-radius:12px;z-index:100000;font-size:14px;font-weight:600;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.5);border:2px solid #27ae60;white-space:pre-line;">' + msg + '</div>'; document.body.appendChild(t); setTimeout(() => t.remove(), 4000); };
-        window.addEventListener('unhandledrejection', e => { e.preventDefault(); console.error('Unhandled:', e.reason); });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay, [id$="Modal"], [id$="Center"]').forEach(m => { if (m.style.display !== 'none' && m.style.display !== '') m.style.display = 'none'; }); } });
-        window.addEventListener('offline', () => alert('⚠️ No internet connection! Some features may not work.')); window.addEventListener('online', () => alert('✅ Connection restored!'));
-        document.addEventListener('click', e => { const btn = e.target.closest('button'); if (btn && !btn.dataset.noGuard) { if (btn.dataset.busy) { e.stopImmediatePropagation(); e.preventDefault(); return; } btn.dataset.busy = '1'; setTimeout(() => delete btn.dataset.busy, 2000); } }, true);
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbzNtZrTfndEPGotMf5oCB07W4uJQ9dWjqilTLuGiJG0zW8wCYVEBgwL3e34OvOOgZpb/exec';
         const EMAIL_TEMPLATES_FOLDER_ID = '1cj4aLgolPRwJvjRrkiNAUhQ7ZD_HRfE2';
         
@@ -16509,7 +16108,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             setTimeout(() => {
                 clearInterval(textInterval);
                 transitionToMainDashboard();
-            }, 500);
+            }, 3000);
         }
         
         // Initialize Dashboard Stars Background
@@ -16809,7 +16408,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             try { closeOffersCenter(); } catch(e) {}
             try { closeReportBuilder(); } catch(e) {}
             try { closeRenewals(); } catch(e) {}
-            try { closeOfferAnalytics(); } catch(e) {}
             
             // Hide app view
             if (mainContent) mainContent.style.display = 'none';
@@ -16841,7 +16439,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             try { closeOffersCenter(); } catch(e) {}
             try { closeReportBuilder(); } catch(e) {}
             try { closeRenewals(); } catch(e) {}
-            try { closeOfferAnalytics(); } catch(e) {}
             
             // Hide POLARIS Portal
             if (mainDashboard) mainDashboard.classList.add('hidden');
@@ -17073,7 +16670,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         (async () => {
                             try {
                                 await preloadAllDataWithProgress();
-                                await loadClientsFromAPI();      
+                                await loadClientsFromAPI();
                                 populateClientSelector();
                                 loadDataForSelectedQuarters();
                             } catch (e) {
@@ -17083,7 +16680,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             // Transition to main dashboard
                             setTimeout(() => {
                                 transitionToMainDashboard();
-                            }, 500);
+                            }, 3000);
                         })();
                         return;
                     }
@@ -17513,6 +17110,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         function clearContractFilters() {
             document.getElementById('contractFilterStatus').value = '';
             document.getElementById('contractFilterType').value = '';
+            if (document.getElementById('contractFilterEntity')) {
+                document.getElementById('contractFilterEntity').value = '';
+            }
             document.getElementById('contractFilterClient').value = '';
             document.getElementById('contractFilterSearch').value = '';
             if (document.getElementById('contractFilterDate')) {
@@ -17924,7 +17524,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         async function loadContracts() {
             const tbody = document.getElementById('contractTableBody');
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">Loading...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-muted);">Loading...</td></tr>';
             
             try {
                 // Load BOTH contracts AND all clients
@@ -17973,6 +17573,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 ...contract,
                                 client_id: clientId,
                                 client_name: clientName,
+                                client_type: client.client_type || '',
+                                parent_client_id: client.parent_client_id || '',
                                 has_contract: true,
                                 sort_priority: getContractPriority(contract.status)
                             });
@@ -17987,6 +17589,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 contract_id: `CON-${clientId}`,
                                 client_id: clientId,
                                 client_name: clientName,
+                                client_type: client.client_type || '',
+                                parent_client_id: client.parent_client_id || '',
                                 doc_type: 'Service Agreement',
                                 status: client.status || 'Active',
                                 version: '1',
@@ -18001,6 +17605,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 contract_id: '-',
                                 client_id: clientId,
                                 client_name: clientName,
+                                client_type: client.client_type || '',
+                                parent_client_id: client.parent_client_id || '',
                                 doc_type: '-',
                                 status: 'No Contract',
                                 version: '-',
@@ -18013,8 +17619,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     }
                 });
                 
-                // Sort by priority: Active first, then Signed, then Pending, then No Contract
-                combinedList.sort((a, b) => a.sort_priority - b.sort_priority);
+                // Sort alphabetically by client name
+                combinedList.sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
                 
                 console.log('📋 Combined list:', combinedList);
                 
@@ -18023,7 +17629,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
             } catch (e) {
                 console.error('Error loading contracts:', e);
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading contracts</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#e74c3c;">Error loading contracts</td></tr>';
             }
         }
         
@@ -18040,21 +17646,28 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         function renderContractsTable(contracts) {
             const tbody = document.getElementById('contractTableBody');
-            if(!contracts||contracts.length===0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">No contracts found</td></tr>'; return; }
+            if(!contracts||contracts.length===0) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-muted);">No contracts found</td></tr>'; return; }
             
-            tbody.innerHTML = contracts.map(c => {
+            tbody.innerHTML = contracts.map((c, idx) => {
                 const statusClass = getStatusClass(c.status);
                 const needsContract = c.status === 'No Contract';
                 const hasContract = c.has_contract && c.contract_id && c.contract_id !== '-';
+                const isParent = (c.client_type || '').toLowerCase() === 'parent';
+                const entityBadge = isParent 
+                    ? '<span style="background:#3498db;color:#fff;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;letter-spacing:0.5px;">PARENT</span>'
+                    : '<span style="background:rgba(212,168,67,0.3);color:#d4a843;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600;letter-spacing:0.5px;">SUB</span>';
                 
-                return `<tr style="${needsContract ? 'background: rgba(231,76,60,0.1);' : ''}">
+                return `<tr style="${needsContract ? 'background: rgba(231,76,60,0.1);' : ''} ${isParent ? 'background: rgba(52,152,219,0.08);' : ''}">
+                <td style="text-align:center;color:var(--text-muted);font-size:0.8rem;">${idx + 1}</td>
+                <td style="font-family:monospace;font-size:0.75rem;color:rgba(255,255,255,0.5);">${c.client_id || '-'}</td>
                 <td>
                     <a href="javascript:void(0)" onclick="window.selectClientFromContract('${c.client_id}', '${(c.client_name || '').replace(/'/g, "\\'")}');" 
-                       style="color:var(--polaris-gold);text-decoration:none;font-weight:600;cursor:pointer;" 
+                       style="color:${isParent ? '#3498db' : 'var(--polaris-gold)'};text-decoration:none;font-weight:${isParent ? '700' : '600'};cursor:pointer;${!isParent ? 'padding-left:1rem;' : ''}" 
                        title="Click to view ${c.client_name} KPIs">
-                        ${c.client_name || '-'}
+                        ${isParent ? '🏢 ' : '└ '}${c.client_name || '-'}
                     </a>
                 </td>
+                <td style="text-align:center;">${entityBadge}</td>
                 <td><span class="contract-type ${(c.doc_type||'').toLowerCase()}">${c.doc_type || '-'}</span></td>
                 <td><span class="contract-status ${statusClass}">${c.status || '-'}</span></td>
                 <td style="text-align:center;">${needsContract || !c.version || c.version === '-' ? '-' : 'v' + c.version}</td>
@@ -18076,7 +17689,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (countEl) {
                 const withContracts = contracts.filter(c => c.has_contract).length;
                 const withoutContracts = contracts.filter(c => !c.has_contract).length;
-                countEl.textContent = `Showing ${contracts.length} clients (${withContracts} with contracts, ${withoutContracts} need contracts)`;
+                const parents = contracts.filter(c => (c.client_type||'').toLowerCase() === 'parent').length;
+                const subs = contracts.filter(c => (c.client_type||'').toLowerCase() === 'subsidiary').length;
+                countEl.textContent = `Showing ${contracts.length} clients (${parents} parents, ${subs} subsidiaries) — ${withContracts} with contracts, ${withoutContracts} need contracts`;
             }
         }
         
@@ -18158,6 +17773,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             let filtered = allContractsData || [];
             const status = document.getElementById('contractFilterStatus')?.value;
             const type = document.getElementById('contractFilterType')?.value;
+            const entity = document.getElementById('contractFilterEntity')?.value;
             const client = document.getElementById('contractFilterClient')?.value;
             const search = (document.getElementById('contractFilterSearch')?.value || '').toLowerCase();
             
@@ -18169,10 +17785,20 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 }
             }
             if(type) filtered = filtered.filter(c => c.doc_type === type);
-            if(client) filtered = filtered.filter(c => c.client_id === client);
+            if(entity) filtered = filtered.filter(c => (c.client_type || '').toLowerCase() === entity);
+            if(client) {
+                // Check if selected value is a group (parent_id) - show parent + all its subsidiaries
+                if (client.startsWith('GROUP:')) {
+                    const parentId = client.replace('GROUP:', '');
+                    filtered = filtered.filter(c => c.client_id === parentId || c.parent_client_id === parentId);
+                } else {
+                    filtered = filtered.filter(c => c.client_id === client);
+                }
+            }
             if(search) filtered = filtered.filter(c => 
                 (c.contract_id || c.doc_id || '').toLowerCase().includes(search) || 
-                (c.client_name && c.client_name.toLowerCase().includes(search))
+                (c.client_name && c.client_name.toLowerCase().includes(search)) ||
+                (c.client_id && c.client_id.toLowerCase().includes(search))
             );
             
             renderContractsTable(filtered);
@@ -18186,20 +17812,57 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 // Filter dropdown exists
                 if (filterSel) {
                     filterSel.innerHTML = '<option value="">All Clients</option>';
+                    
+                    if (clients && clients.length > 0) {
+                        // Build parent-subsidiary groups
+                        const parents = clients.filter(c => (c.client_type || '').toLowerCase() === 'parent')
+                            .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                        const subs = clients.filter(c => (c.client_type || '').toLowerCase() === 'subsidiary');
+                        const standalone = clients.filter(c => !c.client_type);
+                        
+                        // Add GROUP options for parents with subsidiaries
+                        if (parents.length > 0) {
+                            const groupOptGroup = document.createElement('optgroup');
+                            groupOptGroup.label = '🏢 Groups (Parent + Subsidiaries)';
+                            parents.forEach(p => {
+                                const childCount = subs.filter(s => s.parent_client_id === p.client_id).length;
+                                const opt = document.createElement('option');
+                                opt.value = `GROUP:${p.client_id}`;
+                                opt.textContent = `🏢 ${p.client_name || 'Unknown'} (${childCount + 1} entities)`;
+                                groupOptGroup.appendChild(opt);
+                            });
+                            filterSel.appendChild(groupOptGroup);
+                        }
+                        
+                        // Add individual clients
+                        const allOptGroup = document.createElement('optgroup');
+                        allOptGroup.label = '👤 Individual Clients';
+                        const sorted = [...clients].sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                        sorted.forEach(c => {
+                            const displayName = c.client_name || c.contact_name || 'Unknown';
+                            const isP = (c.client_type || '').toLowerCase() === 'parent';
+                            const opt = document.createElement('option');
+                            opt.value = c.client_id;
+                            opt.textContent = `${isP ? '🏢 ' : '  └ '}${displayName}`;
+                            allOptGroup.appendChild(opt);
+                        });
+                        filterSel.appendChild(allOptGroup);
+                    }
                 }
                 
                 // Create dropdown may not exist (removed New Contract tab)
                 if (createSel) {
                     createSel.innerHTML = '<option value="">-- Select Client --</option>';
+                    if (clients && clients.length > 0) {
+                        const sorted = [...clients].sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                        sorted.forEach(c => {
+                            const displayName = c.client_name || c.contact_name || 'Unknown';
+                            createSel.innerHTML += `<option value="${c.client_id}" data-name="${displayName}">${displayName}</option>`;
+                        });
+                    }
                 }
                 
-                if (clients && clients.length > 0) {
-                    clients.forEach(c => {
-                        const displayName = c.client_name || c.contact_name || 'Unknown';
-                        if (filterSel) filterSel.innerHTML += `<option value="${c.client_id}">${displayName}</option>`;
-                        if (createSel) createSel.innerHTML += `<option value="${c.client_id}" data-name="${displayName}">${displayName}</option>`;
-                    });
-                } else {
+                if (!clients || clients.length === 0) {
                     // If no clients from API, get unique clients from loaded contracts
                     const uniqueClients = {};
                     allContractsData.forEach(c => {
@@ -18207,7 +17870,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             uniqueClients[c.client_id] = c.client_name;
                         }
                     });
-                    Object.keys(uniqueClients).forEach(id => {
+                    Object.keys(uniqueClients).sort((a,b) => uniqueClients[a].localeCompare(uniqueClients[b])).forEach(id => {
                         if (filterSel) filterSel.innerHTML += `<option value="${id}">${uniqueClients[id]}</option>`;
                         if (createSel) createSel.innerHTML += `<option value="${id}" data-name="${uniqueClients[id]}">${uniqueClients[id]}</option>`;
                     });
@@ -25845,6 +25508,7 @@ async function loadDriveTemplates() {
     if (!select) return;
     
     try {
+        const EMAIL_TEMPLATES_FOLDER_ID = '1cj4aLgolPRwJvjRrkiNAUhQ7ZD_HRfE2';
         // Show loading
         select.innerHTML = '<option value="">-- Select Email Template --</option><option value="_loading" disabled>⏳ Loading from Drive...</option>';
         if (statusDiv) statusDiv.innerHTML = '⏳ Fetching templates from Drive...';
@@ -25985,6 +25649,16 @@ function replaceTemplatePlaceholders(content) {
     }
     
     return processed;
+}
+
+// Reset to original template content
+function resetSendDocsTemplate() {
+    if (currentDriveTemplateContent) {
+        const previewDiv = document.getElementById('sendDocsPreview');
+        if (previewDiv) {
+            previewDiv.innerHTML = replaceTemplatePlaceholders(currentDriveTemplateContent);
+        }
+    }
 }
 
 // Initialize templates when Send Documents modal opens
@@ -27956,7 +27630,7 @@ async function loadRenewalEmailTemplate() {
     }
 }
 
-function replacePlaceholdersRenewals(text, clientName, contactFirstName, contactFullName) {
+function replacePlaceholdersRenewals((text, clientName, contactFirstName, contactFullName) {
     return text
         .replace(/\{\{client_name\}\}/gi, clientName)
         .replace(/\{\{contact_name\}\}/gi, contactFirstName)
@@ -28431,34 +28105,56 @@ function updateLoadingProgress(percent, details) {
 
 // Master preload function WITH PROGRESS
 async function preloadAllDataWithProgress() {
+    console.log('🚀 Starting comprehensive data preload with progress...');
+    
     const startTime = Date.now();
-    let done = 0;
-    const total = 7;
-    const tick = (label) => { done++; updateLoadingProgress(Math.round(done/total*90), label); };
     
     try {
-        updateLoadingProgress(5, 'Loading all data...');
+        // Phase 1: Critical data (25%)
+        updateLoadingProgress(5, 'Loading offers...');
+        await preloadOffersData().catch(() => {});
         
-        await Promise.allSettled([
-            preloadOffersData().then(() => tick('Offers ✓')).catch(() => tick('Offers...')),
-            loadProgramsFromDB().then(() => tick('Programs ✓')).catch(() => tick('Programs...')),
-            loadOfferClients().then(() => tick('Clients ✓')).catch(() => tick('Clients...')),
-            preloadClientsForAll().then(() => tick('Client data ✓')).catch(() => tick('Client data...')),
-            preloadDocumentLinks().then(() => tick('Documents ✓')).catch(() => tick('Documents...')),
-            preloadEmailTemplates().then(() => tick('Templates ✓')).catch(() => tick('Templates...')),
-            preloadEmailHistory().then(() => tick('Email history ✓')).catch(() => tick('Email history...')),
+        updateLoadingProgress(15, 'Loading programs...');
+        await loadProgramsFromDB().catch(() => {});
+        
+        updateLoadingProgress(25, 'Loading clients...');
+        await Promise.all([
+            loadOfferClients().catch(() => {}),
+            preloadClientsForAll().catch(() => {})
         ]);
+        console.log('✅ Phase 1 complete: Offers, Programs, Clients');
         
-        updateLoadingProgress(92, 'Loading contracts...');
+        // Phase 2: Document links and email data (50%)
+        updateLoadingProgress(35, 'Loading document links...');
+        await preloadDocumentLinks().catch(() => {});
+        
+        updateLoadingProgress(45, 'Loading email templates...');
+        await preloadEmailTemplates().catch(() => {});
+        
+        updateLoadingProgress(55, 'Loading email history...');
+        await preloadEmailHistory().catch(() => {});
+        console.log('✅ Phase 2 complete: Documents, Email Templates, History');
+        
+        // Phase 3: Contracts (75%)
+        updateLoadingProgress(70, 'Loading contracts...');
         await preloadContracts().catch(() => {});
+        console.log('✅ Phase 3 complete: Contracts');
+        
+        // Phase 4: Final setup (100%)
+        updateLoadingProgress(90, 'Finalizing...');
         
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        updateLoadingProgress(100, 'Ready! Loaded in ' + elapsed + 's');
+        updateLoadingProgress(100, `Ready! Loaded in ${elapsed}s`);
+        console.log(`🎉 All data preloaded in ${elapsed}s - Modals will open instantly!`);
         
+        // Auto-load CEO Dashboard
         loadCEODashboardFromAPI();
-        await new Promise(r => setTimeout(r, 300));
+        
+        // Small delay to show 100%
+        await new Promise(resolve => setTimeout(resolve, 300));
         
     } catch (e) {
+        console.log('⚠️ Some preload errors (non-critical):', e.message);
         updateLoadingProgress(100, 'Ready (some data may load on demand)');
     }
 }
@@ -28701,6 +28397,29 @@ function updateCEOFinancialsUI(data) {
 function safeSetText(elementId, value) {
     const el = document.getElementById(elementId);
     if (el) el.textContent = value;
+}
+
+function updateTopClientsTable(clients) {
+    const tbody = document.getElementById('ceoTopClientsBody');
+    if (!tbody || !clients || clients.length === 0) {
+        console.log('ℹ️ No top clients table or data to display');
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    clients.forEach((client, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${client.client_id || 'Unknown'}</td>
+            <td>${(client.members || 0).toLocaleString()}</td>
+            <td>$${Math.round(client.claims_cost || 0).toLocaleString()}</td>
+            <td>${client.contribution_pct || 0}%</td>
+            <td style="color: ${parseFloat(client.loss_ratio) <= 70 ? '#4CAF50' : '#f39c12'}">${client.loss_ratio || 0}%</td>
+        `;
+        tbody.appendChild(row);
+    });
+    console.log('✅ Top clients table updated with', clients.length, 'clients');
 }
 
 // v3.24: Updated Top Clients Table with Client Names
