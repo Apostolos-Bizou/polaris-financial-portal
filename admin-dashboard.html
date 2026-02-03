@@ -9996,40 +9996,87 @@
                 console.warn('⚠️ clientsList only has "All Clients" - no real clients loaded');
             }
             
-            // Build hierarchy map for visual indicators
+            // Build hierarchy map
             const allClients = window.cachedClientsData || [];
-            const subsidiaryMap = {};
+            const parentMap = {};  // parentId -> [child clients]
+            const parentClients = [];
+            
             allClients.forEach(function(c) {
+                if ((c.client_type || '').toLowerCase() === 'parent') {
+                    parentClients.push(c);
+                }
                 if (c.parent_client_id && c.parent_client_id !== '') {
-                    if (!subsidiaryMap[c.parent_client_id]) subsidiaryMap[c.parent_client_id] = [];
-                    subsidiaryMap[c.parent_client_id].push(c.client_id);
+                    if (!parentMap[c.parent_client_id]) parentMap[c.parent_client_id] = [];
+                    parentMap[c.parent_client_id].push(c);
                 }
             });
             
-            // Generate options with hierarchy visual indicators
-            selector.innerHTML = clientsList.map(function(c) {
-                var displayName = c.name;
-                if (c.id === 'all') {
-                    displayName = '🏢 All Clients (Company Total)';
-                } else {
-                    var subs = subsidiaryMap[c.id];
-                    var clientData = c.data || allClients.find(function(ac) { return ac.client_id === c.id; });
-                    var isSubsidiary = clientData && clientData.parent_client_id && clientData.parent_client_id !== '';
-                    
-                    if (subs && subs.length > 0) {
-                        displayName = '🏛️ ' + c.name + ' (+' + subs.length + ' sub)';
-                    } else if (isSubsidiary) {
-                        displayName = '   └─ ' + c.name;
-                    } else {
-                        displayName = '🏢 ' + c.name;
+            // Clear and rebuild
+            selector.innerHTML = '';
+            
+            // "All Clients" option
+            const allOpt = document.createElement('option');
+            allOpt.value = 'all';
+            allOpt.textContent = '🏢 All Clients (Company Total)';
+            selector.appendChild(allOpt);
+            
+            // Get only clients in clientsList (active with contracts)
+            const activeIds = new Set(clientsList.filter(c => c.id !== 'all').map(c => c.id));
+            
+            // GROUP OPTIONS - parents that have active children
+            const activeParents = parentClients
+                .filter(p => {
+                    const children = parentMap[p.client_id] || [];
+                    return activeIds.has(p.client_id) || children.some(ch => activeIds.has(ch.client_id));
+                })
+                .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+            
+            if (activeParents.length > 0) {
+                const groupOptGroup = document.createElement('optgroup');
+                groupOptGroup.label = '🏢 Groups (Parent + Subsidiaries)';
+                activeParents.forEach(p => {
+                    const children = (parentMap[p.client_id] || []).filter(ch => activeIds.has(ch.client_id));
+                    const totalEntities = (activeIds.has(p.client_id) ? 1 : 0) + children.length;
+                    if (totalEntities > 0) {
+                        const opt = document.createElement('option');
+                        opt.value = `GROUP:${p.client_id}`;
+                        opt.textContent = `🏢 ${p.client_name} (${totalEntities} entities)`;
+                        groupOptGroup.appendChild(opt);
                     }
+                });
+                selector.appendChild(groupOptGroup);
+            }
+            
+            // INDIVIDUAL OPTIONS - sorted alphabetically with hierarchy indicators
+            const individualOptGroup = document.createElement('optgroup');
+            individualOptGroup.label = '👤 Individual Clients';
+            
+            const sortedClients = clientsList
+                .filter(c => c.id !== 'all')
+                .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            
+            sortedClients.forEach(function(c) {
+                var clientData = c.data || allClients.find(function(ac) { return ac.client_id === c.id; });
+                var isParent = clientData && (clientData.client_type || '').toLowerCase() === 'parent';
+                var isSubsidiary = clientData && clientData.parent_client_id && clientData.parent_client_id !== '';
+                
+                var opt = document.createElement('option');
+                opt.value = c.id;
+                if (isParent) {
+                    var subs = (parentMap[c.id] || []).filter(ch => activeIds.has(ch.client_id));
+                    opt.textContent = '🏛️ ' + c.name + (subs.length > 0 ? ' (+' + subs.length + ' sub)' : '');
+                } else if (isSubsidiary) {
+                    opt.textContent = '   └─ ' + c.name;
+                } else {
+                    opt.textContent = '🏢 ' + c.name;
                 }
-                return '<option value="' + c.id + '">' + displayName + '</option>';
-            }).join('');
+                individualOptGroup.appendChild(opt);
+            });
+            selector.appendChild(individualOptGroup);
             
-            console.log('✅ Selector populated with', clientsList.length, 'options (hierarchy-aware)');
+            console.log('✅ Selector populated with', clientsList.length, 'options + GROUP options (hierarchy-aware)');
             
-            // Populate compare selectors (without "All")
+            // Populate compare selectors (without "All" and without GROUPs)
             const clientsOnly = clientsList.filter(c => c.id !== 'all');
             if (compareA) {
                 compareA.innerHTML = clientsOnly.map(c => 
@@ -10047,9 +10094,38 @@
         function handleClientChange() {
             const selector = document.getElementById('clientSelector');
             selectedClient = selector.value;
+            
+            // Handle GROUP selection
+            if (selectedClient.startsWith('GROUP:')) {
+                const parentId = selectedClient.replace('GROUP:', '');
+                const allClients = window.cachedClientsData || [];
+                const parent = allClients.find(c => c.client_id === parentId);
+                const groupName = parent ? parent.client_name : 'Group';
+                
+                document.getElementById('clientFilterBadge').textContent = '🏢 ' + groupName + ' (Group)';
+                
+                // Collect all client IDs in this group (parent + subsidiaries)
+                const groupIds = [parentId];
+                allClients.forEach(c => {
+                    if (c.parent_client_id === parentId) {
+                        groupIds.push(c.client_id);
+                    }
+                });
+                
+                // Only include clients that are active (in clientsList)
+                const activeIds = new Set(clientsList.filter(c => c.id !== 'all').map(c => c.id));
+                const activeGroupIds = groupIds.filter(id => activeIds.has(id));
+                
+                console.log(`🏢 GROUP selected: ${groupName} (${activeGroupIds.length} active entities)`, activeGroupIds);
+                
+                // Load aggregated KPIs for the group
+                loadGroupKPIs(activeGroupIds, groupName);
+                return;
+            }
+            
             const clientName = clientsList.find(c => c.id === selectedClient)?.name || 'All Clients';
             
-            document.getElementById('clientFilterBadge').textContent = clientName.replace('🏢 ', '');
+            document.getElementById('clientFilterBadge').textContent = clientName.replace('🏢 ', '').replace('🏛️ ', '').replace('   └─ ', '');
             
             // Load KPIs for selected client (or all clients)
             loadMainDashboardKPIs(selectedClient);
@@ -10061,6 +10137,104 @@
             } else {
                 // Load specific client financials
                 loadCEOFinancialsForClient(selectedClient);
+            }
+        }
+        
+        // Load and aggregate KPIs for a group of clients (parent + subsidiaries)
+        async function loadGroupKPIs(clientIds, groupName) {
+            try {
+                console.log(`📊 Loading GROUP KPIs for ${groupName}: ${clientIds.length} entities`);
+                
+                // Make parallel API calls for all clients in the group
+                const promises = clientIds.map(id => {
+                    const params = new URLSearchParams({ action: 'getClientKPISummary', clientId: id });
+                    return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
+                });
+                
+                const results = await Promise.all(promises);
+                
+                // Aggregate KPIs
+                const aggregated = {
+                    total_members: 0, total_claims: 0, total_cost_usd: 0,
+                    new_enrollments: 0, cancellations: 0
+                };
+                const claimTypes = { cases: { inpatient: 0, outpatient: 0, exgratia: 0 }, costs: { inpatient: 0, outpatient: 0, exgratia: 0 }};
+                const memberTypes = { members: { principal: 0, dependent: 0 }};
+                
+                results.forEach(data => {
+                    if (!data || data.error) return;
+                    if (data.kpis) {
+                        aggregated.total_members += (data.kpis.total_members || 0);
+                        aggregated.total_claims += (data.kpis.total_claims || 0);
+                        aggregated.total_cost_usd += (data.kpis.total_cost_usd || 0);
+                        aggregated.new_enrollments += (data.kpis.new_enrollments || data.kpis.enrollments || 0);
+                        aggregated.cancellations += (data.kpis.cancellations || 0);
+                    }
+                    if (data.claimTypes) {
+                        claimTypes.cases.inpatient += (data.claimTypes.cases?.inpatient || 0);
+                        claimTypes.cases.outpatient += (data.claimTypes.cases?.outpatient || 0);
+                        claimTypes.cases.exgratia += (data.claimTypes.cases?.exgratia || 0);
+                        claimTypes.costs.inpatient += (data.claimTypes.costs?.inpatient || 0);
+                        claimTypes.costs.outpatient += (data.claimTypes.costs?.outpatient || 0);
+                        claimTypes.costs.exgratia += (data.claimTypes.costs?.exgratia || 0);
+                    }
+                    if (data.memberTypes) {
+                        memberTypes.members.principal += (data.memberTypes.members?.principal || 0);
+                        memberTypes.members.dependent += (data.memberTypes.members?.dependent || 0);
+                    }
+                });
+                
+                // Update main KPIs
+                document.getElementById('kpiMembers').textContent = aggregated.total_members.toLocaleString();
+                document.getElementById('kpiClaims').textContent = aggregated.total_claims.toLocaleString();
+                document.getElementById('kpiApproved').textContent = '$' + aggregated.total_cost_usd.toLocaleString();
+                
+                const costPerMember = aggregated.total_members > 0 ? aggregated.total_cost_usd / aggregated.total_members : 0;
+                document.getElementById('kpiCost').textContent = '$' + costPerMember.toFixed(2);
+                
+                const utilization = aggregated.total_members > 0 ? (aggregated.total_claims / aggregated.total_members * 100) : 0;
+                document.getElementById('kpiUtilization').textContent = utilization.toFixed(1) + '%';
+                
+                if (document.getElementById('totalActive')) {
+                    document.getElementById('totalActive').textContent = aggregated.total_members.toLocaleString();
+                }
+                
+                // Update Inpatient/Outpatient
+                if (document.getElementById('inpatientCases')) {
+                    document.getElementById('inpatientCases').textContent = claimTypes.cases.inpatient.toLocaleString();
+                    document.getElementById('outpatientCases').textContent = claimTypes.cases.outpatient.toLocaleString();
+                    document.getElementById('exGratiaCases').textContent = claimTypes.cases.exgratia.toLocaleString();
+                }
+                if (document.getElementById('inpatientCost')) {
+                    document.getElementById('inpatientCost').textContent = '$' + claimTypes.costs.inpatient.toLocaleString();
+                    document.getElementById('outpatientCost').textContent = '$' + claimTypes.costs.outpatient.toLocaleString();
+                    document.getElementById('exGratiaCost').textContent = '$' + claimTypes.costs.exgratia.toLocaleString();
+                }
+                
+                // Update Principal/Dependent
+                if (document.getElementById('principalCount')) {
+                    document.getElementById('principalCount').textContent = memberTypes.members.principal.toLocaleString();
+                    document.getElementById('dependentCount').textContent = memberTypes.members.dependent.toLocaleString();
+                }
+                
+                // Update enrollments
+                if (document.getElementById('newEnrollments')) {
+                    document.getElementById('newEnrollments').textContent = '+' + aggregated.new_enrollments;
+                    document.getElementById('cancellations').textContent = '-' + aggregated.cancellations;
+                    const netChange = aggregated.new_enrollments - aggregated.cancellations;
+                    document.getElementById('netChange').textContent = (netChange >= 0 ? '+' : '') + netChange;
+                }
+                
+                // Store aggregated data for charts
+                window.currentClientKPIs = { kpis: aggregated, claimTypes, memberTypes, isGroup: true, groupName };
+                
+                // Refresh charts
+                loadDataForSelectedQuarters();
+                
+                console.log(`✅ GROUP KPIs aggregated for ${groupName}:`, aggregated);
+                
+            } catch (error) {
+                console.error('❌ Error loading GROUP KPIs:', error);
             }
         }
         
@@ -10291,7 +10465,9 @@
         function openActiveMembers() {
             // For admin, open with selected client or all
             const clientSelector = document.getElementById('clientSelector');
-            const clientId = clientSelector ? clientSelector.value : 'all';
+            let clientId = clientSelector ? clientSelector.value : 'all';
+            // If GROUP selected, pass parent ID
+            if (clientId.startsWith('GROUP:')) clientId = clientId.replace('GROUP:', '');
             const url = 'https://apostolos-bizou.github.io/polaris-member-tracker/?client=' + encodeURIComponent(clientId);
             window.open(url, '_blank');
         }
