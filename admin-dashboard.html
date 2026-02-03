@@ -6085,6 +6085,413 @@
             }
         }
         
+/* ═══════════════════════════════════════════════════════════════════════════════
+   POLARIS RESPONSIVE OVERRIDE - Add before </style> on line 6091
+   Covers: Mobile (≤576px), Tablet Portrait (≤768px), Tablet Landscape (≤992px)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── GLOBAL: Tables get horizontal scroll ─── */
+table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+thead, tbody, tfoot, tr { display: table; width: 100%; table-layout: auto; }
+table thead { position: sticky; top: 0; z-index: 2; }
+
+/* ─── GLOBAL: Prevent horizontal page overflow ─── */
+html, body { overflow-x: hidden; max-width: 100vw; }
+.main-content, .email-center-content, .offers-center-content, 
+.contract-content, .renewals-content, .analytics-content,
+.send-docs-body { overflow-x: hidden; }
+
+/* ─── GLOBAL: Inline grid overrides (need !important for inline styles) ─── */
+@media (max-width: 768px) {
+    [style*="grid-template-columns: repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
+    [style*="grid-template-columns: repeat(5"] { grid-template-columns: repeat(2, 1fr) !important; }
+    [style*="grid-template-columns: repeat(6"] { grid-template-columns: repeat(2, 1fr) !important; }
+    [style*="grid-template-columns:repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
+    [style*="grid-template-columns:repeat(5"] { grid-template-columns: repeat(2, 1fr) !important; }
+    [style*="grid-template-columns:repeat(6"] { grid-template-columns: repeat(2, 1fr) !important; }
+    [style*="grid-template-columns: repeat(3"] { grid-template-columns: repeat(2, 1fr) !important; }
+    [style*="grid-template-columns:repeat(3"] { grid-template-columns: repeat(2, 1fr) !important; }
+    [style*="grid-template-columns:2fr 0.8fr"] { grid-template-columns: 1fr 1fr !important; font-size: 12px !important; }
+}
+@media (max-width: 576px) {
+    [style*="grid-template-columns: repeat("] { grid-template-columns: 1fr !important; }
+    [style*="grid-template-columns:repeat("] { grid-template-columns: 1fr !important; }
+    [style*="grid-template-columns:2fr"] { grid-template-columns: 1fr !important; }
+    [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+    [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TABLET LANDSCAPE (≤ 992px)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 992px) {
+    /* Dashboard Header */
+    .dashboard-header { padding: 1rem 1.5rem; flex-wrap: wrap; gap: 0.5rem; }
+    .dashboard-logo-text { font-size: 1.4rem; }
+    .dashboard-stats-bar { gap: 1.5rem; padding: 1rem; flex-wrap: wrap; }
+    .dashboard-stat-value { font-size: 1.8rem; }
+    
+    /* Dashboard Cards */
+    .dashboard-cards-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 1rem !important; padding: 1rem !important; }
+    
+    /* Main Header */
+    .header { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
+    .header-left { flex-wrap: wrap; gap: 0.5rem; }
+    .header-center { display: none; }
+    
+    /* KPI Grids */
+    .ceo-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.75rem !important; }
+    .offers-stats { grid-template-columns: repeat(3, 1fr) !important; gap: 0.5rem !important; }
+    .contract-stats { grid-template-columns: repeat(2, 1fr) !important; }
+    .cost-summary-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .financial-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    
+    /* Modal content padding */
+    .email-center-content { padding: 1rem 1.25rem; }
+    .offers-center-content { padding: 1rem 1.25rem; }
+    .send-docs-header { padding: 15px 20px; }
+    .send-docs-body { padding: 15px 20px !important; }
+    
+    /* Global nav buttons */
+    .global-nav-btn { font-size: 0.75rem !important; padding: 0.4rem 0.75rem !important; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TABLET PORTRAIT (≤ 768px)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Dashboard Portal */
+    .dashboard-header { padding: 0.75rem 1rem; }
+    .dashboard-logo-icon { font-size: 1.8rem; }
+    .dashboard-logo-text { font-size: 1.2rem; }
+    .dashboard-user-avatar { width: 35px; height: 35px; font-size: 1rem; }
+    .dashboard-stats-bar { gap: 1rem; padding: 0.75rem; }
+    .dashboard-stat-value { font-size: 1.4rem; }
+    .dashboard-stat-label { font-size: 0.7rem; letter-spacing: 1px; }
+    .dashboard-cards-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.75rem !important; padding: 0.75rem !important; }
+    .dashboard-card { padding: 1rem !important; }
+    .dashboard-card-icon { font-size: 2rem; }
+    .dashboard-card-title { font-size: 0.85rem; }
+    
+    /* Main Content Header */
+    .header { padding: 0.5rem 0.75rem; }
+    .header h1 { font-size: 1rem; }
+    .header-left { gap: 0.3rem; }
+    .header-actions { gap: 0.3rem; }
+    .header-action-btn { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
+    
+    /* CEO Dashboard */
+    .ceo-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
+    .ceo-kpi-card { padding: 0.75rem !important; }
+    .ceo-kpi-value { font-size: 1.3rem !important; }
+    .ceo-kpi-label { font-size: 0.7rem !important; }
+    .ceo-tax-table { font-size: 0.8rem; }
+    .ceo-tax-table td, .ceo-tax-table th { padding: 6px 8px !important; }
+    
+    /* YOY Summary inline grid */
+    .yoy-summary { grid-template-columns: repeat(2, 1fr) !important; }
+    
+    /* Offers Center */
+    .offers-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
+    .offer-stat-card { padding: 0.75rem 0.5rem; }
+    .offer-stat-value { font-size: 1.3rem; }
+    .offers-tabs { gap: 0.35rem; }
+    .offers-tab { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
+    .offers-center-header h2 { font-size: 1.1rem; }
+    .offers-center-header { padding: 0.75rem 1rem; }
+    .offers-center-content { padding: 0.75rem 1rem; }
+    .offers-table { font-size: 0.75rem; }
+    .offers-table th, .offers-table td { padding: 6px 8px; white-space: nowrap; }
+    
+    /* Email Center */
+    .email-center-box { width: 100%; max-width: 100%; border-radius: 0; max-height: 100vh; }
+    .email-center-header { padding: 0.75rem 1rem; }
+    .email-center-header h2 { font-size: 1.1rem; }
+    .email-center-content { padding: 0.75rem 1rem; max-height: calc(100vh - 60px); }
+    .email-tabs { gap: 0.25rem; }
+    .email-tab { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
+    .email-form-group label { font-size: 0.8rem; }
+    .email-form-group input, .email-form-group select, .email-form-group textarea { font-size: 0.85rem; padding: 0.5rem; }
+    
+    /* Contract Center */
+    .contract-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 0.75rem !important; }
+    .contract-center-header { padding: 0.75rem 1rem; }
+    .contract-center-header h2 { font-size: 1.1rem; }
+    .contract-tabs { gap: 0.25rem; flex-wrap: wrap; }
+    .contract-tab { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
+    .contract-table { font-size: 0.75rem; }
+    .contract-table th, .contract-table td { padding: 6px 8px; white-space: nowrap; }
+    .contract-filter-group { min-width: 120px !important; }
+    .contract-filters { flex-wrap: wrap; gap: 0.5rem; }
+    .financial-grid { grid-template-columns: 1fr !important; }
+    .contract-details-grid { grid-template-columns: 1fr !important; }
+    
+    /* Send Documents */
+    .send-docs-header { padding: 12px 15px; }
+    .send-docs-header h2 { font-size: 1.1rem; }
+    .send-docs-body { padding: 10px 15px !important; }
+    .send-docs-grid { grid-template-columns: 1fr !important; }
+    .send-docs-template-select { font-size: 0.85rem; }
+    
+    /* Renewals */
+    .renewals-header { padding: 0.75rem 1rem; }
+    .renewals-header h2 { font-size: 1.1rem; }
+    .renewals-content { padding: 0.75rem 1rem; }
+    .renewals-stats { grid-template-columns: repeat(2, 1fr) !important; }
+    
+    /* Offer Analytics */
+    .analytics-header { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
+    .analytics-header h2 { font-size: 1.1rem; }
+    .analytics-content { padding: 0.75rem 1rem; }
+    .analytics-kpi-card { padding: 0.75rem !important; }
+    
+    /* Report Builder */
+    .report-builder-content { padding: 0.75rem 1rem; }
+    
+    /* Program Cards */
+    .program-cards { grid-template-columns: 1fr !important; }
+    .program-card-inputs { grid-template-columns: 1fr !important; }
+    .cost-summary-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    
+    /* Charts - constrain and allow scroll */
+    canvas { max-width: 100% !important; height: auto !important; }
+    .chart-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    
+    /* Comparison/View modals */
+    .modal-overlay, [id$="Modal"], [id$="Center"] { border-radius: 0 !important; }
+    
+    /* Navigation buttons */
+    .global-nav-btn { font-size: 0.7rem !important; padding: 0.35rem 0.6rem !important; }
+    
+    /* General spacing reduction */
+    .section-title { font-size: 1rem; }
+    .card { padding: 0.75rem; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOBILE (≤ 576px)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 576px) {
+    /* Dashboard Portal */
+    .dashboard-header { padding: 0.5rem 0.75rem; flex-direction: column; align-items: flex-start; }
+    .dashboard-logo { gap: 0.5rem; }
+    .dashboard-logo-icon { font-size: 1.5rem; }
+    .dashboard-logo-text { font-size: 1rem; }
+    .dashboard-user { display: none; }
+    .dashboard-stats-bar { gap: 0.75rem; padding: 0.5rem; justify-content: space-around; }
+    .dashboard-stat-value { font-size: 1.2rem; }
+    .dashboard-stat-label { font-size: 0.6rem; }
+    .dashboard-cards-grid { grid-template-columns: 1fr !important; gap: 0.5rem !important; padding: 0.5rem !important; }
+    .dashboard-card { padding: 0.75rem !important; }
+    .dashboard-card-icon { font-size: 1.5rem; }
+    .dashboard-card-title { font-size: 0.8rem; }
+    .dashboard-card-desc { font-size: 0.65rem; display: none; }
+    
+    /* Main Content Header - stack vertically */
+    .header { padding: 0.4rem 0.5rem; flex-direction: column; align-items: stretch; gap: 0.3rem; }
+    .header h1 { font-size: 0.9rem; }
+    .header-left { justify-content: space-between; }
+    .header-actions { justify-content: center; flex-wrap: wrap; gap: 0.25rem; }
+    .header-action-btn { padding: 0.3rem 0.5rem; font-size: 0.7rem; }
+    .header-action-btn span:not(.btn-icon) { display: none; }
+    
+    /* CEO Dashboard */
+    .ceo-kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 0.4rem !important; }
+    .ceo-kpi-card { padding: 0.5rem !important; border-radius: 8px !important; }
+    .ceo-kpi-value { font-size: 1.1rem !important; }
+    .ceo-kpi-label { font-size: 0.6rem !important; }
+    .ceo-kpi-trend { font-size: 0.6rem !important; }
+    .ceo-section-title { font-size: 0.9rem !important; }
+    
+    /* All modal headers compact */
+    .email-center-header h2, .offers-center-header h2, 
+    .contract-center-header h2, .renewals-header h2,
+    .analytics-header h2, .send-docs-header h2 { font-size: 0.95rem !important; }
+    .email-center-header, .offers-center-header, 
+    .contract-center-header, .renewals-header,
+    .analytics-header, .send-docs-header { padding: 0.5rem 0.75rem !important; }
+    
+    /* Close buttons - bigger touch target */
+    .email-center-close, .offers-center-close, .renewals-close,
+    [class*="-close"] { min-width: 44px !important; min-height: 44px !important; }
+    
+    /* Offers */
+    .offers-stats { grid-template-columns: repeat(2, 1fr) !important; }
+    .offer-stat-card { padding: 0.5rem 0.3rem !important; }
+    .offer-stat-value { font-size: 1.1rem !important; }
+    .offer-stat-label { font-size: 0.65rem !important; }
+    .offers-tabs { gap: 0.2rem; }
+    .offers-tab { padding: 0.35rem 0.5rem; font-size: 0.7rem; }
+    .offers-center-content { padding: 0.5rem 0.75rem !important; }
+    
+    /* Email */
+    .email-center-content { padding: 0.5rem 0.75rem !important; }
+    .email-tabs { gap: 0.15rem; }
+    .email-tab { padding: 0.3rem 0.4rem; font-size: 0.65rem; }
+    
+    /* Contracts */
+    .contract-stats { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+    .contract-filters { flex-direction: column; gap: 0.4rem; }
+    .contract-filter-group { min-width: 100% !important; width: 100% !important; }
+    .contract-tabs { gap: 0.15rem; }
+    .contract-tab { padding: 0.3rem 0.4rem; font-size: 0.65rem; }
+    
+    /* Send Documents */
+    .send-docs-body { padding: 8px 10px !important; }
+    
+    /* Renewals */
+    .renewals-content { padding: 0.5rem 0.75rem !important; }
+    .renewals-stats { grid-template-columns: 1fr !important; }
+    
+    /* Analytics KPI cards */
+    .analytics-content { padding: 0.5rem 0.75rem !important; }
+    
+    /* Program cards */
+    .program-cards { grid-template-columns: 1fr !important; }
+    .cost-summary-grid { grid-template-columns: 1fr !important; }
+    
+    /* Buttons - touch friendly */
+    button, .btn, [class*="-btn"], [class*="-tab"] { min-height: 36px; }
+    
+    /* Inputs - larger on mobile */
+    input, select, textarea { font-size: 16px !important; }
+    
+    /* Navigation buttons */
+    .global-nav-btn { font-size: 0.65rem !important; padding: 0.3rem 0.5rem !important; }
+    
+    /* Sidebar if visible */
+    .sidebar { width: 100% !important; position: fixed !important; z-index: 9999 !important; }
+    
+    /* Font size floor */
+    * { -webkit-text-size-adjust: 100%; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SMALL MOBILE (≤ 375px)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 375px) {
+    .dashboard-logo-text { font-size: 0.85rem; }
+    .dashboard-stats-bar { gap: 0.5rem; }
+    .dashboard-stat-value { font-size: 1rem; }
+    .dashboard-cards-grid { padding: 0.25rem !important; }
+    
+    .ceo-kpi-grid { grid-template-columns: 1fr !important; }
+    .ceo-kpi-value { font-size: 1rem !important; }
+    
+    .offers-stats { grid-template-columns: 1fr !important; }
+    .contract-stats { grid-template-columns: 1fr !important; }
+    
+    .header-actions { display: none; }
+    .header h1 { font-size: 0.8rem; }
+    
+    .email-tab, .offers-tab, .contract-tab { font-size: 0.6rem; padding: 0.25rem 0.35rem; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LANDSCAPE MODE - Horizontal scroll hint for wide content
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+    /* Compact headers in landscape */
+    .dashboard-header { padding: 0.3rem 1rem; }
+    .dashboard-stats-bar { padding: 0.3rem 1rem; gap: 1rem; }
+    .dashboard-stat-value { font-size: 1.2rem; }
+    .dashboard-cards-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    
+    .email-center-header, .offers-center-header, 
+    .contract-center-header, .renewals-header,
+    .analytics-header, .send-docs-header { padding: 0.3rem 1rem !important; }
+    
+    .email-center-header h2, .offers-center-header h2,
+    .contract-center-header h2, .renewals-header h2,
+    .analytics-header h2, .send-docs-header h2 { font-size: 1rem !important; }
+    
+    .ceo-kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
+    .offers-stats { grid-template-columns: repeat(5, 1fr) !important; }
+    
+    /* Reduce vertical padding everywhere */
+    .ceo-kpi-card { padding: 0.4rem !important; }
+    .analytics-kpi-card { padding: 0.5rem !important; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   WIDE TABLES - Horizontal scroll wrapper
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 992px) {
+    /* Ensure all tables are scrollable */
+    .data-table, .ceo-tax-table, .contract-table, .offers-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+    .data-table thead, .data-table tbody,
+    .ceo-tax-table thead, .ceo-tax-table tbody,
+    .contract-table thead, .contract-table tbody,
+    .offers-table thead, .offers-table tbody { display: table; width: 100%; }
+    
+    /* Scroll shadow hint on right */
+    .data-table, .ceo-tax-table, .contract-table, .offers-table {
+        background: 
+            linear-gradient(to right, var(--bg-card) 30%, transparent),
+            linear-gradient(to left, var(--bg-card) 30%, transparent),
+            linear-gradient(to right, rgba(212,175,55,0.15), transparent 15px),
+            linear-gradient(to left, rgba(212,175,55,0.15), transparent 15px);
+        background-position: left center, right center, left center, right center;
+        background-size: 20px 100%, 20px 100%, 15px 100%, 15px 100%;
+        background-repeat: no-repeat;
+        background-attachment: local, local, scroll, scroll;
+    }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TOUCH DEVICES - Better hit targets
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+    /* Minimum touch target 44px */
+    button, .btn, [class*="-btn"], [class*="-tab"], [class*="-close"] {
+        min-height: 40px;
+        min-width: 40px;
+    }
+    
+    /* Larger checkboxes */
+    input[type="checkbox"], input[type="radio"] {
+        width: 22px !important;
+        height: 22px !important;
+    }
+    
+    /* Better select dropdown */
+    select { min-height: 44px; }
+    
+    /* Scrollbar visible on touch */
+    * { scrollbar-width: thin; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PRINT - Hide non-essential
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media print {
+    .global-nav-btn, .dashboard-header, .header-actions,
+    .email-center-close, .offers-center-close, .renewals-close,
+    button { display: none !important; }
+    
+    * { background: white !important; color: black !important; box-shadow: none !important; }
+    table { display: table !important; }
+    thead, tbody { display: table-row-group !important; }
+    tr { display: table-row !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   END POLARIS RESPONSIVE OVERRIDE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
         /* Print Styles */
         @media print {
             .sidebar, .header, .user-section { display: none; }
