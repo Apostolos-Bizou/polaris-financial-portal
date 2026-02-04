@@ -17868,6 +17868,22 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             // Hide client folder view, show main view
             document.getElementById('clientFolderView').classList.remove('active');
             document.getElementById('contractMainView').style.display = 'block';
+            
+            // v3.31: Re-attach filter event listeners (fix for onchange not firing)
+            setTimeout(() => {
+                const filterIds = ['contractFilterStatus', 'contractFilterType', 'contractFilterClient', 'contractFilterEntity', 'contractFilterDate'];
+                filterIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.onchange = function() { filterContracts(); };
+                    }
+                });
+                const searchEl = document.getElementById('contractFilterSearch');
+                if (searchEl) {
+                    searchEl.onkeyup = function() { filterContracts(); };
+                }
+                console.log('✅ Contract filter listeners attached');
+            }, 100);
         }
         function closeContractCenter() { 
             document.getElementById('contractCenterModal').classList.add('hidden');
