@@ -21186,6 +21186,11 @@ Email: ${contract.contact_email || '-'}
                 });
             }
             
+            // Also add Dental if offer has dental flag
+            if ((offer.includes_dental === true || offer.includes_dental === 'true' || offer.includes_dental === 'TRUE' || offer.includes_dental === 'Yes' || offer.dental_addon === true || offer.dental_addon === 'true') && !programs.some(p => p.toLowerCase().includes('dental'))) {
+                programs.push('Dental');
+            }
+            
             // Prepare offer data for the modal - WITH SIGNATURE FLAG
             const isComparison = offer.offer_id && offer.offer_id.startsWith('CQ-');
             const offerData = {
@@ -21208,6 +21213,91 @@ Email: ${contract.contact_email || '-'}
             
             // Open the Send Documents modal (status will update after email is sent)
             openSendDocumentsModal(offerData);
+        }
+        
+        // ═══════════════════════════════════════════════════════════════
+        // OFFER SUCCESS OVERLAY
+        // ═══════════════════════════════════════════════════════════════
+        
+        function showOfferSuccessOverlay(offerId, totalMembers, grandTotal, planCount) {
+            // Remove any existing overlay
+            const existing = document.getElementById('offerSuccessOverlay');
+            if (existing) existing.remove();
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'offerSuccessOverlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:999999;display:flex;align-items:center;justify-content:center;animation:fadeInOverlay 0.3s ease;';
+            
+            overlay.innerHTML = `
+                <style>
+                    @keyframes fadeInOverlay { from { opacity:0; } to { opacity:1; } }
+                    @keyframes scaleInCard { from { transform:scale(0.7);opacity:0; } to { transform:scale(1);opacity:1; } }
+                    @keyframes checkPop { 0% { transform:scale(0); } 50% { transform:scale(1.3); } 100% { transform:scale(1); } }
+                    @keyframes fadeOutOverlay { from { opacity:1; } to { opacity:0; } }
+                    @keyframes progressShrink { from { width:100%; } to { width:0%; } }
+                </style>
+                <div style="background:linear-gradient(160deg, #1a5e2f 0%, #145224 30%, #0f3d1a 100%);border:2px solid rgba(39,174,96,0.6);border-radius:28px;padding:3rem 3.5rem;text-align:center;max-width:520px;width:90%;box-shadow:0 30px 80px rgba(0,0,0,0.6), 0 0 60px rgba(39,174,96,0.15);animation:scaleInCard 0.4s cubic-bezier(0.34,1.56,0.64,1);">
+                    
+                    <div style="font-size:4.5rem;margin-bottom:0.5rem;animation:checkPop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;">✅</div>
+                    
+                    <h2 style="color:white;font-size:2rem;margin:0 0 1.5rem;font-weight:700;letter-spacing:-0.5px;">Offer Saved Successfully!</h2>
+                    
+                    <div style="display:flex;flex-direction:column;gap:14px;text-align:left;background:rgba(0,0,0,0.2);border-radius:16px;padding:1.5rem 1.8rem;margin-bottom:1.5rem;">
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <span style="font-size:1.8rem;">📋</span>
+                            <div>
+                                <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Offer ID</div>
+                                <div style="color:white;font-size:1.4rem;font-weight:700;">${offerId}</div>
+                            </div>
+                        </div>
+                        <div style="border-top:1px solid rgba(255,255,255,0.08);"></div>
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <span style="font-size:1.8rem;">👥</span>
+                            <div>
+                                <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Total Members</div>
+                                <div style="color:#5dade2;font-size:1.4rem;font-weight:700;">${Number(totalMembers).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div style="border-top:1px solid rgba(255,255,255,0.08);"></div>
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <span style="font-size:1.8rem;">💰</span>
+                            <div>
+                                <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Grand Total</div>
+                                <div style="color:#27ae60;font-size:1.4rem;font-weight:700;">$${Number(grandTotal).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                            </div>
+                        </div>
+                        <div style="border-top:1px solid rgba(255,255,255,0.08);"></div>
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <span style="font-size:1.8rem;">📦</span>
+                            <div>
+                                <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Plans</div>
+                                <div style="color:#f39c12;font-size:1.4rem;font-weight:700;">${planCount} plan(s)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress bar -->
+                    <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
+                        <div style="height:100%;background:linear-gradient(90deg,#27ae60,#2ecc71);border-radius:4px;animation:progressShrink 4s linear forwards;"></div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            
+            // Close on click anywhere
+            overlay.addEventListener('click', () => {
+                overlay.style.animation = 'fadeOutOverlay 0.3s ease forwards';
+                setTimeout(() => overlay.remove(), 300);
+            });
+            
+            // Auto-close after 4 seconds
+            setTimeout(() => {
+                if (document.getElementById('offerSuccessOverlay')) {
+                    overlay.style.animation = 'fadeOutOverlay 0.3s ease forwards';
+                    setTimeout(() => overlay.remove(), 300);
+                }
+            }, 4000);
         }
         
         // ═══════════════════════════════════════════════════════════════
@@ -22443,11 +22533,7 @@ const clientData = {
                 if (result.success) {
                     const displayMembers = grandTotalMembers;
                     const displayTotal = grandTotal;
-                    alert('✅ Offer saved successfully!\n\n' +
-                          '📋 Offer ID: ' + result.offer_id + '\n' +
-                          '👥 Total Members: ' + displayMembers.toLocaleString() + '\n' +
-                          '💰 Grand Total: $' + displayTotal.toLocaleString() + '\n' +
-                          '📦 Plans: ' + items.length + ' plan(s)');
+                    showOfferSuccessOverlay(result.offer_id, displayMembers, displayTotal, items.length);
                     
                     // Force correct values into local cache so table displays properly
                     // Backend may not store these yet, so we inject them locally
@@ -23232,6 +23318,12 @@ const clientData = {
                         programs.push(item.plan_name);
                     }
                 });
+            }
+            
+            // Also add Dental if offer has dental flag
+            if ((offer.includes_dental === true || offer.includes_dental === 'true' || offer.includes_dental === 'TRUE' || offer.includes_dental === 'Yes' || offer.dental_addon === true || offer.dental_addon === 'true') && !programs.some(p => p.toLowerCase().includes('dental'))) {
+                programs.push('Dental');
+                console.log('Added Dental from includes_dental flag');
             }
             
             // Prepare offer data for the modal
@@ -26417,6 +26509,15 @@ function highlightOfferPrograms(offer) {
     });
     
     console.log('Plan components to match:', planComponents);
+    
+    // Check if offer includes dental as a flag (dental is stored separately, not in items)
+    const hasDentalFlag = offer.includes_dental === true || offer.includes_dental === 'true' || 
+                          offer.includes_dental === 'TRUE' || offer.includes_dental === 'Yes' ||
+                          offer.dental_addon === true || offer.dental_addon === 'true';
+    if (hasDentalFlag && !planComponents.includes('dental')) {
+        planComponents.push('dental');
+        console.log('Added dental from includes_dental flag');
+    }
     
     // First, deselect all program brochures
     document.querySelectorAll('.send-docs-program-item').forEach(item => {
