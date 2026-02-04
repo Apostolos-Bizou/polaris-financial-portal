@@ -23533,13 +23533,20 @@ const clientData = {
             btn.disabled = true;
             
             try {
-                // Use GET to avoid CORS
+                // Use GET to avoid CORS - send FULL financial breakdown
                 const params = new URLSearchParams({
                     action: 'convertToStandardOffer',
                     offerId: offer.offer_id,
                     selectedPlan: selectedPlan.planName + (selectedPlan.hasDental ? ' + Dental' : ''),
-                    totalCost: selectedPlan.totalCost,
-                    includeDental: selectedPlan.hasDental
+                    selectedPlanId: selectedPlan.planId || selectedPlan.planName?.toLowerCase().replace(/[^a-z]/g, '_') || 'converted',
+                    totalCost: selectedPlan.totalCost || 0,
+                    regFee: selectedPlan.regFee || 0,
+                    fundDep: selectedPlan.fundDep || 0,
+                    dental: selectedPlan.dental || 0,
+                    includeDental: selectedPlan.hasDental || false,
+                    principals: offer.total_principals || 0,
+                    dependents: offer.total_dependents || 0,
+                    totalMembers: offer.total_members || 0
                 });
                 
                 const response = await fetch(API_URL + '?' + params.toString());
