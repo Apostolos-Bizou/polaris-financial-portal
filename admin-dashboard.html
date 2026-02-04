@@ -6766,6 +6766,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 <button onclick="openOffersCenter()" class="header-action-btn">
                     <span>📋</span> All Offers
                 </button>
+                <button onclick="openAddClientModal()" class="header-action-btn" style="background: linear-gradient(135deg, #1a5276, #2471a3);">
+                    <span>🏢</span> + New Client
+                </button>
                 <button onclick="openContractCenter()" class="header-action-btn">
                     <span>📄</span> Contracts
                 </button>
@@ -17519,6 +17522,163 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             document.getElementById('addClientModal').style.display = 'flex';
             clearClientForm();
             resetClientHierarchyFields();
+            // Reset to Add mode
+            window._editingClientId = null;
+            const modalTitle = document.querySelector('#addClientModal h2');
+            if (modalTitle) modalTitle.innerHTML = '<span style="font-size:2rem;">🏢</span> Add New Client';
+            const saveBtn = document.querySelector('#addClientModal button[onclick*="saveNewClient"], #addClientModal button[onclick*="saveClientForm"]');
+            if (saveBtn) {
+                saveBtn.innerHTML = '<span>💾</span> Save Client';
+                saveBtn.setAttribute('onclick', 'saveClientForm()');
+            }
+        }
+        
+        async function openEditClientModal(clientId) {
+            if (!clientId) return;
+            
+            // Open modal immediately with loading state
+            document.getElementById('addClientModal').classList.remove('hidden');
+            document.getElementById('addClientModal').style.display = 'flex';
+            clearClientForm();
+            
+            // Set edit mode
+            window._editingClientId = clientId;
+            const modalTitle = document.querySelector('#addClientModal h2');
+            if (modalTitle) modalTitle.innerHTML = '<span style="font-size:2rem;">✏️</span> Edit Client';
+            const saveBtn = document.querySelector('#addClientModal button[onclick*="saveNewClient"], #addClientModal button[onclick*="saveClientForm"]');
+            if (saveBtn) {
+                saveBtn.innerHTML = '<span>💾</span> Update Client';
+                saveBtn.setAttribute('onclick', 'saveClientForm()');
+            }
+            
+            document.getElementById('addClientStatus').innerHTML = '<p style="color:#d4a843;text-align:center;">⏳ Loading client data...</p>';
+            
+            try {
+                const response = await fetch(`${API_URL}?action=getClientById&clientId=${encodeURIComponent(clientId)}`);
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    populateClientForm(result.data);
+                    document.getElementById('addClientStatus').innerHTML = '';
+                } else {
+                    document.getElementById('addClientStatus').innerHTML = '<p style="color:#e74c3c;text-align:center;">❌ ' + (result.error || 'Failed to load client') + '</p>';
+                }
+            } catch (error) {
+                document.getElementById('addClientStatus').innerHTML = '<p style="color:#e74c3c;text-align:center;">❌ Error: ' + error.message + '</p>';
+            }
+        }
+        
+        function populateClientForm(client) {
+            // Company structure
+            const clientType = document.getElementById('clientType');
+            if (clientType) {
+                clientType.value = client.client_type || 'parent';
+                toggleParentClientDropdown();
+                if (client.client_type === 'subsidiary' && client.parent_client_id) {
+                    setTimeout(() => {
+                        const parentSelect = document.getElementById('parentClientId');
+                        if (parentSelect) parentSelect.value = client.parent_client_id;
+                    }, 300);
+                }
+            }
+            
+            // Company information
+            const fieldMap = {
+                'clientName': client.client_name || '',
+                'clientShort': client.short_name || client.client_short || '',
+                'clientCountry': client.country || '',
+                'clientTIN': client.tin || client.tin_number || '',
+                'clientVAT': client.vat || client.vat_number || '',
+                'clientRegAddress': client.registered_address || client.reg_address || '',
+                'clientOpAddress': client.operating_address || client.op_address || '',
+                // Contact info
+                'clientContactPerson': client.contact_name || client.contact_person || '',
+                'clientCapacity': client.capacity || client.title || '',
+                'clientEmail': client.contact_email || client.email || '',
+                'clientPhone': client.phone || '',
+                'clientMobile': client.mobile || '',
+                'clientFax': client.fax || '',
+                // Signatory
+                'clientSignatoryName': client.signatory_name || '',
+                'clientSignatoryTitle': client.signatory_title || '',
+                // Portal
+                'clientPortalUrl': client.portal_url || '',
+                'clientPortalUsername': client.portal_username || '',
+                'clientPortalPassword': client.portal_password || ''
+            };
+            
+            Object.keys(fieldMap).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = fieldMap[id];
+            });
+        }
+        
+        async function saveClientForm() {
+            const isEdit = !!window._editingClientId;
+            const statusDiv = document.getElementById('addClientStatus');
+            
+            const clientName = document.getElementById('clientName').value.trim();
+            const contactEmail = document.getElementById('clientEmail').value.trim();
+            
+            if (!clientName) {
+                statusDiv.innerHTML = '<p style="color:#e74c3c;text-align:center;">❌ Company Name is required</p>';
+                return;
+            }
+            
+            const clientData = {
+                client_name: clientName,
+                short_name: (document.getElementById('clientShort') || {}).value || '',
+                country: (document.getElementById('clientCountry') || {}).value || '',
+                tin: (document.getElementById('clientTIN') || {}).value || '',
+                vat: (document.getElementById('clientVAT') || {}).value || '',
+                registered_address: (document.getElementById('clientRegAddress') || {}).value || '',
+                operating_address: (document.getElementById('clientOpAddress') || {}).value || '',
+                contact_name: (document.getElementById('clientContactPerson') || {}).value || '',
+                capacity: (document.getElementById('clientCapacity') || {}).value || '',
+                contact_email: contactEmail,
+                phone: (document.getElementById('clientPhone') || {}).value || '',
+                mobile: (document.getElementById('clientMobile') || {}).value || '',
+                fax: (document.getElementById('clientFax') || {}).value || '',
+                signatory_name: (document.getElementById('clientSignatoryName') || {}).value || '',
+                signatory_title: (document.getElementById('clientSignatoryTitle') || {}).value || '',
+                portal_url: (document.getElementById('clientPortalUrl') || {}).value || '',
+                portal_username: (document.getElementById('clientPortalUsername') || {}).value || '',
+                portal_password: (document.getElementById('clientPortalPassword') || {}).value || '',
+                client_type: (document.getElementById('clientType') || {}).value || 'parent',
+                parent_client_id: (document.getElementById('parentClientId') || {}).value || '',
+                status: 'active'
+            };
+            
+            statusDiv.innerHTML = '<p style="color:#d4a843;text-align:center;">⏳ ' + (isEdit ? 'Updating' : 'Saving') + ' client...</p>';
+            
+            try {
+                let url;
+                if (isEdit) {
+                    url = `${API_URL}?action=updateClient&clientId=${encodeURIComponent(window._editingClientId)}&client=${encodeURIComponent(JSON.stringify(clientData))}`;
+                } else {
+                    url = `${API_URL}?action=addClient&client=${encodeURIComponent(JSON.stringify(clientData))}`;
+                }
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusDiv.innerHTML = '<p style="color:#27ae60;text-align:center;">✅ Client ' + (isEdit ? 'updated' : 'created') + ' successfully! ' + (result.client_id || '') + '</p>';
+                    
+                    // Refresh clients data
+                    setTimeout(() => {
+                        closeAddClientModal();
+                        // Reload offers to show updated client names
+                        if (typeof loadOffers === 'function') loadOffers();
+                        if (typeof loadClients === 'function') loadClients();
+                        if (typeof populateClientDropdown === 'function') populateClientDropdown();
+                    }, 1500);
+                } else {
+                    statusDiv.innerHTML = '<p style="color:#e74c3c;text-align:center;">❌ ' + (result.error || 'Failed to save') + '</p>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<p style="color:#e74c3c;text-align:center;">❌ Error: ' + error.message + '</p>';
+            }
         }
         
         function closeAddClientModal() {
@@ -17530,13 +17690,14 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         
         function clearClientForm() {
-            ['clientName', 'clientCountry', 'clientTIN', 'clientRegAddress', 'clientOpAddress', 'clientVAT',
+            ['clientName', 'clientShort', 'clientCountry', 'clientTIN', 'clientRegAddress', 'clientOpAddress', 'clientVAT',
              'clientContactPerson', 'clientCapacity', 'clientEmail', 'clientPhone', 'clientMobile', 'clientFax',
-             'clientSignatoryName', 'clientSignatoryTitle'].forEach(id => {
+             'clientSignatoryName', 'clientSignatoryTitle', 'clientPortalUrl', 'clientPortalUsername', 'clientPortalPassword'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
             document.getElementById('addClientStatus').innerHTML = '';
+            window._editingClientId = null;
         }
         
         async function saveNewClient() {
@@ -20503,7 +20664,7 @@ Email: ${contract.contact_email || '-'}
                 
                 // Filter by date range
                 if (dateFrom || dateTo) {
-                    const offerDate = offer.offer_date ? new Date(offer.offer_date).toISOString().split('T')[0] : '';
+                    const offerDate = (offer.offer_date || offer.created_date || offer.created_at) ? new Date(offer.offer_date || offer.created_date || offer.created_at).toISOString().split('T')[0] : '';
                     if (dateFrom && offerDate < dateFrom) return false;
                     if (dateTo && offerDate > dateTo) return false;
                 }
@@ -20623,11 +20784,12 @@ Email: ${contract.contact_email || '-'}
                         const cleanName = (offer.client_name || 'N/A').replace(/^[\s]*[🏢└\s]+/g, '').trim() || 'N/A';
                         const cd = (window.cachedClientsData || []).find(c => c.client_id === offer.client_id);
                         const ct = cd ? (cd.client_type || '').toLowerCase() : '';
-                        if (ct === 'parent') return '<span style="color:#5dade2;font-weight:700;">🏢 ' + cleanName + '</span> <span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">PARENT</span>';
-                        if (ct === 'subsidiary') return '<span style="color:#d4af37;">└</span> <span style="color:#d4af37;">' + cleanName + '</span> <span style="background:rgba(212,175,55,0.15);color:#d4af37;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">SUB</span>';
-                        return cleanName;
+                        const editBtn = offer.client_id ? '<button onclick="openEditClientModal(\'' + offer.client_id + '\')" style="background:none;border:none;cursor:pointer;font-size:0.75rem;opacity:0.6;padding:2px 4px;border-radius:4px;transition:all 0.2s;" onmouseover="this.style.opacity=1;this.style.background=\'rgba(212,175,55,0.2)\'" onmouseout="this.style.opacity=0.6;this.style.background=\'none\'" title="Edit Client">✏️</button>' : '';
+                        if (ct === 'parent') return '<span style="color:#5dade2;font-weight:700;">🏢 ' + cleanName + '</span> ' + editBtn + ' <span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">PARENT</span>';
+                        if (ct === 'subsidiary') return '<span style="color:#d4af37;">└</span> <span style="color:#d4af37;">' + cleanName + '</span> ' + editBtn + ' <span style="background:rgba(212,175,55,0.15);color:#d4af37;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">SUB</span>';
+                        return cleanName + ' ' + editBtn;
                     })()}</td>
-                    <td style="padding:1rem;">${formatContractDate(offer.offer_date)}</td>
+                    <td style="padding:1rem;">${formatContractDate(offer.offer_date || offer.created_date || offer.created_at)}</td>
                     <td style="padding:1rem;">${offer.total_members || 0}</td>
                     <td style="padding:1rem;"><strong>$${(offer.grand_total_usd || 0).toLocaleString()}</strong></td>
                     <td style="padding:1rem;"><span class="offer-status ${offer.status}">${offer.status}</span></td>
@@ -24125,7 +24287,7 @@ const clientData = {
                 <button onclick="closeAddClientModal()" style="padding:1rem 2rem; background:#4a5568; color:white; border:none; border-radius:10px; cursor:pointer; font-size:1.1rem; font-weight:500; transition:all 0.3s; min-width:140px;" onmouseover="this.style.background='#5a6578'" onmouseout="this.style.background='#4a5568'">
                     Cancel
                 </button>
-                <button onclick="saveNewClientWithOffersUpdate()" style="padding:1rem 2rem; background:linear-gradient(135deg, #27ae60, #1e8449); color:white; border:none; border-radius:10px; cursor:pointer; font-size:1.1rem; font-weight:600; transition:all 0.3s; min-width:180px; display:flex; align-items:center; justify-content:center; gap:8px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(39,174,96,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                <button onclick="saveClientForm()" style="padding:1rem 2rem; background:linear-gradient(135deg, #27ae60, #1e8449); color:white; border:none; border-radius:10px; cursor:pointer; font-size:1.1rem; font-weight:600; transition:all 0.3s; min-width:180px; display:flex; align-items:center; justify-content:center; gap:8px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(39,174,96,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
                     <span>💾</span> Save Client
                 </button>
             </div>
