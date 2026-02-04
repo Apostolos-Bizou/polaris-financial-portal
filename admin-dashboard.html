@@ -20558,12 +20558,21 @@ Email: ${contract.contact_email || '-'}
             
             // Extract program names from offer items
             const programs = [];
-            if (offer.items && Array.isArray(offer.items)) {
-                offer.items.forEach(item => {
-                    if (item.plan_name && !programs.includes(item.plan_name)) {
-                        programs.push(item.plan_name);
+            let items = offer.items;
+            if (typeof items === 'string') { try { items = JSON.parse(items); } catch(e) { items = []; } }
+            if (items && Array.isArray(items)) {
+                items.forEach(item => {
+                    const name = item.plan_name || item.program_name || item.program_id || '';
+                    if (name && !programs.includes(name)) {
+                        programs.push(name);
                     }
                 });
+            }
+            // Check dental flag
+            if (offer.includes_dental === true || offer.includes_dental === 'true' || offer.includes_dental === 'TRUE') {
+                if (!programs.some(p => p.toLowerCase().includes('dental'))) {
+                    programs.push('Dental');
+                }
             }
             
             // Prepare offer data for the modal - WITH SIGNATURE FLAG
@@ -20576,6 +20585,7 @@ Email: ${contract.contact_email || '-'}
                 contactEmail: contactEmail,
                 programs: programs,
                 items: offer.items, // Include items for program highlighting
+                includes_dental: offer.includes_dental, // Pass dental flag
                 status: offer.status,
                 totalMembers: offer.total_members,
                 grandTotal: offer.grand_total_usd,
@@ -22112,14 +22122,45 @@ const clientData = {
                 } catch (e) {
                     console.error('Error parsing comparison_data:', e);
                 }
-            } else if (offer.items && Array.isArray(offer.items)) {
+            } else {
                 // Standard offer - extract from items
-                offer.items.forEach(item => {
-                    if (item.plan_name && !programs.includes(item.plan_name)) {
-                        programs.push(item.plan_name);
+                let items = offer.items;
+                // Parse items if JSON string
+                if (typeof items === 'string') {
+                    try { items = JSON.parse(items); } catch(e) { items = []; }
+                }
+                if (Array.isArray(items)) {
+                    items.forEach(item => {
+                        // Try plan_name first, then program_id, then program_name
+                        const name = item.plan_name || item.program_name || item.program_id || '';
+                        if (name && !programs.includes(name)) {
+                            programs.push(name);
+                        }
+                    });
+                }
+                
+                // Also map program_id to display names for highlighting
+                // e.g. "gold" → "Gold", "gold_plus" → "Gold Plus"
+                const idToName = {
+                    'silver': 'Silver', 'gold': 'Gold', 'gold_plus': 'Gold Plus',
+                    'gold_plus_plus': 'Gold Plus Plus', 'platinum': 'Platinum', 'diamond': 'Diamond'
+                };
+                programs.forEach((p, idx) => {
+                    const mapped = idToName[p.toLowerCase().replace(/\s+/g, '_')];
+                    if (mapped && !programs.includes(mapped)) {
+                        programs[idx] = mapped;
                     }
                 });
             }
+            
+            // Check dental flag from offer
+            if (offer.includes_dental === true || offer.includes_dental === 'true' || offer.includes_dental === 'TRUE') {
+                if (!programs.some(p => p.toLowerCase().includes('dental'))) {
+                    programs.push('Dental');
+                }
+            }
+            
+            console.log('Final programs for Send modal:', programs);
             
             // Prepare offer data for the modal
             const offerData = {
@@ -22130,6 +22171,7 @@ const clientData = {
                 contactEmail: contactEmail,
                 programs: programs,
                 items: offer.items, // Include items for program highlighting
+                includes_dental: offer.includes_dental, // Pass dental flag
                 status: offer.status,
                 totalMembers: offer.total_members,
                 grandTotal: offer.grand_total_usd,
@@ -25329,12 +25371,33 @@ function highlightOfferPrograms(offer) {
     // Parse offer items to get programs
     let programs = [];
     try {
-        if (offer.items) {
-            const items = typeof offer.items === 'string' ? JSON.parse(offer.items) : offer.items;
-            programs = items.map(item => (item.plan_name || item.program || '').toLowerCase().trim()).filter(Boolean);
+        let items = offer.items;
+        // Parse if string
+        if (typeof items === 'string') {
+            try { items = JSON.parse(items); } catch(e) { items = []; }
+        }
+        if (items && Array.isArray(items)) {
+            programs = items.map(item => (item.plan_name || item.program_name || item.program_id || item.program || '').toLowerCase().trim()).filter(Boolean);
         }
     } catch (e) {
         console.log('Could not parse offer items:', e);
+    }
+    
+    // Also check programs array passed directly (from openSendDocumentsFromOffer)
+    if (offer.programs && Array.isArray(offer.programs)) {
+        offer.programs.forEach(p => {
+            const lower = p.toLowerCase().trim();
+            if (lower && !programs.includes(lower)) {
+                programs.push(lower);
+            }
+        });
+    }
+    
+    // Check dental flag
+    if (offer.includes_dental === true || offer.includes_dental === 'true' || offer.includes_dental === 'TRUE') {
+        if (!programs.some(p => p.includes('dental'))) {
+            programs.push('dental');
+        }
     }
     
     console.log('Offer programs to highlight:', programs);
@@ -26094,8 +26157,31 @@ async function loadDriveTemplates() {
         
     } catch (error) {
         console.error('Error loading Drive templates:', error);
-        select.innerHTML = '<option value="">-- Select Email Template --</option><option value="" disabled>❌ Error loading templates</option>';
-        if (statusDiv) statusDiv.innerHTML = '❌ Error: ' + error.message + ' <button onclick="refreshDriveTemplates()" style="background: #4a5568; border: none; color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Retry</button>';
+        
+        // FALLBACK: Use regular emailTemplates if Drive fails
+        if (emailTemplates && emailTemplates.length > 0) {
+            console.log('📋 Falling back to regular email templates:', emailTemplates.length);
+            select.innerHTML = '<option value="">-- Select Email Template --</option>';
+            emailTemplates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.template_id || template.id;
+                option.textContent = '📝 ' + (template.template_name || template.name);
+                select.appendChild(option);
+            });
+            // Store as driveEmailTemplates for compatibility
+            driveEmailTemplates = emailTemplates.map(t => ({
+                id: t.template_id || t.id,
+                name: t.template_name || t.name,
+                fullName: t.template_name || t.name,
+                icon: '📝',
+                category: t.category || 'general'
+            }));
+            if (statusDiv) statusDiv.innerHTML = '📋 Using cached templates (' + emailTemplates.length + ')';
+            setTimeout(() => { if (statusDiv) statusDiv.innerHTML = ''; }, 3000);
+        } else {
+            select.innerHTML = '<option value="">-- Select Email Template --</option><option value="" disabled>❌ Error loading templates</option>';
+            if (statusDiv) statusDiv.innerHTML = '❌ Error: ' + error.message + ' <button onclick="refreshDriveTemplates()" style="background: #4a5568; border: none; color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Retry</button>';
+        }
     }
 }
 
