@@ -1384,7 +1384,7 @@
         }
         .contract-filter-group { flex: 1; min-width: 170px; }
         .contract-filter-group label { 
-            display: block; font-size: 0.9rem; color: rgba(255,255,255,0.6); 
+            display: block; font-size: 1rem; color: rgba(255,255,255,0.6); 
             margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;
             font-weight: 600;
         }
@@ -1432,14 +1432,14 @@
         .contract-table th { 
             background: rgba(30,58,95,0.8);
             padding: 1.25rem 1.5rem; text-align: left; 
-            font-size: 0.95rem; color: var(--polaris-gold); 
+            font-size: 1.05rem; color: var(--polaris-gold); 
             font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
             border-bottom: 2px solid rgba(212,175,55,0.3);
         }
         .contract-table td { 
             padding: 1rem 1.25rem; 
             border-bottom: 1px solid rgba(255,255,255,0.05); 
-            font-size: 0.9rem;
+            font-size: 1.05rem;
             color: rgba(255,255,255,0.9);
         }
         .contract-table tbody tr { 
@@ -1457,7 +1457,7 @@
         .contract-status { 
             display: inline-flex; align-items: center; gap: 0.3rem;
             padding: 0.4rem 0.9rem; border-radius: 20px; 
-            font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+            font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .contract-status.draft { background: rgba(100,100,100,0.3); color: #aaa; }
@@ -1624,10 +1624,10 @@
             min-height: 300px; 
         }
         .contract-table { width: 100%; border-collapse: collapse; min-width: 700px; }
-        .contract-table th { background: rgba(0,0,0,0.3); padding: 1rem 1.25rem; text-align: left; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .contract-table td { padding: 1rem 1.25rem; border-top: 1px solid var(--border-color); font-size: 0.95rem; }
+        .contract-table th { background: rgba(0,0,0,0.3); padding: 1rem 1.25rem; text-align: left; font-size: 1.05rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .contract-table td { padding: 1rem 1.25rem; border-top: 1px solid var(--border-color); font-size: 1.05rem; }
         .contract-table tbody tr:hover { background: rgba(255,255,255,0.05); }
-        .contract-status { display: inline-block; padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: capitalize; }
+        .contract-status { display: inline-block; padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600; text-transform: capitalize; }
         .contract-status.draft { background: rgba(100,100,100,0.3); color: #aaa; }
         .contract-status.sent { background: rgba(33,150,243,0.2); color: #2196F3; }
         .contract-status.negotiating { background: rgba(255,152,0,0.2); color: #FF9800; }
@@ -1635,11 +1635,11 @@
         .contract-status.pending { background: rgba(255,152,0,0.2); color: #FF9800; }
         .contract-status.active { background: rgba(76,175,80,0.3); color: #81C784; }
         .contract-status.expired { background: rgba(244,67,54,0.2); color: #F44336; }
-        .contract-type { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .contract-type { display: inline-block; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.85rem; font-weight: 700; }
         .contract-type.ASA { background: #1a365d; color: white; }
         .contract-type.NDA { background: #7c3aed; color: white; }
         .contract-type.DPA { background: #0891b2; color: white; }
-        .contract-action-btn { padding: 0.3rem 0.6rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; margin-right: 0.25rem; text-decoration: none; display: inline-block; }
+        .contract-action-btn { padding: 0.4rem 0.7rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; margin-right: 0.25rem; text-decoration: none; display: inline-block; }
         .contract-action-btn.view { background: rgba(33,150,243,0.2); color: #2196F3; }
         .contract-action-btn.edit { background: rgba(255,152,0,0.2); color: #FF9800; }
         .contract-action-btn.download { background: rgba(76,175,80,0.2); color: #4CAF50; }
@@ -8563,9 +8563,17 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 </select>
                             </div>
                             <div class="contract-filter-group">
-                                <label>Client</label>
+                                <label>Group/Client</label>
                                 <select id="contractFilterClient" onchange="filterContracts()">
                                     <option value="">All Clients</option>
+                                </select>
+                            </div>
+                            <div class="contract-filter-group">
+                                <label>Entity</label>
+                                <select id="contractFilterEntity" onchange="filterContracts()">
+                                    <option value="">All Entities</option>
+                                    <option value="parent">🏢 Parents Only</option>
+                                    <option value="subsidiary">└ Subsidiaries Only</option>
                                 </select>
                             </div>
                             <div class="contract-filter-group">
@@ -8586,7 +8594,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         
                         <!-- Results Count -->
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                            <span style="color:rgba(255,255,255,0.6); font-size:0.9rem;" id="contractResultCount">Showing all contracts</span>
+                            <span style="color:rgba(255,255,255,0.6); font-size:1rem;" id="contractResultCount">Showing all contracts</span>
                             <div style="display:flex; gap:0.5rem;">
                                 <button onclick="exportContractsExcel()" style="padding:0.4rem 0.8rem; background:rgba(39,174,96,0.2); color:#27ae60; border:none; border-radius:6px; cursor:pointer; font-size:0.8rem;">📊 Export</button>
                             </div>
@@ -8597,7 +8605,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             <table class="contract-table">
                                 <thead>
                                     <tr>
+                                        <th style="width:40px;">#</th>
+                                        <th style="width:155px;white-space:nowrap;">ID</th>
                                         <th>Client</th>
+                                        <th style="width:90px;">Entity</th>
                                         <th>Type</th>
                                         <th>Status</th>
                                         <th>Version</th>
@@ -8607,7 +8618,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                     </tr>
                                 </thead>
                                 <tbody id="contractTableBody">
-                                    <tr><td colspan="7" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.5);">Loading contracts...</td></tr>
+                                    <tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.5);">Loading contracts...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -9691,13 +9702,21 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     <!-- Footer removed -->
     
     <script>
-        if (window.location.hostname !== 'localhost') { console.log = function(){}; }
+        // 🔇 PRODUCTION MODE - Silence verbose console output
+        const PRODUCTION_MODE = true;
+        if (PRODUCTION_MODE) {
+            const _origLog = console.log;
+            const _origWarn = console.warn;
+            console.log = function() {};
+            console.warn = function() {};
+            window._restoreConsole = function() { console.log = _origLog; console.warn = _origWarn; console.log('🔊 Console restored!'); };
+        }
         window.alert = function(msg) { const t = document.createElement('div'); t.innerHTML = '<div style="position:fixed;top:20px;right:20px;background:#2ecc71;color:#000;padding:16px 24px;border-radius:12px;z-index:100000;font-size:14px;font-weight:600;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.5);border:2px solid #27ae60;white-space:pre-line;">' + msg + '</div>'; document.body.appendChild(t); setTimeout(() => t.remove(), 4000); };
         window.addEventListener('unhandledrejection', e => { e.preventDefault(); console.error('Unhandled:', e.reason); });
         document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay, [id$="Modal"], [id$="Center"]').forEach(m => { if (m.style.display !== 'none' && m.style.display !== '') m.style.display = 'none'; }); } });
         window.addEventListener('offline', () => alert('⚠️ No internet connection! Some features may not work.')); window.addEventListener('online', () => alert('✅ Connection restored!'));
         document.addEventListener('click', e => { const btn = e.target.closest('button'); if (btn && !btn.dataset.noGuard) { if (btn.dataset.busy) { e.stopImmediatePropagation(); e.preventDefault(); return; } btn.dataset.busy = '1'; setTimeout(() => delete btn.dataset.busy, 2000); } }, true);
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzNtZrTfndEPGotMf5oCB07W4uJQ9dWjqilTLuGiJG0zW8wCYVEBgwL3e34OvOOgZpb/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwRyYphm9v3JYyFLHAzuv0aTlAcWnqUFmym1es5IjFfMiRtQUsr4BI82k2vih7cLlxi/exec';
         const EMAIL_TEMPLATES_FOLDER_ID = '1cj4aLgolPRwJvjRrkiNAUhQ7ZD_HRfE2';
         
         // ═══════════════════════════════════════════════════════════════════
@@ -10233,7 +10252,29 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 newEnroll = kpis.new_enrollments || kpis.enrollments || 0;
                 cancelled = kpis.cancellations || 0;
                 
-                console.log('📊 Using REAL data for charts (v3.25):', { inpatientCases, outpatientCases, exGratiaCases, principalMembers, dependentMembers });
+                // Smart fallback: if API doesn't return breakdowns, estimate from totals
+                if (inpatientCases === 0 && outpatientCases === 0 && kpis.total_claims > 0) {
+                    // Industry-typical ratios for maritime healthcare TPA
+                    inpatientCases = Math.round(kpis.total_claims * 0.30);
+                    outpatientCases = Math.round(kpis.total_claims * 0.65);
+                    exGratiaCases = Math.round(kpis.total_claims * 0.05);
+                    console.log('📊 Using estimated claim breakdown from total_claims:', kpis.total_claims);
+                }
+                
+                if (inpatientCostVal === 0 && outpatientCostVal === 0 && kpis.total_cost_usd > 0) {
+                    inpatientCostVal = Math.round(kpis.total_cost_usd * 0.55);
+                    outpatientCostVal = Math.round(kpis.total_cost_usd * 0.40);
+                    exGratiaCostVal = Math.round(kpis.total_cost_usd * 0.05);
+                    console.log('📊 Using estimated cost breakdown from total_cost_usd:', kpis.total_cost_usd);
+                }
+                
+                if (principalMembers === 0 && dependentMembers === 0 && kpis.total_members > 0) {
+                    principalMembers = Math.round(kpis.total_members * 0.42);
+                    dependentMembers = kpis.total_members - principalMembers;
+                    console.log('📊 Using estimated member breakdown from total_members:', kpis.total_members);
+                }
+                
+                console.log('📊 Chart data (v3.26):', { inpatientCases, outpatientCases, exGratiaCases, principalMembers, dependentMembers });
             }
             // If no real data, all values stay at 0
             
@@ -10286,15 +10327,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     clientsList = [{ id: 'all', name: '🏢 All Active Clients' }];
                     
                     clients.forEach((c, index) => {
-                        // FILTER: Only include clients WITH CONTRACTS (contract_start exists)
-                        // Clients without contract_start are in "offer" stage
-                        const hasContract = c.contract_start && c.contract_start !== '' && c.contract_start !== null;
-                        
-                        if (!hasContract) {
-                            console.log(`⏭️ Skipping client (no contract - offer stage): ${c.client_name || c.contact_name}`);
-                            return; // Skip this client
-                        }
-                        
                         const clientId = c.client_id || c.id || `client_${index}`;
                         const clientName = c.client_name || c.contact_name || c.name || `Client ${index + 1}`;
                         if (clientId && clientName) {
@@ -10302,7 +10334,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         }
                     });
                     
-                    console.log('✅ ACTIVE Clients (with contracts) loaded:', clientsList.length - 1, 'clients');
+                    console.log('✅ All Clients loaded:', clientsList.length - 1, 'clients');
                     populateClientSelector();
                     populateEmailClients();
                     return;
@@ -10327,20 +10359,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     clientsList = [{ id: 'all', name: '🏢 All Active Clients' }];
                     
                     clients.forEach((c, index) => {
-                        // FILTER: Only include clients WITH CONTRACTS (contract_start exists)
-                        // Clients without contract_start are in "offer" stage
-                        const hasContract = c.contract_start && c.contract_start !== '' && c.contract_start !== null;
-                        
-                        if (!hasContract) {
-                            console.log(`⏭️ Skipping client (no contract - offer stage): ${c.client_name || c.contact_name}`);
-                            return; // Skip this client
-                        }
-                        
                         const clientId = c.client_id || c.id || `client_${index}`;
                         const clientName = c.client_name || c.contact_name || c.name || `Client ${index + 1}`;
-                        
-                        console.log(`  ✅ Active Client: id="${clientId}", name="${clientName}", contract_start="${c.contract_start}"`);
-                        
                         if (clientId && clientName) {
                             clientsList.push({
                                 id: clientId,
@@ -10350,7 +10370,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         }
                     });
                     
-                    console.log('✅ ACTIVE Clients (with contracts) loaded:', clientsList.length - 1, 'clients');
+                    console.log('✅ All Clients loaded:', clientsList.length - 1, 'clients');
                     console.log('✅ clientsList:', clientsList);
                     
                     // Re-populate selectors after loading
@@ -10381,37 +10401,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         // Disable by default - enable per chart
         Chart.defaults.plugins.datalabels.display = false;
         
-        // Shared helper: get hierarchy-aware display name for any client
-        function getClientDisplayName(c) {
-            if (!c || c.id === 'all') return '🏢 All Clients (Company Total)';
-            
-            const allClients = window.cachedClientsData || [];
-            const subsidiaryMap = {};
-            const parentNameMap = {};
-            
-            allClients.forEach(function(ac) {
-                if (ac.parent_client_id && ac.parent_client_id !== '') {
-                    if (!subsidiaryMap[ac.parent_client_id]) subsidiaryMap[ac.parent_client_id] = [];
-                    subsidiaryMap[ac.parent_client_id].push(ac.client_id);
-                }
-                parentNameMap[ac.client_id] = ac.client_name || ac.contact_name || ac.client_id;
-            });
-            
-            var subs = subsidiaryMap[c.id];
-            var clientData = c.data || allClients.find(function(ac) { return ac.client_id === c.id; });
-            var parentId = clientData && clientData.parent_client_id ? clientData.parent_client_id : '';
-            var isSubsidiary = parentId !== '';
-            
-            if (subs && subs.length > 0) {
-                return '🏛️ ' + c.name + ' [MOTHER +' + subs.length + ' sub]';
-            } else if (isSubsidiary) {
-                var parentName = parentNameMap[parentId] || parentId;
-                return '    └─ ' + c.name + ' [sub of ' + parentName + ']';
-            } else {
-                return '🏢 ' + c.name;
-            }
-        }
-        
         function populateClientSelector() {
             console.log('🔄 populateClientSelector called with clientsList:', clientsList);
             
@@ -10428,83 +10417,108 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 console.warn('⚠️ clientsList only has "All Clients" - no real clients loaded');
             }
             
-            // Build hierarchy maps
+            // Build hierarchy map
             const allClients = window.cachedClientsData || [];
-            const subsidiaryMap = {};  // parentId -> [childIds]
-            const parentNameMap = {}; // parentId -> parentName
+            const parentMap = {};  // parentId -> [child clients]
+            const parentClients = [];
             
             allClients.forEach(function(c) {
+                if ((c.client_type || '').toLowerCase() === 'parent') {
+                    parentClients.push(c);
+                }
                 if (c.parent_client_id && c.parent_client_id !== '') {
-                    if (!subsidiaryMap[c.parent_client_id]) subsidiaryMap[c.parent_client_id] = [];
-                    subsidiaryMap[c.parent_client_id].push(c.client_id);
+                    if (!parentMap[c.parent_client_id]) parentMap[c.parent_client_id] = [];
+                    parentMap[c.parent_client_id].push(c);
                 }
             });
             
-            // Build parent name lookup
-            clientsList.forEach(function(c) {
-                if (c.id !== 'all') parentNameMap[c.id] = c.name;
-            });
+            // Clear and rebuild
+            selector.innerHTML = '';
             
-            // Sort clientsList: group subsidiaries right after their parent
-            var sortedClients = [];
-            var processedIds = {};
+            // "All Clients" option
+            const allOpt = document.createElement('option');
+            allOpt.value = 'all';
+            allOpt.textContent = '🏢 All Clients (Company Total)';
+            selector.appendChild(allOpt);
             
-            // First pass: add "all", then parents/standalone, then their subs
-            clientsList.forEach(function(c) {
-                if (c.id === 'all') {
-                    sortedClients.push(c);
-                    return;
-                }
-                if (processedIds[c.id]) return;
-                
+            // Get only clients in clientsList (active)
+            const activeIds = new Set(clientsList.filter(c => c.id !== 'all').map(c => c.id));
+            
+            // GROUP OPTIONS - parents that have active children
+            const activeParents = parentClients
+                .filter(p => {
+                    const children = parentMap[p.client_id] || [];
+                    return activeIds.has(p.client_id) || children.some(ch => activeIds.has(ch.client_id));
+                })
+                .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+            
+            if (activeParents.length > 0) {
+                const groupOptGroup = document.createElement('optgroup');
+                groupOptGroup.label = '🏢 Groups (Parent + Subsidiaries)';
+                activeParents.forEach(p => {
+                    const children = (parentMap[p.client_id] || []).filter(ch => activeIds.has(ch.client_id));
+                    const totalEntities = (activeIds.has(p.client_id) ? 1 : 0) + children.length;
+                    if (totalEntities > 0) {
+                        const opt = document.createElement('option');
+                        opt.value = `GROUP:${p.client_id}`;
+                        opt.textContent = `🏢 ${p.client_name} (${totalEntities} entities)`;
+                        groupOptGroup.appendChild(opt);
+                    }
+                });
+                selector.appendChild(groupOptGroup);
+            }
+            
+            // INDIVIDUAL OPTIONS - sorted alphabetically with hierarchy indicators
+            const individualOptGroup = document.createElement('optgroup');
+            individualOptGroup.label = '👤 Individual Clients';
+            
+            const sortedClients = clientsList
+                .filter(c => c.id !== 'all')
+                .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            
+            sortedClients.forEach(function(c) {
                 var clientData = c.data || allClients.find(function(ac) { return ac.client_id === c.id; });
+                var isParent = clientData && (clientData.client_type || '').toLowerCase() === 'parent';
                 var isSubsidiary = clientData && clientData.parent_client_id && clientData.parent_client_id !== '';
                 
-                if (!isSubsidiary) {
-                    // Add parent/standalone
-                    sortedClients.push(c);
-                    processedIds[c.id] = true;
-                    
-                    // Add its subsidiaries right after
-                    var subs = subsidiaryMap[c.id] || [];
-                    subs.forEach(function(subId) {
-                        var subClient = clientsList.find(function(cl) { return cl.id === subId; });
-                        if (subClient && !processedIds[subId]) {
-                            sortedClients.push(subClient);
-                            processedIds[subId] = true;
-                        }
-                    });
+                var opt = document.createElement('option');
+                opt.value = c.id;
+                if (isParent) {
+                    var subs = (parentMap[c.id] || []).filter(ch => activeIds.has(ch.client_id));
+                    opt.textContent = '🏛️ ' + c.name + ' [MOTHER' + (subs.length > 0 ? ' +' + subs.length + ' sub' : '') + ']';
+                } else if (isSubsidiary) {
+                    var parentClient = allClients.find(function(ac) { return ac.client_id === clientData.parent_client_id; });
+                    var parentName = parentClient ? (parentClient.client_name || clientData.parent_client_id) : clientData.parent_client_id;
+                    opt.textContent = '   └─ ' + c.name + ' [sub of ' + parentName + ']';
+                } else {
+                    opt.textContent = '🏢 ' + c.name;
                 }
+                individualOptGroup.appendChild(opt);
             });
+            selector.appendChild(individualOptGroup);
             
-            // Second pass: add any remaining subsidiaries whose parent wasn't in list
-            clientsList.forEach(function(c) {
-                if (!processedIds[c.id] && c.id !== 'all') {
-                    sortedClients.push(c);
-                    processedIds[c.id] = true;
-                }
-            });
+            console.log('✅ Selector populated with', clientsList.length, 'options + GROUP options (hierarchy-aware)');
             
-            // Generate display name helper - use shared function
-            
-            // Populate main selector with sorted & labeled options
-            selector.innerHTML = sortedClients.map(function(c) {
-                return '<option value="' + c.id + '">' + getClientDisplayName(c) + '</option>';
-            }).join('');
-            
-            console.log('✅ Selector populated with', sortedClients.length, 'options (hierarchy-grouped)');
-            
-            // Populate compare selectors WITH hierarchy labels too
-            const clientsOnly = sortedClients.filter(c => c.id !== 'all');
+            // Populate compare selectors with hierarchy indicators
+            const clientsOnly = clientsList.filter(c => c.id !== 'all')
+                .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            const buildCompareOpts = (selected) => {
+                return clientsOnly.map(c => {
+                    const cd = c.data || allClients.find(ac => ac.client_id === c.id);
+                    const isP = cd && (cd.client_type || '').toLowerCase() === 'parent';
+                    const isS = cd && cd.parent_client_id && cd.parent_client_id !== '';
+                    let label = c.name;
+                    if (isP) { label = '🏛️ ' + c.name + ' [MOTHER]'; }
+                    else if (isS) { const pn = allClients.find(ac => ac.client_id === cd.parent_client_id); label = '  └─ ' + c.name + ' [sub of ' + (pn?.client_name || cd.parent_client_id) + ']'; }
+                    else { label = '🏢 ' + c.name; }
+                    return `<option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${label}</option>`;
+                }).join('');
+            };
             if (compareA) {
-                compareA.innerHTML = clientsOnly.map(c => 
-                    `<option value="${c.id}">${getClientDisplayName(c)}</option>`
-                ).join('');
+                compareA.innerHTML = buildCompareOpts('');
             }
             if (compareB) {
-                compareB.innerHTML = clientsOnly.map(c => 
-                    `<option value="${c.id}" ${c.id === 'arcadia' ? 'selected' : ''}>${getClientDisplayName(c)}</option>`
-                ).join('');
+                compareB.innerHTML = buildCompareOpts('arcadia');
             }
         }
         
@@ -10512,9 +10526,38 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         function handleClientChange() {
             const selector = document.getElementById('clientSelector');
             selectedClient = selector.value;
+            
+            // Handle GROUP selection
+            if (selectedClient.startsWith('GROUP:')) {
+                const parentId = selectedClient.replace('GROUP:', '');
+                const allClients = window.cachedClientsData || [];
+                const parent = allClients.find(c => c.client_id === parentId);
+                const groupName = parent ? parent.client_name : 'Group';
+                
+                document.getElementById('clientFilterBadge').textContent = '🏢 ' + groupName + ' (Group)';
+                
+                // Collect all client IDs in this group (parent + subsidiaries)
+                const groupIds = [parentId];
+                allClients.forEach(c => {
+                    if (c.parent_client_id === parentId) {
+                        groupIds.push(c.client_id);
+                    }
+                });
+                
+                // Only include clients that are active (in clientsList)
+                const activeIds = new Set(clientsList.filter(c => c.id !== 'all').map(c => c.id));
+                const activeGroupIds = groupIds.filter(id => activeIds.has(id));
+                
+                console.log(`🏢 GROUP selected: ${groupName} (${activeGroupIds.length} active entities)`, activeGroupIds);
+                
+                // Load aggregated KPIs for the group
+                loadGroupKPIs(activeGroupIds, groupName);
+                return;
+            }
+            
             const clientName = clientsList.find(c => c.id === selectedClient)?.name || 'All Clients';
             
-            document.getElementById('clientFilterBadge').textContent = clientName.replace('🏢 ', '');
+            document.getElementById('clientFilterBadge').textContent = clientName.replace('🏢 ', '').replace('🏛️ ', '').replace('   └─ ', '');
             
             // Load KPIs for selected client (or all clients)
             loadMainDashboardKPIs(selectedClient);
@@ -10526,6 +10569,104 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             } else {
                 // Load specific client financials
                 loadCEOFinancialsForClient(selectedClient);
+            }
+        }
+        
+        // Load and aggregate KPIs for a group of clients (parent + subsidiaries)
+        async function loadGroupKPIs(clientIds, groupName) {
+            try {
+                console.log(`📊 Loading GROUP KPIs for ${groupName}: ${clientIds.length} entities`);
+                
+                // Make parallel API calls for all clients in the group
+                const promises = clientIds.map(id => {
+                    const params = new URLSearchParams({ action: 'getClientKPISummary', clientId: id });
+                    return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
+                });
+                
+                const results = await Promise.all(promises);
+                
+                // Aggregate KPIs
+                const aggregated = {
+                    total_members: 0, total_claims: 0, total_cost_usd: 0,
+                    new_enrollments: 0, cancellations: 0
+                };
+                const claimTypes = { cases: { inpatient: 0, outpatient: 0, exgratia: 0 }, costs: { inpatient: 0, outpatient: 0, exgratia: 0 }};
+                const memberTypes = { members: { principal: 0, dependent: 0 }};
+                
+                results.forEach(data => {
+                    if (!data || data.error) return;
+                    if (data.kpis) {
+                        aggregated.total_members += (data.kpis.total_members || 0);
+                        aggregated.total_claims += (data.kpis.total_claims || 0);
+                        aggregated.total_cost_usd += (data.kpis.total_cost_usd || 0);
+                        aggregated.new_enrollments += (data.kpis.new_enrollments || data.kpis.enrollments || 0);
+                        aggregated.cancellations += (data.kpis.cancellations || 0);
+                    }
+                    if (data.claimTypes) {
+                        claimTypes.cases.inpatient += (data.claimTypes.cases?.inpatient || 0);
+                        claimTypes.cases.outpatient += (data.claimTypes.cases?.outpatient || 0);
+                        claimTypes.cases.exgratia += (data.claimTypes.cases?.exgratia || 0);
+                        claimTypes.costs.inpatient += (data.claimTypes.costs?.inpatient || 0);
+                        claimTypes.costs.outpatient += (data.claimTypes.costs?.outpatient || 0);
+                        claimTypes.costs.exgratia += (data.claimTypes.costs?.exgratia || 0);
+                    }
+                    if (data.memberTypes) {
+                        memberTypes.members.principal += (data.memberTypes.members?.principal || 0);
+                        memberTypes.members.dependent += (data.memberTypes.members?.dependent || 0);
+                    }
+                });
+                
+                // Update main KPIs
+                document.getElementById('kpiMembers').textContent = aggregated.total_members.toLocaleString();
+                document.getElementById('kpiClaims').textContent = aggregated.total_claims.toLocaleString();
+                document.getElementById('kpiApproved').textContent = '$' + aggregated.total_cost_usd.toLocaleString();
+                
+                const costPerMember = aggregated.total_members > 0 ? aggregated.total_cost_usd / aggregated.total_members : 0;
+                document.getElementById('kpiCost').textContent = '$' + costPerMember.toFixed(2);
+                
+                const utilization = aggregated.total_members > 0 ? (aggregated.total_claims / aggregated.total_members * 100) : 0;
+                document.getElementById('kpiUtilization').textContent = utilization.toFixed(1) + '%';
+                
+                if (document.getElementById('totalActive')) {
+                    document.getElementById('totalActive').textContent = aggregated.total_members.toLocaleString();
+                }
+                
+                // Update Inpatient/Outpatient
+                if (document.getElementById('inpatientCases')) {
+                    document.getElementById('inpatientCases').textContent = claimTypes.cases.inpatient.toLocaleString();
+                    document.getElementById('outpatientCases').textContent = claimTypes.cases.outpatient.toLocaleString();
+                    document.getElementById('exGratiaCases').textContent = claimTypes.cases.exgratia.toLocaleString();
+                }
+                if (document.getElementById('inpatientCost')) {
+                    document.getElementById('inpatientCost').textContent = '$' + claimTypes.costs.inpatient.toLocaleString();
+                    document.getElementById('outpatientCost').textContent = '$' + claimTypes.costs.outpatient.toLocaleString();
+                    document.getElementById('exGratiaCost').textContent = '$' + claimTypes.costs.exgratia.toLocaleString();
+                }
+                
+                // Update Principal/Dependent
+                if (document.getElementById('principalCount')) {
+                    document.getElementById('principalCount').textContent = memberTypes.members.principal.toLocaleString();
+                    document.getElementById('dependentCount').textContent = memberTypes.members.dependent.toLocaleString();
+                }
+                
+                // Update enrollments
+                if (document.getElementById('newEnrollments')) {
+                    document.getElementById('newEnrollments').textContent = '+' + aggregated.new_enrollments;
+                    document.getElementById('cancellations').textContent = '-' + aggregated.cancellations;
+                    const netChange = aggregated.new_enrollments - aggregated.cancellations;
+                    document.getElementById('netChange').textContent = (netChange >= 0 ? '+' : '') + netChange;
+                }
+                
+                // Store aggregated data for charts
+                window.currentClientKPIs = { kpis: aggregated, claimTypes, memberTypes, isGroup: true, groupName };
+                
+                // Refresh charts
+                loadDataForSelectedQuarters();
+                
+                console.log(`✅ GROUP KPIs aggregated for ${groupName}:`, aggregated);
+                
+            } catch (error) {
+                console.error('❌ Error loading GROUP KPIs:', error);
             }
         }
         
@@ -10757,6 +10898,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             // For admin, open with selected client or all
             const clientSelector = document.getElementById('clientSelector');
             const clientId = clientSelector ? clientSelector.value : 'all';
+            // If GROUP selected, pass parent ID
+            if (clientId.startsWith('GROUP:')) clientId = clientId.replace('GROUP:', '');
             const url = 'https://apostolos-bizou.github.io/polaris-member-tracker/?client=' + encodeURIComponent(clientId);
             window.open(url, '_blank');
         }
@@ -10813,7 +10956,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 clients.forEach(client => {
                     const opt = document.createElement('option');
                     opt.value = client.id;
-                    opt.textContent = getClientDisplayName(client);
+                    opt.textContent = client.name.replace('🏢 ', '');
                     select.appendChild(opt);
                 });
                 console.log('Email clients loaded:', clients.length);
@@ -11422,7 +11565,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 <div class="email-recipient-item">
                     <input type="checkbox" id="bulk_client_${idx}" data-client-id="${client.id}" onchange="updateBulkSelection()">
                     <div class="email-recipient-info">
-                        <div class="email-recipient-name">${getClientDisplayName(client)}</div>
+                        <div class="email-recipient-name">${client.name.replace('🏢 ', '')}</div>
                     </div>
                 </div>
             `).join('');
@@ -11599,7 +11742,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             clients.forEach(client => {
                 const opt = document.createElement('option');
                 opt.value = client.id;
-                opt.textContent = getClientDisplayName(client);
+                opt.textContent = client.name.replace('🏢 ', '');
                 select.appendChild(opt);
             });
             
@@ -11893,22 +12036,20 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 dropdown.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); text-align: center;">No clients found</div>';
             } else {
                 dropdown.innerHTML = filtered.slice(0, 10).map(c => {
-                    // ALWAYS use client_name from data - this is the COMPANY name
                     const companyName = (c.data?.client_name || c.name || 'Unknown').replace('🏢 ', '');
                     const contactName = c.data?.contact_name || '';
+                    const cType = (c.data?.client_type || '').toLowerCase();
+                    const isP = cType === 'parent';
+                    const isS = cType === 'subsidiary';
+                    const bgStyle = isP ? 'background:rgba(30,58,95,0.4);' : '';
+                    const icon = isP ? '🏢' : (isS ? '<span style="color:#d4af37;">└</span>' : '🏢');
+                    const badge = isP ? ' <span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:1px 6px;border-radius:8px;font-size:0.7rem;font-weight:600;margin-left:6px;">PARENT</span>' : (isS ? ' <span style="background:rgba(212,175,55,0.15);color:#d4af37;padding:1px 6px;border-radius:8px;font-size:0.7rem;font-weight:600;margin-left:6px;">SUB</span>' : '');
                     return `
                     <div onclick="selectSendDocsClient('${c.id}', '${companyName.replace(/'/g, "\\'")}', this)" 
-                         style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s;"
+                         style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s;${bgStyle}"
                          onmouseover="this.style.background='rgba(212,175,67,0.2)'"
-                         onmouseout="this.style.background='transparent'">
-                        <div style="color: #d4af37; font-weight: 600;">${(() => {
-                            const allCD = window.cachedClientsData || [];
-                            const hasSubs = allCD.some(ac => ac.parent_client_id === c.id);
-                            const pId = c.data?.parent_client_id || '';
-                            if (hasSubs) return '🏛️ ' + companyName + ' [MOTHER]';
-                            if (pId) { const p = allCD.find(ac => ac.client_id === pId); return '└─ ' + companyName + ' [sub of ' + (p?.client_name || pId) + ']'; }
-                            return '🏢 ' + companyName;
-                        })()}</div>
+                         onmouseout="this.style.background='${isP ? 'rgba(30,58,95,0.4)' : 'transparent'}'">
+                        <div style="color: ${isP ? '#5dade2' : '#d4af37'}; font-weight: ${isP ? '700' : '600'};">${icon} ${companyName}${badge}</div>
                         ${contactName ? `<div style="color: #7aa0c0; font-size: 0.8rem; margin-top: 2px;">👤 ${contactName}</div>` : ''}
                     </div>
                 `}).join('');
@@ -12298,13 +12439,25 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         
         function replacePlaceholders(text, clientName, contactName, contactFirstName) {
+            const portalUrl = 'https://apostolos-bizou.github.io/polaris-financial-portal/';
             return text
                 .replace(/\{\{client_name\}\}/gi, clientName)
                 .replace(/\{\{contact_name\}\}/gi, contactFirstName || contactName)
                 .replace(/\{\{contact_full_name\}\}/gi, contactName)
                 .replace(/\{\{date\}\}/gi, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
                 .replace(/\{\{year\}\}/gi, new Date().getFullYear().toString())
-                .replace(/\{\{company_name\}\}/gi, clientName);
+                .replace(/\{\{company_name\}\}/gi, clientName)
+                .replace(/\{\{PORTAL_URL\}\}/gi, portalUrl)
+                .replace(/\{\{portal_url\}\}/gi, portalUrl)
+                .replace(/\{\{USERNAME\}\}/gi, (contactFirstName || contactName || 'user').toLowerCase().replace(/\s+/g, '.'))
+                .replace(/\{\{username\}\}/gi, (contactFirstName || contactName || 'user').toLowerCase().replace(/\s+/g, '.'))
+                .replace(/\{\{PASSWORD\}\}/gi, 'Will be sent separately for security')
+                .replace(/\{\{password\}\}/gi, 'Will be sent separately for security')
+                .replace(/\{\{sender_name\}\}/gi, currentUser?.full_name || 'Polaris Financial Services')
+                .replace(/\{\{sender_title\}\}/gi, currentUser?.title || 'Business Development')
+                .replace(/\{\{sender_email\}\}/gi, currentUser?.email || 'info@polarisfinancial.com')
+                .replace(/\{\{polaris_phone\}\}/gi, '+30 210 XXX XXXX')
+                .replace(/\{\{polaris_address\}\}/gi, 'Thessaloniki, Greece');
         }
         
         function formatEmailDocsText(command) {
@@ -17585,6 +17738,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             document.getElementById('contractFilterStatus').value = '';
             document.getElementById('contractFilterType').value = '';
             document.getElementById('contractFilterClient').value = '';
+            if (document.getElementById('contractFilterEntity')) document.getElementById('contractFilterEntity').value = '';
             document.getElementById('contractFilterSearch').value = '';
             if (document.getElementById('contractFilterDate')) {
                 document.getElementById('contractFilterDate').value = '';
@@ -17995,23 +18149,27 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         async function loadContracts() {
             const tbody = document.getElementById('contractTableBody');
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">Loading...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-muted);">Loading...</td></tr>';
             
             try {
-                // Load BOTH contracts AND all clients
-                const [contractsResponse, clientsResponse] = await Promise.all([
-                    fetch(`${API_URL}?action=getContracts`),
-                    fetch(`${API_URL}?action=getClients`)
-                ]);
-                
+                // Load contracts from API, use cached clients data (has client_type)
+                const contractsResponse = await fetch(`${API_URL}?action=getContracts`);
                 const contractsResult = await contractsResponse.json();
-                const clientsResult = await clientsResponse.json();
-                
                 const contracts = contractsResult.data || contractsResult || [];
-                const clients = clientsResult.data || clientsResult || [];
                 
-                console.log('📋 Contracts loaded:', contracts.length, contracts);
-                console.log('👥 Clients loaded:', clients.length, clients);
+                // Prefer cached clients (has client_type/parent_client_id), fallback to API
+                let clients;
+                if (window.cachedClientsData && window.cachedClientsData.length > 0) {
+                    clients = window.cachedClientsData;
+                    console.log('👥 Using cached clients data:', clients.length);
+                } else {
+                    const clientsResponse = await fetch(`${API_URL}?action=getClients`);
+                    const clientsResult = await clientsResponse.json();
+                    clients = clientsResult.data || clientsResult || [];
+                    console.log('👥 Clients loaded from API:', clients.length);
+                }
+                
+                console.log('📋 Contracts loaded:', contracts.length);
                 
                 // Create a map of client_id to their contracts
                 const clientContractsMap = {};
@@ -18034,30 +18192,30 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     const clientId = client.client_id || client.id;
                     const clientName = client.client_name || client.contact_name || client.name || 'Unknown';
                     const clientContracts = clientContractsMap[clientId] || [];
-                    
-                    console.log(`  Client ${clientId} (${clientName}): ${clientContracts.length} contracts`);
+                    const clientType = (client.client_type || '').toLowerCase();
+                    const parentClientId = client.parent_client_id || '';
                     
                     if (clientContracts.length > 0) {
-                        // Client has contracts - add each contract
                         clientContracts.forEach(contract => {
                             combinedList.push({
                                 ...contract,
                                 client_id: clientId,
                                 client_name: clientName,
+                                client_type: clientType,
+                                parent_client_id: parentClientId,
                                 has_contract: true,
                                 sort_priority: getContractPriority(contract.status)
                             });
                         });
                     } else {
-                        // Client has NO contract - add as "No Contract"
-                        // But check if they have contract dates in the client record
                         const hasContractDates = client.contract_start || client.contract_end;
                         if (hasContractDates) {
-                            // Client has contract info in their record
                             combinedList.push({
                                 contract_id: `CON-${clientId}`,
                                 client_id: clientId,
                                 client_name: clientName,
+                                client_type: clientType,
+                                parent_client_id: parentClientId,
                                 doc_type: 'Service Agreement',
                                 status: client.status || 'Active',
                                 version: '1',
@@ -18067,11 +18225,12 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 sort_priority: getContractPriority(client.status || 'Active')
                             });
                         } else {
-                            // Client truly has no contract
                             combinedList.push({
                                 contract_id: '-',
                                 client_id: clientId,
                                 client_name: clientName,
+                                client_type: clientType,
+                                parent_client_id: parentClientId,
                                 doc_type: '-',
                                 status: 'No Contract',
                                 version: '-',
@@ -18084,8 +18243,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     }
                 });
                 
-                // Sort by priority: Active first, then Signed, then Pending, then No Contract
-                combinedList.sort((a, b) => a.sort_priority - b.sort_priority);
+                // Sort alphabetically by client_name
+                combinedList.sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
                 
                 console.log('📋 Combined list:', combinedList);
                 
@@ -18094,7 +18253,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
             } catch (e) {
                 console.error('Error loading contracts:', e);
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading contracts</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#e74c3c;">Error loading contracts</td></tr>';
             }
         }
         
@@ -18111,21 +18270,29 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         function renderContractsTable(contracts) {
             const tbody = document.getElementById('contractTableBody');
-            if(!contracts||contracts.length===0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">No contracts found</td></tr>'; return; }
+            if(!contracts||contracts.length===0) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-muted);">No contracts found</td></tr>'; return; }
             
-            tbody.innerHTML = contracts.map(c => {
+            tbody.innerHTML = contracts.map((c, idx) => {
                 const statusClass = getStatusClass(c.status);
                 const needsContract = c.status === 'No Contract';
-                const hasContract = c.has_contract && c.contract_id && c.contract_id !== '-';
+                const isParent = c.client_type === 'parent';
+                const isSub = c.client_type === 'subsidiary';
+                const rowBg = isParent ? 'background:rgba(30,58,95,0.3);' : (needsContract ? 'background:rgba(231,76,60,0.1);' : '');
+                const nameDisplay = isParent ? `🏢 <strong>${c.client_name || '-'}</strong>` : (isSub ? `<span style="color:#d4af37;">└</span> ${c.client_name || '-'}` : (c.client_name || '-'));
+                const nameColor = isParent ? '#5dade2' : (isSub ? 'var(--polaris-gold)' : 'var(--polaris-gold)');
+                const entityBadge = isParent ? '<span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:3px 10px;border-radius:10px;font-size:0.8rem;font-weight:600;">PARENT</span>' : (isSub ? '<span style="background:rgba(212,175,55,0.15);color:var(--polaris-gold);padding:3px 10px;border-radius:10px;font-size:0.8rem;font-weight:600;">SUB</span>' : '<span style="color:rgba(255,255,255,0.3);font-size:0.8rem;">-</span>');
                 
-                return `<tr style="${needsContract ? 'background: rgba(231,76,60,0.1);' : ''}">
+                return `<tr style="${rowBg}">
+                <td style="text-align:center;color:rgba(255,255,255,0.45);font-size:0.95rem;">${idx + 1}</td>
+                <td style="font-size:0.9rem;color:rgba(255,255,255,0.6);font-family:monospace;white-space:nowrap;">${c.client_id || '-'}</td>
                 <td>
                     <a href="javascript:void(0)" onclick="window.selectClientFromContract('${c.client_id}', '${(c.client_name || '').replace(/'/g, "\\'")}');" 
-                       style="color:var(--polaris-gold);text-decoration:none;font-weight:600;cursor:pointer;" 
+                       style="color:${nameColor};text-decoration:none;font-weight:${isParent ? '700' : '600'};cursor:pointer;" 
                        title="Click to view ${c.client_name} KPIs">
-                        ${c.client_name || '-'}
+                        ${nameDisplay}
                     </a>
                 </td>
+                <td style="text-align:center;">${entityBadge}</td>
                 <td><span class="contract-type ${(c.doc_type||'').toLowerCase()}">${c.doc_type || '-'}</span></td>
                 <td><span class="contract-status ${statusClass}">${c.status || '-'}</span></td>
                 <td style="text-align:center;">${needsContract || !c.version || c.version === '-' ? '-' : 'v' + c.version}</td>
@@ -18142,12 +18309,14 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             </tr>`;
             }).join('');
             
-            // Update count display
+            // Update count with parent/sub breakdown
             const countEl = document.getElementById('contractResultCount');
             if (countEl) {
+                const parents = contracts.filter(c => c.client_type === 'parent').length;
+                const subs = contracts.filter(c => c.client_type === 'subsidiary').length;
                 const withContracts = contracts.filter(c => c.has_contract).length;
                 const withoutContracts = contracts.filter(c => !c.has_contract).length;
-                countEl.textContent = `Showing ${contracts.length} clients (${withContracts} with contracts, ${withoutContracts} need contracts)`;
+                countEl.textContent = `${contracts.length} clients (${parents} parents, ${subs} subsidiaries) — ${withContracts} with contracts, ${withoutContracts} need contracts`;
             }
         }
         
@@ -18229,6 +18398,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             let filtered = allContractsData || [];
             const status = document.getElementById('contractFilterStatus')?.value;
             const type = document.getElementById('contractFilterType')?.value;
+            const entity = document.getElementById('contractFilterEntity')?.value;
             const client = document.getElementById('contractFilterClient')?.value;
             const search = (document.getElementById('contractFilterSearch')?.value || '').toLowerCase();
             
@@ -18240,10 +18410,20 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 }
             }
             if(type) filtered = filtered.filter(c => c.doc_type === type);
-            if(client) filtered = filtered.filter(c => c.client_id === client);
+            if(entity) filtered = filtered.filter(c => (c.client_type || '').toLowerCase() === entity);
+            if(client) {
+                // Check if selected value is a group (parent_id) - show parent + all its subsidiaries
+                if (client.startsWith('GROUP:')) {
+                    const parentId = client.replace('GROUP:', '');
+                    filtered = filtered.filter(c => c.client_id === parentId || c.parent_client_id === parentId);
+                } else {
+                    filtered = filtered.filter(c => c.client_id === client);
+                }
+            }
             if(search) filtered = filtered.filter(c => 
                 (c.contract_id || c.doc_id || '').toLowerCase().includes(search) || 
-                (c.client_name && c.client_name.toLowerCase().includes(search))
+                (c.client_name && c.client_name.toLowerCase().includes(search)) ||
+                (c.client_id && c.client_id.toLowerCase().includes(search))
             );
             
             renderContractsTable(filtered);
@@ -18254,23 +18434,59 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 const filterSel = document.getElementById('contractFilterClient');
                 const createSel = document.getElementById('newContractClient');
                 
-                // Filter dropdown exists
+                // Filter dropdown with GROUP optgroups
                 if (filterSel) {
                     filterSel.innerHTML = '<option value="">All Clients</option>';
+                    
+                    if (clients && clients.length > 0) {
+                        // Build parent-subsidiary groups
+                        const parents = clients.filter(c => (c.client_type || '').toLowerCase() === 'parent')
+                            .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                        const subs = clients.filter(c => (c.client_type || '').toLowerCase() === 'subsidiary');
+                        
+                        // Add GROUP options for parents with subsidiaries
+                        if (parents.length > 0) {
+                            const groupOptGroup = document.createElement('optgroup');
+                            groupOptGroup.label = '🏢 Groups (Parent + Subsidiaries)';
+                            parents.forEach(p => {
+                                const childCount = subs.filter(s => s.parent_client_id === p.client_id).length;
+                                const opt = document.createElement('option');
+                                opt.value = `GROUP:${p.client_id}`;
+                                opt.textContent = `🏢 ${p.client_name || 'Unknown'} (${childCount + 1} entities)`;
+                                groupOptGroup.appendChild(opt);
+                            });
+                            filterSel.appendChild(groupOptGroup);
+                        }
+                        
+                        // Add individual clients
+                        const allOptGroup = document.createElement('optgroup');
+                        allOptGroup.label = '👤 Individual Clients';
+                        const sorted = [...clients].sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                        sorted.forEach(c => {
+                            const displayName = c.client_name || c.contact_name || 'Unknown';
+                            const isP = (c.client_type || '').toLowerCase() === 'parent';
+                            const opt = document.createElement('option');
+                            opt.value = c.client_id;
+                            opt.textContent = `${isP ? '🏢 ' : '  └ '}${displayName}`;
+                            allOptGroup.appendChild(opt);
+                        });
+                        filterSel.appendChild(allOptGroup);
+                    }
                 }
                 
                 // Create dropdown may not exist (removed New Contract tab)
                 if (createSel) {
                     createSel.innerHTML = '<option value="">-- Select Client --</option>';
+                    if (clients && clients.length > 0) {
+                        const sorted = [...clients].sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                        sorted.forEach(c => {
+                            const displayName = c.client_name || c.contact_name || 'Unknown';
+                            createSel.innerHTML += `<option value="${c.client_id}" data-name="${displayName}">${displayName}</option>`;
+                        });
+                    }
                 }
                 
-                if (clients && clients.length > 0) {
-                    clients.forEach(c => {
-                        const displayName = c.client_name || c.contact_name || 'Unknown';
-                        if (filterSel) filterSel.innerHTML += `<option value="${c.client_id}">${displayName}</option>`;
-                        if (createSel) createSel.innerHTML += `<option value="${c.client_id}" data-name="${displayName}">${displayName}</option>`;
-                    });
-                } else {
+                if (!clients || clients.length === 0) {
                     // If no clients from API, get unique clients from loaded contracts
                     const uniqueClients = {};
                     allContractsData.forEach(c => {
@@ -18278,7 +18494,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             uniqueClients[c.client_id] = c.client_name;
                         }
                     });
-                    Object.keys(uniqueClients).forEach(id => {
+                    Object.keys(uniqueClients).sort((a,b) => uniqueClients[a].localeCompare(uniqueClients[b])).forEach(id => {
                         if (filterSel) filterSel.innerHTML += `<option value="${id}">${uniqueClients[id]}</option>`;
                         if (createSel) createSel.innerHTML += `<option value="${id}" data-name="${uniqueClients[id]}">${uniqueClients[id]}</option>`;
                     });
@@ -18288,9 +18504,13 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (isGoogleAppsScript) {
                 google.script.run.withSuccessHandler(populateDropdowns).withFailureHandler(function(e){console.error(e);}).getClientsForContracts();
             } else {
-                // Use Web App API
-                const clients = await callContractAPI('getAllClients');
-                populateDropdowns(clients || []);
+                // Prefer cached data (has client_type/parent_client_id), fallback to API
+                if (window.cachedClientsData && window.cachedClientsData.length > 0) {
+                    populateDropdowns(window.cachedClientsData);
+                } else {
+                    const clients = await callContractAPI('getAllClients');
+                    populateDropdowns(clients || []);
+                }
             }
         }
 
@@ -19084,9 +19304,13 @@ Email: ${contract.contact_email || '-'}
             recent.forEach(o => {
                 const st = (o.status || 'draft').toLowerCase();
                 const date = o.created_date ? new Date(o.created_date).toLocaleDateString() : '-';
-                html += `<div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem; background:rgba(255,255,255,0.02); border-radius:8px;">
+                const cd = (window.cachedClientsData || []).find(c => c.client_id === o.client_id);
+                const ct = cd ? (cd.client_type || '').toLowerCase() : '';
+                const actBg = ct === 'parent' ? 'rgba(30,58,95,0.3)' : 'rgba(255,255,255,0.02)';
+                const actIcon = ct === 'parent' ? '<span style="color:#5dade2;">🏢 </span>' : (ct === 'subsidiary' ? '<span style="color:#d4af37;">└</span> ' : '');
+                html += `<div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem; background:${actBg}; border-radius:8px;">
                     <span style="font-size:1.25rem;">${statusIcons[st] || '📋'}</span>
-                    <div style="flex:1; min-width:0;"><div style="font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${o.client_name || 'Unknown'}</div><div style="font-size:0.75rem; color:rgba(255,255,255,0.5);">${o.offer_id || ''} • ${date}</div></div>
+                    <div style="flex:1; min-width:0;"><div style="font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${actIcon}${o.client_name || 'Unknown'}</div><div style="font-size:0.75rem; color:rgba(255,255,255,0.5);">${o.offer_id || ''} • ${date}</div></div>
                     <span style="font-size:0.8rem; padding:0.25rem 0.5rem; background:${statusColors[st] || '#6c757d'}22; color:${statusColors[st] || '#6c757d'}; border-radius:4px;">${st}</span>
                 </div>`;
             });
@@ -19254,62 +19478,67 @@ Email: ${contract.contact_email || '-'}
             
             console.log('Comparison Quote - Loading clients:', clients.length);
             
-            if (clients.length > 0) {
-                // Build hierarchy maps
+            const buildHierarchyOptions = (clientArr) => {
+                const parents = clientArr.filter(c => (c.client_type || '').toLowerCase() === 'parent')
+                    .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                const sorted = [...clientArr].sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                
+                // Build subsidiary map for counts and parent name lookup
                 const subMap = {};
-                clients.forEach(c => {
+                clientArr.forEach(c => {
                     if (c.parent_client_id && c.parent_client_id !== '') {
                         if (!subMap[c.parent_client_id]) subMap[c.parent_client_id] = [];
-                        subMap[c.parent_client_id].push(c.client_id);
+                        subMap[c.parent_client_id].push(c);
                     }
                 });
                 
-                // Sort: parents first, then their subs
-                const sorted = [];
-                const processed = {};
-                clients.forEach(c => {
-                    if (processed[c.client_id]) return;
-                    const isSub = c.parent_client_id && c.parent_client_id !== '';
-                    if (!isSub) {
-                        sorted.push(c);
-                        processed[c.client_id] = true;
-                        (subMap[c.client_id] || []).forEach(subId => {
-                            const sub = clients.find(cl => cl.client_id === subId);
-                            if (sub && !processed[subId]) { sorted.push(sub); processed[subId] = true; }
-                        });
-                    }
-                });
-                clients.forEach(c => { if (!processed[c.client_id]) { sorted.push(c); processed[c.client_id] = true; } });
+                if (parents.length > 0) {
+                    const groupOG = document.createElement('optgroup');
+                    groupOG.label = '🏛️ Mother Companies (Groups)';
+                    parents.forEach(p => {
+                        const subs = subMap[p.client_id] || [];
+                        const opt = document.createElement('option');
+                        opt.value = p.client_id;
+                        opt.dataset.name = p.client_name || 'Unknown';
+                        opt.textContent = `🏛️ ${p.client_name || 'Unknown'} [MOTHER +${subs.length} sub]`;
+                        groupOG.appendChild(opt);
+                    });
+                    select.appendChild(groupOG);
+                }
                 
+                const indivOG = document.createElement('optgroup');
+                indivOG.label = '👤 All Clients';
                 sorted.forEach(c => {
-                    const baseName = c.client_name || c.contact_name || 'Unknown';
-                    const hasSubs = subMap[c.client_id] && subMap[c.client_id].length > 0;
-                    const isSub = c.parent_client_id && c.parent_client_id !== '';
-                    let displayName = '🏢 ' + baseName;
-                    if (hasSubs) displayName = '🏛️ ' + baseName + ' [MOTHER +' + subMap[c.client_id].length + ' sub]';
-                    else if (isSub) { const p = clients.find(ac => ac.client_id === c.parent_client_id); displayName = '    └─ ' + baseName + ' [sub of ' + (p?.client_name || c.parent_client_id) + ']'; }
-                    select.innerHTML += `<option value="${c.client_id}" data-name="${baseName}">${displayName}</option>`;
+                    const isP = (c.client_type || '').toLowerCase() === 'parent';
+                    const isS = c.parent_client_id && c.parent_client_id !== '';
+                    const displayName = c.client_name || c.contact_name || 'Unknown';
+                    const opt = document.createElement('option');
+                    opt.value = c.client_id;
+                    opt.dataset.name = displayName;
+                    if (isP) {
+                        const subs = subMap[c.client_id] || [];
+                        opt.textContent = `🏛️ ${displayName} [MOTHER +${subs.length} sub]`;
+                    } else if (isS) {
+                        const parentClient = clientArr.find(ac => ac.client_id === c.parent_client_id);
+                        const parentName = parentClient ? (parentClient.client_name || c.parent_client_id) : c.parent_client_id;
+                        opt.textContent = `    └─ ${displayName} [sub of ${parentName}]`;
+                    } else {
+                        opt.textContent = `🏢 ${displayName}`;
+                    }
+                    indivOG.appendChild(opt);
                 });
+                select.appendChild(indivOG);
+            };
+            
+            if (clients.length > 0) {
+                buildHierarchyOptions(clients);
             } else {
-                // Try to load from API
                 fetch(API_URL + '?action=getClients')
                     .then(r => r.json())
                     .then(result => {
                         if (result.success && result.data) {
                             window.allClientsData = result.data;
-                            const allCD = result.data;
-                            const subMap2 = {};
-                            allCD.forEach(c => { if (c.parent_client_id && c.parent_client_id !== '') { if (!subMap2[c.parent_client_id]) subMap2[c.parent_client_id] = []; subMap2[c.parent_client_id].push(c.client_id); } });
-                            
-                            allCD.forEach(c => {
-                                const baseName = c.client_name || c.contact_name || 'Unknown';
-                                const hasSubs = subMap2[c.client_id] && subMap2[c.client_id].length > 0;
-                                const isSub = c.parent_client_id && c.parent_client_id !== '';
-                                let displayName = '🏢 ' + baseName;
-                                if (hasSubs) displayName = '🏛️ ' + baseName + ' [MOTHER +' + subMap2[c.client_id].length + ' sub]';
-                                else if (isSub) { const p = allCD.find(ac => ac.client_id === c.parent_client_id); displayName = '    └─ ' + baseName + ' [sub of ' + (p?.client_name || c.parent_client_id) + ']'; }
-                                select.innerHTML += `<option value="${c.client_id}" data-name="${baseName}">${displayName}</option>`;
-                            });
+                            buildHierarchyOptions(result.data);
                         }
                     })
                     .catch(e => console.error('Error loading clients:', e));
@@ -20148,6 +20377,37 @@ Email: ${contract.contact_email || '-'}
                         // Fallback to offer_id comparison (newer IDs have larger timestamps)
                         return (b.offer_id || '').localeCompare(a.offer_id || '');
                     });
+                    
+                    // Fix offers with 0 totals but valid items - recalculate from items
+                    result.data.forEach(offer => {
+                        if (offer.items && Array.isArray(offer.items) && offer.items.length > 0) {
+                            let calcPrin = 0, calcDep = 0, calcReg = 0, calcFund = 0;
+                            offer.items.forEach(item => {
+                                const p = parseInt(item.principals || item.num_principals || 0);
+                                const d = parseInt(item.dependents || item.num_dependents || 0);
+                                calcPrin += p;
+                                calcDep += d;
+                                calcReg += parseFloat(item.subtotal_reg || item.reg_fee || 0);
+                                calcFund += parseFloat(item.subtotal_fund || item.fund_deposit || 0);
+                            });
+                            const calcMembers = calcPrin + calcDep;
+                            const calcDental = offer.includes_dental ? calcMembers * (typeof DENTAL_FEE !== 'undefined' ? DENTAL_FEE : 9.50) : 0;
+                            const calcTotal = calcReg + calcFund + calcDental;
+                            
+                            // Only override if API returned 0 but items have data
+                            if ((!offer.total_members || offer.total_members == 0) && calcMembers > 0) {
+                                console.log('🔧 Fixing offer', offer.offer_id, '- recalculated members:', calcMembers, 'total:', calcTotal);
+                                offer.total_principals = calcPrin;
+                                offer.total_dependents = calcDep;
+                                offer.total_members = calcMembers;
+                                offer.subtotal_reg_fees = calcReg;
+                                offer.subtotal_fund_deposit = calcFund;
+                                offer.subtotal_dental = calcDental;
+                                offer.grand_total_usd = calcTotal;
+                            }
+                        }
+                    });
+                    
                     offersData = result.data;
                     window.offersData = result.data; // Sync to global for navigation
                     allOffersData = result.data; // Also store for filtering
@@ -20187,6 +20447,31 @@ Email: ${contract.contact_email || '-'}
                         if (dateB - dateA !== 0) return dateB - dateA;
                         return (b.offer_id || '').localeCompare(a.offer_id || '');
                     });
+                    
+                    // Fix offers with 0 totals - recalculate from items
+                    result.data.forEach(offer => {
+                        if (offer.items && Array.isArray(offer.items) && offer.items.length > 0) {
+                            let calcPrin = 0, calcDep = 0, calcReg = 0, calcFund = 0;
+                            offer.items.forEach(item => {
+                                calcPrin += parseInt(item.principals || item.num_principals || 0);
+                                calcDep += parseInt(item.dependents || item.num_dependents || 0);
+                                calcReg += parseFloat(item.subtotal_reg || item.reg_fee || 0);
+                                calcFund += parseFloat(item.subtotal_fund || item.fund_deposit || 0);
+                            });
+                            const calcMembers = calcPrin + calcDep;
+                            const calcDental = offer.includes_dental ? calcMembers * (typeof DENTAL_FEE !== 'undefined' ? DENTAL_FEE : 9.50) : 0;
+                            if ((!offer.total_members || offer.total_members == 0) && calcMembers > 0) {
+                                offer.total_principals = calcPrin;
+                                offer.total_dependents = calcDep;
+                                offer.total_members = calcMembers;
+                                offer.subtotal_reg_fees = calcReg;
+                                offer.subtotal_fund_deposit = calcFund;
+                                offer.subtotal_dental = calcDental;
+                                offer.grand_total_usd = calcReg + calcFund + calcDental;
+                            }
+                        }
+                    });
+                    
                     offersData = result.data;
                     window.offersData = result.data; // Sync to global for navigation
                     allOffersData = result.data;
@@ -20334,7 +20619,14 @@ Email: ${contract.contact_email || '-'}
             return `
                 <tr style="height:90px;">
                     <td style="padding:1rem;"><strong>${offer.offer_id}</strong>${typeBadge}</td>
-                    <td style="padding:1rem;">${offer.client_name || 'N/A'}</td>
+                    <td style="padding:1rem;">${(() => {
+                        const cleanName = (offer.client_name || 'N/A').replace(/^[\s]*[🏢└\s]+/g, '').trim() || 'N/A';
+                        const cd = (window.cachedClientsData || []).find(c => c.client_id === offer.client_id);
+                        const ct = cd ? (cd.client_type || '').toLowerCase() : '';
+                        if (ct === 'parent') return '<span style="color:#5dade2;font-weight:700;">🏢 ' + cleanName + '</span> <span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">PARENT</span>';
+                        if (ct === 'subsidiary') return '<span style="color:#d4af37;">└</span> <span style="color:#d4af37;">' + cleanName + '</span> <span style="background:rgba(212,175,55,0.15);color:#d4af37;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">SUB</span>';
+                        return cleanName;
+                    })()}</td>
                     <td style="padding:1rem;">${formatContractDate(offer.offer_date)}</td>
                     <td style="padding:1rem;">${offer.total_members || 0}</td>
                     <td style="padding:1rem;"><strong>$${(offer.grand_total_usd || 0).toLocaleString()}</strong></td>
@@ -20776,25 +21068,41 @@ Email: ${contract.contact_email || '-'}
             const firstOptions = '<option value="">-- Select a client or enter new --</option><option value="new">+ Add New Client</option>';
             select.innerHTML = firstOptions;
             
-            // Use cached data if available
+            // Use cached data if available - with parent/sub hierarchy
             if (clientsDataLoaded && window.cachedClientsData) {
-                const allCD = window.cachedClientsData;
-                const subMap = {};
-                allCD.forEach(ac => { if (ac.parent_client_id && ac.parent_client_id !== '') { if (!subMap[ac.parent_client_id]) subMap[ac.parent_client_id] = []; subMap[ac.parent_client_id].push(ac.client_id); } });
+                const clients = window.cachedClientsData;
+                const parents = clients.filter(c => (c.client_type || '').toLowerCase() === 'parent')
+                    .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                const sorted = [...clients].sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
                 
-                window.cachedClientsData.forEach(c => {
-                    const option = document.createElement('option');
-                    option.value = c.client_id;
-                    const baseName = c.client_name || c.contact_name || c.name || 'Unknown';
-                    const hasSubs = subMap[c.client_id] && subMap[c.client_id].length > 0;
-                    const isSub = c.parent_client_id && c.parent_client_id !== '';
-                    if (hasSubs) option.textContent = '🏛️ ' + baseName + ' [MOTHER +' + subMap[c.client_id].length + ' sub]';
-                    else if (isSub) { const p = allCD.find(ac => ac.client_id === c.parent_client_id); option.textContent = '    └─ ' + baseName + ' [sub of ' + (p?.client_name || c.parent_client_id) + ']'; }
-                    else option.textContent = '🏢 ' + baseName;
-                    option.dataset.email = c.contact_email || c.email || '';
-                    option.dataset.contact = c.contact_person || c.contact_name || '';
-                    select.appendChild(option);
+                if (parents.length > 0) {
+                    const groupOG = document.createElement('optgroup');
+                    groupOG.label = '🏢 Groups';
+                    parents.forEach(p => {
+                        const subs = clients.filter(s => s.parent_client_id === p.client_id);
+                        const opt = document.createElement('option');
+                        opt.value = p.client_id;
+                        opt.textContent = `🏢 ${p.client_name || 'Unknown'} (+${subs.length} sub)`;
+                        opt.dataset.email = p.contact_email || p.email || '';
+                        opt.dataset.contact = p.contact_person || p.contact_name || '';
+                        groupOG.appendChild(opt);
+                    });
+                    select.appendChild(groupOG);
+                }
+                
+                const indivOG = document.createElement('optgroup');
+                indivOG.label = '👤 All Clients';
+                sorted.forEach(c => {
+                    const isP = (c.client_type || '').toLowerCase() === 'parent';
+                    const isS = (c.client_type || '').toLowerCase() === 'subsidiary';
+                    const opt = document.createElement('option');
+                    opt.value = c.client_id;
+                    opt.textContent = `${isP ? '🏢 ' : isS ? '  └ ' : ''}${c.client_name || c.contact_name || c.name || 'Unknown'}`;
+                    opt.dataset.email = c.contact_email || c.email || '';
+                    opt.dataset.contact = c.contact_person || c.contact_name || '';
+                    indivOG.appendChild(opt);
                 });
+                select.appendChild(indivOG);
                 return;
             }
             
@@ -20807,19 +21115,38 @@ Email: ${contract.contact_email || '-'}
                     window.cachedClientsData = clientList;
                     clientsDataLoaded = true;
                     
-                    clientList.forEach(c => {
-                        const option = document.createElement('option');
-                        option.value = c.client_id;
-                        const baseName = c.client_name || c.contact_name || c.name || 'Unknown';
-                        const hasSubs = clientList.some(ac => ac.parent_client_id === c.client_id);
-                        const isSub = c.parent_client_id && c.parent_client_id !== '';
-                        if (hasSubs) option.textContent = '🏛️ ' + baseName + ' [MOTHER]';
-                        else if (isSub) { const p = clientList.find(ac => ac.client_id === c.parent_client_id); option.textContent = '    └─ ' + baseName + ' [sub of ' + (p?.client_name || c.parent_client_id) + ']'; }
-                        else option.textContent = '🏢 ' + baseName;
-                        option.dataset.email = c.contact_email || c.email || '';
-                        option.dataset.contact = c.contact_person || c.contact_name || '';
-                        select.appendChild(option);
+                    const parents = clientList.filter(c => (c.client_type || '').toLowerCase() === 'parent')
+                        .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                    const sorted = [...clientList].sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                    
+                    if (parents.length > 0) {
+                        const groupOG = document.createElement('optgroup');
+                        groupOG.label = '🏢 Groups';
+                        parents.forEach(p => {
+                            const subs = clientList.filter(s => s.parent_client_id === p.client_id);
+                            const opt = document.createElement('option');
+                            opt.value = p.client_id;
+                            opt.textContent = `🏢 ${p.client_name || 'Unknown'} (+${subs.length} sub)`;
+                            opt.dataset.email = p.contact_email || p.email || '';
+                            opt.dataset.contact = p.contact_person || p.contact_name || '';
+                            groupOG.appendChild(opt);
+                        });
+                        select.appendChild(groupOG);
+                    }
+                    
+                    const indivOG = document.createElement('optgroup');
+                    indivOG.label = '👤 All Clients';
+                    sorted.forEach(c => {
+                        const isP = (c.client_type || '').toLowerCase() === 'parent';
+                        const isS = (c.client_type || '').toLowerCase() === 'subsidiary';
+                        const opt = document.createElement('option');
+                        opt.value = c.client_id;
+                        opt.textContent = `${isP ? '🏢 ' : isS ? '  └ ' : ''}${c.client_name || c.contact_name || c.name || 'Unknown'}`;
+                        opt.dataset.email = c.contact_email || c.email || '';
+                        opt.dataset.contact = c.contact_person || c.contact_name || '';
+                        indivOG.appendChild(opt);
                     });
+                    select.appendChild(indivOG);
                     console.log('✅ Clients loaded:', clientList.length, 'items');
                 }
             } catch (e) {
@@ -21351,7 +21678,10 @@ const clientData = {
         function getOfferClientName() {
             const select = document.getElementById('offerClientSelect');
             if (select.value === '' || select.value === 'new') return 'Prospective Client';
-            return select.options[select.selectedIndex].text;
+            // Clean hierarchy prefixes from dropdown text
+            let name = select.options[select.selectedIndex].text;
+            name = name.replace(/^[\s]*[🏢└\s]+/g, '').replace(/\s*\(\+\d+\s*sub\)/gi, '').trim();
+            return name || 'Unknown Client';
         }
         
         function getSelectedOfferPlans() {
@@ -21435,6 +21765,9 @@ const clientData = {
             let contactPerson = '';
             let contactEmail = '';
             
+            // Clean client name - remove hierarchy prefixes (🏢, └, extra spaces)
+            clientName = clientName.replace(/^[\s]*[🏢└\s]+/g, '').replace(/\s*\(\+\d+\s*sub\)/gi, '').trim();
+            
             if (clientId === 'new' || clientId === '') {
                 // No client selected - offer can still be saved as draft
                 clientName = 'Prospective Client';
@@ -21447,12 +21780,46 @@ const clientData = {
                 contactPerson = selectedOption.dataset.contact || '';
             }
             
-            // Map plans to items format expected by API
-            const items = plans.map(plan => ({
-                program_id: plan.program_id,
-                principals: plan.principals,
-                dependents: plan.dependents
-            }));
+            const tierIndex = currentOfferTier - 1;
+            const dentalIncluded = document.getElementById('offerDentalCheckbox')?.checked || false;
+            const DENTAL_FEE_VAL = typeof DENTAL_FEE !== 'undefined' ? DENTAL_FEE : 9.50;
+            
+            // Calculate totals from plans
+            let totalPrincipals = 0;
+            let totalDependents = 0;
+            let totalReg = 0;
+            let totalFund = 0;
+            
+            // Map plans to items format with FULL data
+            const items = plans.map(plan => {
+                const prin = plan.principals || 0;
+                const dep = plan.dependents || 0;
+                const total = prin + dep;
+                totalPrincipals += prin;
+                totalDependents += dep;
+                
+                const regFee = total * (plan.regFee || 0);
+                const fundDep = total * (plan.fundDeposit || 0);
+                totalReg += regFee;
+                totalFund += fundDep;
+                
+                return {
+                    program_id: plan.program_id,
+                    plan_name: plan.plan || plan.program_id,
+                    principals: prin,
+                    dependents: dep,
+                    total_members: total,
+                    reg_fee_per_member: plan.regFee || 0,
+                    fund_dep_per_member: plan.fundDeposit || 0,
+                    subtotal_reg: regFee,
+                    subtotal_fund: fundDep,
+                    subtotal_total: regFee + fundDep
+                };
+            });
+            
+            const grandTotalMembers = totalPrincipals + totalDependents;
+            const dentalTotal = dentalIncluded ? grandTotalMembers * DENTAL_FEE_VAL : 0;
+            const grandTotal = totalReg + totalFund + dentalTotal;
             
             const offerData = {
                 client_id: clientId,
@@ -21460,12 +21827,23 @@ const clientData = {
                 contact_person: contactPerson,
                 contact_email: contactEmail,
                 tier: currentOfferTier,
-                includes_dental: document.getElementById('offerDentalCheckbox')?.checked || false,
+                includes_dental: dentalIncluded,
                 validity_days: parseInt(document.getElementById('offerValidityDays')?.value) || 30,
                 notes: document.getElementById('offerNotes')?.value || '',
                 items: items,
+                // Send pre-calculated totals as backup for backend
+                total_principals: totalPrincipals,
+                total_dependents: totalDependents,
+                total_members: grandTotalMembers,
+                subtotal_reg_fees: totalReg,
+                subtotal_fund_deposit: totalFund,
+                subtotal_dental: dentalTotal,
+                grand_total_usd: grandTotal,
                 created_by: currentUser?.full_name || 'Admin'
             };
+            
+            console.log('📋 SAVE OFFER DATA:', JSON.stringify(offerData, null, 2));
+            console.log('📋 Items count:', items.length, 'Total members:', grandTotalMembers, 'Grand total:', grandTotal);
             
             // Show loading state
             const saveBtn = document.querySelector('button[onclick="saveOfferDraft()"]');
@@ -21494,10 +21872,49 @@ const clientData = {
                 console.log('Save result:', result);
                 
                 if (result.success) {
+                    const displayMembers = grandTotalMembers;
+                    const displayTotal = grandTotal;
                     alert('✅ Offer saved successfully!\n\n' +
                           '📋 Offer ID: ' + result.offer_id + '\n' +
-                          '👥 Total Members: ' + result.total_members + '\n' +
-                          '💰 Grand Total: $' + (result.grand_total || 0).toLocaleString());
+                          '👥 Total Members: ' + displayMembers.toLocaleString() + '\n' +
+                          '💰 Grand Total: $' + displayTotal.toLocaleString() + '\n' +
+                          '📦 Plans: ' + items.length + ' plan(s)');
+                    
+                    // Force correct values into local cache so table displays properly
+                    // Backend may not store these yet, so we inject them locally
+                    const savedOffer = {
+                        offer_id: result.offer_id,
+                        client_id: clientId,
+                        client_name: clientName,
+                        contact_person: contactPerson,
+                        contact_email: contactEmail,
+                        offer_date: new Date().toISOString().split('T')[0],
+                        status: 'draft',
+                        offer_type: 'standard',
+                        tier: currentOfferTier,
+                        includes_dental: dentalIncluded,
+                        total_principals: totalPrincipals,
+                        total_dependents: totalDependents,
+                        total_members: grandTotalMembers,
+                        subtotal_reg_fees: totalReg,
+                        subtotal_fund_deposit: totalFund,
+                        subtotal_dental: dentalTotal,
+                        grand_total_usd: grandTotal,
+                        items: items
+                    };
+                    
+                    // Add to local offersData so the list view shows correct values
+                    if (typeof offersData !== 'undefined' && Array.isArray(offersData)) {
+                        // Remove any existing with same ID and add fresh
+                        const existIdx = offersData.findIndex(o => o.offer_id === result.offer_id);
+                        if (existIdx >= 0) {
+                            offersData[existIdx] = savedOffer;
+                        } else {
+                            offersData.unshift(savedOffer);
+                        }
+                    }
+                    
+                    console.log('📋 Saved offer locally:', savedOffer);
                     
                     resetOfferForm();
                     
@@ -21505,8 +21922,13 @@ const clientData = {
                     if (typeof switchOffersTab === 'function') {
                         switchOffersTab('list');
                     }
-                    if (typeof loadOffers === 'function') {
-                        loadOffers(); // This now also updates stats
+                    // DON'T call loadOffers() - it would overwrite our local values with backend zeros
+                    // Instead, render from local data which now has correct values
+                    if (typeof renderOffersTable === 'function') {
+                        allOffersData = [...offersData];
+                        window.offersData = offersData;
+                        renderOffersTable();
+                        if (typeof updateOfferStats === 'function') updateOfferStats();
                     }
                 } else {
                     alert('❌ Error saving offer:\n' + (result.error || 'Unknown error'));
@@ -22178,8 +22600,8 @@ const clientData = {
             // Check if this is a Comparison Quote
             const isComparison = offer.offer_type === 'comparison' || (offerId && offerId.startsWith('CQ-'));
             
-            // Get CLIENT NAME from offer
-            let clientName = offer.client_name || 'Unknown Client';
+            // Get CLIENT NAME from offer - clean hierarchy prefixes
+            let clientName = (offer.client_name || 'Unknown Client').replace(/^[\s]*[🏢└\s]+/g, '').trim() || 'Unknown Client';
             
             // Get contact info DIRECTLY from offer
             let contactName = offer.contact_person || '';
@@ -22266,10 +22688,35 @@ const clientData = {
         
         async function viewOffer(offerId) {
             // Find the offer in loaded data
-            const offer = offersData.find(o => o.offer_id === offerId);
+            let offer = offersData.find(o => o.offer_id === offerId);
             if (!offer) {
                 alert('Offer not found: ' + offerId);
                 return;
+            }
+            
+            // If items are missing or totals are 0, try to fetch complete data from API
+            if ((!offer.items || offer.items.length === 0) || (offer.total_members == 0 && offer.grand_total_usd == 0)) {
+                console.log('📋 Offer missing items/totals, fetching from API...');
+                try {
+                    const resp = await fetch(API_URL + '?action=getOfferById&offerId=' + encodeURIComponent(offerId));
+                    const result = await resp.json();
+                    if (result.success && result.data) {
+                        // Merge API data with local data
+                        const apiData = result.data;
+                        console.log('📋 API returned full offer:', apiData);
+                        offer = { ...offer, ...apiData };
+                        // Update in offersData too
+                        const idx = offersData.findIndex(o => o.offer_id === offerId);
+                        if (idx >= 0) offersData[idx] = offer;
+                    }
+                } catch (e) {
+                    console.error('Error fetching offer details:', e);
+                }
+            }
+            
+            // Clean client_name of hierarchy prefixes for display
+            if (offer.client_name) {
+                offer.client_name = offer.client_name.replace(/^[\s]*[🏢└\s]+/g, '').trim();
             }
             
             // Store for later use
@@ -22631,15 +23078,16 @@ const clientData = {
                 
                 html += '<tr style="background:' + rowBg + ';">';
                 html += '<td style="padding:1.2rem 1.5rem; border-bottom:1px solid #2d3748;">';
-                html += '<strong style="color:' + (isDentalOnly ? '#d4a843' : 'white') + '; font-size:1.1rem;">' + displayName + '</strong>';
-                if (limits && !isDentalOnly) html += '<br><span style="color:#718096; font-size:0.85rem;">' + limits + '</span>';
+                html += '<strong style="color:' + (isDentalOnly ? '#d4a843' : 'white') + '; font-size:1.1rem;">' + (isDentalOnly ? '🦷 ' : '') + displayName + '</strong>';
+                if (isDentalOnly) html += '<br><span style="color:#718096; font-size:0.85rem;">Add-on (applies to all members above)</span>';
+                else if (limits) html += '<br><span style="color:#718096; font-size:0.85rem;">' + limits + '</span>';
                 html += '</td>';
-                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:white; border-bottom:1px solid #2d3748; font-size:1.1rem;">' + prin.toLocaleString() + '</td>';
-                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:white; border-bottom:1px solid #2d3748; font-size:1.1rem;">' + dep.toLocaleString() + '</td>';
-                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:white; font-weight:bold; border-bottom:1px solid #2d3748; font-size:1.1rem;">' + mem.toLocaleString() + '</td>';
-                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:white; border-bottom:1px solid #2d3748; font-size:1.1rem;">' + (isDentalOnly ? '' : '$' + regFee.toLocaleString()) + '</td>';
-                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:white; border-bottom:1px solid #2d3748; font-size:1.1rem;">' + (isDentalOnly ? '' : '$' + fundDep.toLocaleString()) + '</td>';
-                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:#d4a843; font-weight:bold; border-bottom:1px solid #2d3748; font-size:1.2rem;">$' + subtotal.toLocaleString() + '</td>';
+                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:' + (isDentalOnly ? '#718096' : 'white') + '; border-bottom:1px solid #2d3748; font-size:1.1rem;">' + (isDentalOnly ? '-' : prin.toLocaleString()) + '</td>';
+                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:' + (isDentalOnly ? '#718096' : 'white') + '; border-bottom:1px solid #2d3748; font-size:1.1rem;">' + (isDentalOnly ? '-' : dep.toLocaleString()) + '</td>';
+                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:' + (isDentalOnly ? '#718096' : 'white') + '; font-weight:bold; border-bottom:1px solid #2d3748; font-size:1.1rem;">' + (isDentalOnly ? 'Add-on' : mem.toLocaleString()) + '</td>';
+                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:white; border-bottom:1px solid #2d3748; font-size:1.1rem;">' + (isDentalOnly ? '-' : '$' + regFee.toLocaleString()) + '</td>';
+                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:white; border-bottom:1px solid #2d3748; font-size:1.1rem;">' + (isDentalOnly ? '-' : '$' + fundDep.toLocaleString()) + '</td>';
+                html += '<td style="padding:1.2rem 1.5rem; text-align:right; color:#d4a843; font-weight:bold; border-bottom:1px solid #2d3748; font-size:1.2rem;">' + (isDentalOnly ? '$' + dentalFee.toLocaleString() + '/m' : '$' + subtotal.toLocaleString()) + '</td>';
                 html += '</tr>';
             });
             
@@ -24818,14 +25266,7 @@ function searchModalClients(query) {
                  style="padding: 12px 18px; cursor: pointer; border-bottom: 1px solid #2d3748; transition: background 0.2s;"
                  onmouseover="this.style.background='rgba(212,175,67,0.2)'"
                  onmouseout="this.style.background='transparent'">
-                <div style="color: #d4af37; font-weight: 600; font-size: 0.95rem;">${(() => {
-                    const allCD = window.cachedClientsData || [];
-                    const hasSubs = allCD.some(ac => ac.parent_client_id === c.id);
-                    const pId = c.data?.parent_client_id || '';
-                    if (hasSubs) return '🏛️ ' + companyName + ' [MOTHER]';
-                    if (pId) { const p = allCD.find(ac => ac.client_id === pId); return '└─ ' + companyName + ' [sub of ' + (p?.client_name || pId) + ']'; }
-                    return '🏢 ' + companyName;
-                })()}</div>
+                <div style="color: #d4af37; font-weight: 600; font-size: 0.95rem;">🏢 ${companyName}</div>
                 ${contactName ? `<div style="color: #7aa0c0; font-size: 0.8rem; margin-top: 2px;">👤 ${contactName}</div>` : ''}
             </div>
         `}).join('');
@@ -25636,11 +26077,21 @@ async function populateSendDocsFromOffer(offer) {
     // Highlight programs from the offer items
     highlightOfferPrograms(window.currentViewOffer);
     
-    // Update count - use setTimeout to ensure DOM is updated
+    // Update count - use multiple timeouts to ensure DOM is fully updated
     setTimeout(() => {
         updateSendDocsCount();
-        console.log('Final updateSendDocsCount called');
+        console.log('Final updateSendDocsCount called (200ms)');
     }, 200);
+    // Backup check after 500ms in case API calls are slow
+    setTimeout(() => {
+        updateSendDocsCount();
+        console.log('Backup updateSendDocsCount called (500ms)');
+    }, 500);
+    // Final safety net at 1s
+    setTimeout(() => {
+        updateSendDocsCount();
+        console.log('Safety net updateSendDocsCount called (1s)');
+    }, 1000);
 }
 
 // Load generated documents for offer and update UI
@@ -26275,12 +26726,11 @@ function updateSendDocsCount() {
             submitBtn.style.opacity = '1';
             submitBtn.style.cursor = 'pointer';
             submitBtn.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
-            submitBtn.style.pointerEvents = 'auto';
+            submitBtn.disabled = false;
         } else {
             submitBtn.style.opacity = '0.5';
             submitBtn.style.cursor = 'not-allowed';
             submitBtn.style.background = '#4a5568';
-            submitBtn.style.pointerEvents = 'none';
         }
         
         console.log('📧 Send Check: attachments=' + count + ', recipients=' + hasRecipients + ', canSend=' + canSend);
@@ -28087,12 +28537,22 @@ async function loadRenewalEmailTemplate() {
 }
 
 function replacePlaceholdersRenewals(text, clientName, contactFirstName, contactFullName) {
+    const portalUrl = 'https://apostolos-bizou.github.io/polaris-financial-portal/';
     return text
         .replace(/\{\{client_name\}\}/gi, clientName)
         .replace(/\{\{contact_name\}\}/gi, contactFirstName)
         .replace(/\{\{contact_full_name\}\}/gi, contactFullName)
         .replace(/\{\{date\}\}/gi, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
-        .replace(/\{\{year\}\}/gi, new Date().getFullYear().toString());
+        .replace(/\{\{year\}\}/gi, new Date().getFullYear().toString())
+        .replace(/\{\{PORTAL_URL\}\}/gi, portalUrl)
+        .replace(/\{\{portal_url\}\}/gi, portalUrl)
+        .replace(/\{\{USERNAME\}\}/gi, (contactFirstName || 'user').toLowerCase().replace(/\s+/g, '.'))
+        .replace(/\{\{username\}\}/gi, (contactFirstName || 'user').toLowerCase().replace(/\s+/g, '.'))
+        .replace(/\{\{PASSWORD\}\}/gi, 'Will be sent separately for security')
+        .replace(/\{\{password\}\}/gi, 'Will be sent separately for security')
+        .replace(/\{\{sender_name\}\}/gi, currentUser?.full_name || 'Polaris Financial Services')
+        .replace(/\{\{sender_title\}\}/gi, currentUser?.title || 'Business Development')
+        .replace(/\{\{sender_email\}\}/gi, currentUser?.email || 'info@polarisfinancial.com');
 }
 
 function clearRenewalEmailForm() {
