@@ -20197,7 +20197,8 @@ Email: ${contract.contact_email || '-'}
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert('✅ Comparison offer saved successfully!');
+                    const cqGrandTotal = options.reduce((sum, opt) => sum + (opt.totalCost || 0), 0);
+                    showOfferSuccessOverlay(result.offer_id || 'CQ-NEW', total, cqGrandTotal, options.length);
                     
                     // ═══════════════════════════════════════════════════════════════
                     // FIX: Clear document cache to force reload
@@ -20766,6 +20767,20 @@ Email: ${contract.contact_email || '-'}
                     <div style="text-align:center;width:60px;">
                         <button onclick="openSendDocumentsFromOffer('${offer.offer_id}')" style="padding:0.5rem 0.75rem;font-size:0.8rem;background:linear-gradient(135deg,#d4a843,#c49932);color:#1e3a5f;border:none;border-radius:6px;cursor:pointer;width:60px;font-weight:600;" title="Send Documents via Email">📨 Send</button>
                     </div>
+                    <!-- CQ WORKFLOW BUTTONS (same as standard) -->
+                    <div style="text-align:center;width:70px;${offer.status !== 'sent' && offer.status !== 'draft' ? 'display:none;' : ''}">
+                        <button onclick="acceptOffer('${offer.offer_id}')" style="padding:0.5rem 0.75rem;font-size:0.8rem;background:#27ae60;color:white;border:none;border-radius:6px;cursor:pointer;width:70px;" title="Mark as Accepted by Client">✅ Accept</button>
+                    </div>
+                    <div style="text-align:center;width:70px;${offer.status !== 'accepted' ? 'display:none;' : ''}">
+                        <button onclick="sendOfferForSignature('${offer.offer_id}')" style="padding:0.5rem 0.75rem;font-size:0.8rem;background:#9b59b6;color:white;border:none;border-radius:6px;cursor:pointer;width:70px;" title="Convert to PDF & Send for Signature">📝 Sign</button>
+                    </div>
+                    <div style="text-align:center;width:70px;${offer.status !== 'pending_signature' ? 'display:none;' : ''}">
+                        <button onclick="markOfferAsSigned('${offer.offer_id}')" style="padding:0.5rem 0.75rem;font-size:0.8rem;background:#1abc9c;color:white;border:none;border-radius:6px;cursor:pointer;width:70px;" title="Mark as Signed">✅ Signed</button>
+                    </div>
+                    <div style="text-align:center;width:70px;${offer.status !== 'signed' ? 'display:none;' : ''}">
+                        <button onclick="createContractFromOfferUI('${offer.offer_id}')" style="padding:0.5rem 0.75rem;font-size:0.8rem;background:linear-gradient(135deg,#d4a843,#c49932);color:#1e3a5f;border:none;border-radius:6px;cursor:pointer;width:70px;font-weight:600;" title="Create Contract">📄 Contract</button>
+                    </div>
+                    <div id="signedDocsLinks-${offer.offer_id}" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;"></div>
                 `;
             } else {
                 // STANDARD OFFER: Full buttons
@@ -21322,30 +21337,60 @@ Email: ${contract.contact_email || '-'}
             document.getElementById('acceptOfferNotes').value = '';
             document.getElementById('acceptOfferStatus').innerHTML = '';
             
+            // Detect if comparison quote
+            const isComparison = offer.offer_type === 'comparison' || (offerId && offerId.startsWith('CQ-'));
+            
             // Build offer summary
             let summaryHtml = '';
             
-            // Plans
+            // Type badge
+            if (isComparison) {
+                summaryHtml += '<div style="margin-bottom:12px;"><span style="background:#8b5cf6;color:white;padding:4px 10px;border-radius:6px;font-size:0.8rem;font-weight:600;">📊 COMPARISON QUOTE</span></div>';
+            }
+            
+            // Plans - from items (standard) or comparison_data (CQ)
+            let plansData = [];
+            
             if (offer.items && offer.items.length > 0) {
+                plansData = offer.items.map(item => ({
+                    planName: item.plan_name || item.program_name || 'Plan',
+                    principals: parseInt(item.principals) || 0,
+                    dependents: parseInt(item.dependents) || 0,
+                    regFee: parseFloat(item.reg_fee || 0),
+                    fundDeposit: parseFloat(item.fund_deposit || 0)
+                }));
+            } else if (isComparison && offer.comparison_data) {
+                // Parse CQ comparison_data
+                try {
+                    let compData = typeof offer.comparison_data === 'string' ? JSON.parse(offer.comparison_data) : offer.comparison_data;
+                    if (!Array.isArray(compData)) compData = [compData];
+                    plansData = compData.map(plan => ({
+                        planName: plan.planName || plan.plan_name || 'Plan',
+                        principals: parseInt(plan.principals) || 0,
+                        dependents: parseInt(plan.dependents) || 0,
+                        regFee: parseFloat(plan.regFee || plan.reg_fee || 0),
+                        fundDeposit: parseFloat(plan.fundDeposit || plan.fund_deposit || 0)
+                    }));
+                } catch (e) {
+                    console.error('Error parsing comparison_data:', e);
+                }
+            }
+            
+            if (plansData.length > 0) {
                 summaryHtml += '<div style="margin-bottom:12px;">';
-                summaryHtml += '<div style="color:rgba(255,255,255,0.4);font-size:0.75rem;margin-bottom:6px;">PLANS</div>';
-                offer.items.forEach(item => {
-                    const planName = item.plan_name || item.program_name || 'Plan';
-                    const principals = item.principals || 0;
-                    const dependents = item.dependents || 0;
-                    const total = principals + dependents;
-                    const regFee = parseFloat(item.reg_fee || 0);
-                    const fundDeposit = parseFloat(item.fund_deposit || 0);
-                    const subtotal = (regFee + fundDeposit) * total;
+                summaryHtml += '<div style="color:rgba(255,255,255,0.4);font-size:0.75rem;margin-bottom:6px;">PLANS' + (isComparison ? ' (COMPARED)' : '') + '</div>';
+                plansData.forEach(item => {
+                    const total = item.principals + item.dependents;
+                    const subtotal = (item.regFee + item.fundDeposit) * total;
                     
-                    summaryHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(39,174,96,0.06);border:1px solid rgba(39,174,96,0.12);border-radius:8px;margin-bottom:6px;">
+                    summaryHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(${isComparison ? '139,92,246' : '39,174,96'},0.06);border:1px solid rgba(${isComparison ? '139,92,246' : '39,174,96'},0.12);border-radius:8px;margin-bottom:6px;">
                         <div>
-                            <strong style="color:#27ae60;">${planName}</strong>
-                            <div style="color:rgba(255,255,255,0.4);font-size:0.75rem;">${principals} principals + ${dependents} dependents = ${total} members</div>
+                            <strong style="color:${isComparison ? '#8b5cf6' : '#27ae60'};">${item.planName}</strong>
+                            <div style="color:rgba(255,255,255,0.4);font-size:0.75rem;">${item.principals} principals + ${item.dependents} dependents = ${total} members</div>
                         </div>
                         <div style="text-align:right;">
                             <div style="color:white;font-weight:600;">$${subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
-                            <div style="color:rgba(255,255,255,0.4);font-size:0.7rem;">Reg: $${regFee} | Fund: $${fundDeposit}</div>
+                            <div style="color:rgba(255,255,255,0.4);font-size:0.7rem;">Reg: $${item.regFee} | Fund: $${item.fundDeposit}</div>
                         </div>
                     </div>`;
                 });
@@ -21390,12 +21435,18 @@ Email: ${contract.contact_email || '-'}
                     { key: 'nda', label: 'NDA', icon: '🔒', color: '#e74c3c', desc: 'Non-Disclosure Agreement' },
                     { key: 'dpa', label: 'DPA', icon: '🛡️', color: '#f39c12', desc: 'Data Processing Agreement' },
                     { key: 'asa', label: 'ASA', icon: '📋', color: '#3498db', desc: 'Administrative Services Agreement' },
-                    { key: 'proposal', label: 'Proposal', icon: '📄', color: '#27ae60', desc: 'Financial Proposal' }
+                    { key: 'proposal', label: 'Proposal', icon: '📄', color: '#27ae60', desc: 'Financial Proposal' },
+                    { key: 'comparison_quote', label: 'Comparison Quote', icon: '📊', color: '#8b5cf6', desc: 'Multi-plan comparison document', cqOnly: true }
                 ];
+                
+                // Filter: show CQ doc only for comparison offers
+                const offer = offersData.find(o => o.offer_id === offerId);
+                const isComp = offer && (offer.offer_type === 'comparison' || (offerId && offerId.startsWith('CQ-')));
+                const filteredDocTypes = docTypes.filter(dt => !dt.cqOnly || isComp);
                 
                 let generatedCount = 0;
                 
-                docTypes.forEach(dt => {
+                filteredDocTypes.forEach(dt => {
                     const doc = docs[dt.key];
                     const hasDoc = doc && (doc.fileId || doc.fileUrl);
                     
@@ -21426,10 +21477,11 @@ Email: ${contract.contact_email || '-'}
                 });
                 
                 // Counter header
-                const counterColor = generatedCount === 4 ? '#27ae60' : (generatedCount > 0 ? '#f39c12' : '#e74c3c');
+                const totalDocTypes = filteredDocTypes.length;
+                const counterColor = generatedCount === totalDocTypes ? '#27ae60' : (generatedCount > 0 ? '#f39c12' : '#e74c3c');
                 docsHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06);">
                     <span style="color:rgba(255,255,255,0.5);font-size:0.8rem;">📁 Documents in Drive</span>
-                    <span style="color:${counterColor};font-weight:700;font-size:0.85rem;">${generatedCount}/4 generated</span>
+                    <span style="color:${counterColor};font-weight:700;font-size:0.85rem;">${generatedCount}/${totalDocTypes} generated</span>
                 </div>` + docsHtml;
                 
                 // Check for signed documents
@@ -21492,13 +21544,92 @@ Email: ${contract.contact_email || '-'}
                 const result = await response.json();
                 
                 if (result.success) {
-                    statusDiv.innerHTML = '<div style="padding:10px;text-align:center;color:#27ae60;font-size:0.9rem;font-weight:600;">✅ Offer accepted successfully!</div>';
+                    // Also try to create the Signed Documents folder proactively
+                    const offer = offersData.find(o => o.offer_id === acceptOfferCurrentId);
+                    const clientName = offer ? (offer.client_name || '').replace(/^[\s]*[🏢└─\s]+/g, '').trim() : '';
                     
-                    // Wait, then close modal and refresh
-                    setTimeout(() => {
-                        closeAcceptOfferModal();
-                        loadOffers();
-                    }, 1500);
+                    let folderUrl = '';
+                    try {
+                        statusDiv.innerHTML = '<div style="padding:10px;text-align:center;color:#f39c12;font-size:0.85rem;">📁 Creating Signed Documents folder...</div>';
+                        const folderResp = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify({
+                                action: 'ensureSignedFolder',
+                                offerId: acceptOfferCurrentId,
+                                clientName: clientName
+                            })
+                        });
+                        const folderResult = await folderResp.json();
+                        if (folderResult.success && folderResult.folderUrl) {
+                            folderUrl = folderResult.folderUrl;
+                        }
+                    } catch (folderErr) {
+                        console.log('Signed folder pre-creation skipped:', folderErr);
+                        // Not critical - folder will be created on first upload
+                    }
+                    
+                    // Get Drive folder URL from offer or folder creation result
+                    const driveFolderUrl = folderUrl || (offer && offer.gdrive_folder_url ? offer.gdrive_folder_url : '');
+                    
+                    // Transform modal to upload-ready state
+                    const modalContent = btn.closest('div').parentElement;
+                    const savedOfferId = acceptOfferCurrentId;
+                    
+                    statusDiv.innerHTML = `
+                        <div style="background:linear-gradient(135deg,rgba(39,174,96,0.1),rgba(39,174,96,0.05));border:2px solid rgba(39,174,96,0.3);border-radius:16px;padding:1.5rem;margin:0.5rem 0;">
+                            
+                            <div style="text-align:center;margin-bottom:1.2rem;">
+                                <div style="font-size:3rem;margin-bottom:0.5rem;">✅</div>
+                                <div style="color:#27ae60;font-size:1.2rem;font-weight:700;">Offer Accepted Successfully!</div>
+                                <div style="color:rgba(255,255,255,0.4);font-size:0.85rem;margin-top:4px;">Status changed to "accepted"</div>
+                            </div>
+                            
+                            <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;margin-bottom:1.2rem;">
+                                <div style="color:rgba(255,255,255,0.5);font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📋 Next Step: Upload Signed Documents</div>
+                                <div style="color:rgba(255,255,255,0.6);font-size:0.85rem;line-height:1.5;">
+                                    Ο φάκελος <strong style="color:#1abc9c;">"Signed Documents"</strong> είναι έτοιμος.<br>
+                                    Μόλις παραλάβεις τα υπογεγραμμένα έγγραφα από τον client, ανέβασέ τα εδώ:
+                                </div>
+                            </div>
+                            
+                            <div style="display:flex;gap:12px;margin-bottom:1rem;">
+                                <!-- Upload Signed Documents -->
+                                <div onclick="closeAcceptOfferModal(); setTimeout(() => markOfferAsSigned('${savedOfferId}'), 300);" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:1.2rem 1rem;background:rgba(26,188,156,0.08);border:2px dashed rgba(26,188,156,0.3);border-radius:14px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(26,188,156,0.15)';this.style.borderColor='rgba(26,188,156,0.6)'" onmouseout="this.style.background='rgba(26,188,156,0.08)';this.style.borderColor='rgba(26,188,156,0.3)'">
+                                    <span style="font-size:2.5rem;">📤</span>
+                                    <span style="color:#1abc9c;font-weight:700;font-size:1rem;">Upload Signed Docs</span>
+                                    <span style="color:rgba(255,255,255,0.35);font-size:0.75rem;">From computer or Drive</span>
+                                </div>
+                                
+                                <!-- Open Drive Folder -->
+                                <div onclick="window.open('${driveFolderUrl || 'https://drive.google.com'}', '_blank')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:1.2rem 1rem;background:rgba(66,133,244,0.08);border:2px dashed rgba(66,133,244,0.3);border-radius:14px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(66,133,244,0.15)';this.style.borderColor='rgba(66,133,244,0.6)'" onmouseout="this.style.background='rgba(66,133,244,0.08)';this.style.borderColor='rgba(66,133,244,0.3)'">
+                                    <span style="font-size:2.5rem;">📁</span>
+                                    <span style="color:#4285f4;font-weight:700;font-size:1rem;">Open in Drive</span>
+                                    <span style="color:rgba(255,255,255,0.35);font-size:0.75rem;">View client folder</span>
+                                </div>
+                            </div>
+                            
+                            <div style="background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:8px 12px;font-size:0.8rem;color:#d4a843;text-align:center;">
+                                💡 Μπορείς να ανεβάσεις τα υπογεγραμμένα αργότερα — θα βρεις το κουμπί <strong>✅ Signed</strong> στον πίνακα offers.
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Hide the Accept button, show Done button
+                    btn.style.display = 'none';
+                    const cancelBtn = btn.previousElementSibling;
+                    if (cancelBtn) {
+                        cancelBtn.innerHTML = '✅ Done';
+                        cancelBtn.style.background = 'linear-gradient(135deg,#27ae60,#219a52)';
+                        cancelBtn.style.color = 'white';
+                        cancelBtn.style.fontWeight = '600';
+                        cancelBtn.style.border = 'none';
+                        cancelBtn.onclick = function() {
+                            closeAcceptOfferModal();
+                            loadOffers();
+                        };
+                    }
+                    
                 } else {
                     statusDiv.innerHTML = '<div style="padding:10px;text-align:center;color:#e74c3c;font-size:0.85rem;">❌ Error: ' + (result.error || 'Unknown error') + '</div>';
                     btn.disabled = false;
