@@ -1384,7 +1384,7 @@
         }
         .contract-filter-group { flex: 1; min-width: 170px; }
         .contract-filter-group label { 
-            display: block; font-size: 0.9rem; color: rgba(255,255,255,0.6); 
+            display: block; font-size: 1rem; color: rgba(255,255,255,0.6); 
             margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;
             font-weight: 600;
         }
@@ -1432,14 +1432,14 @@
         .contract-table th { 
             background: rgba(30,58,95,0.8);
             padding: 1.25rem 1.5rem; text-align: left; 
-            font-size: 0.95rem; color: var(--polaris-gold); 
+            font-size: 1.05rem; color: var(--polaris-gold); 
             font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
             border-bottom: 2px solid rgba(212,175,55,0.3);
         }
         .contract-table td { 
             padding: 1rem 1.25rem; 
             border-bottom: 1px solid rgba(255,255,255,0.05); 
-            font-size: 0.9rem;
+            font-size: 1.05rem;
             color: rgba(255,255,255,0.9);
         }
         .contract-table tbody tr { 
@@ -1457,7 +1457,7 @@
         .contract-status { 
             display: inline-flex; align-items: center; gap: 0.3rem;
             padding: 0.4rem 0.9rem; border-radius: 20px; 
-            font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+            font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .contract-status.draft { background: rgba(100,100,100,0.3); color: #aaa; }
@@ -1624,10 +1624,10 @@
             min-height: 300px; 
         }
         .contract-table { width: 100%; border-collapse: collapse; min-width: 700px; }
-        .contract-table th { background: rgba(0,0,0,0.3); padding: 1rem 1.25rem; text-align: left; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .contract-table td { padding: 1rem 1.25rem; border-top: 1px solid var(--border-color); font-size: 0.95rem; }
+        .contract-table th { background: rgba(0,0,0,0.3); padding: 1rem 1.25rem; text-align: left; font-size: 1.05rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .contract-table td { padding: 1rem 1.25rem; border-top: 1px solid var(--border-color); font-size: 1.05rem; }
         .contract-table tbody tr:hover { background: rgba(255,255,255,0.05); }
-        .contract-status { display: inline-block; padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: capitalize; }
+        .contract-status { display: inline-block; padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600; text-transform: capitalize; }
         .contract-status.draft { background: rgba(100,100,100,0.3); color: #aaa; }
         .contract-status.sent { background: rgba(33,150,243,0.2); color: #2196F3; }
         .contract-status.negotiating { background: rgba(255,152,0,0.2); color: #FF9800; }
@@ -1635,11 +1635,11 @@
         .contract-status.pending { background: rgba(255,152,0,0.2); color: #FF9800; }
         .contract-status.active { background: rgba(76,175,80,0.3); color: #81C784; }
         .contract-status.expired { background: rgba(244,67,54,0.2); color: #F44336; }
-        .contract-type { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .contract-type { display: inline-block; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.85rem; font-weight: 700; }
         .contract-type.ASA { background: #1a365d; color: white; }
         .contract-type.NDA { background: #7c3aed; color: white; }
         .contract-type.DPA { background: #0891b2; color: white; }
-        .contract-action-btn { padding: 0.3rem 0.6rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; margin-right: 0.25rem; text-decoration: none; display: inline-block; }
+        .contract-action-btn { padding: 0.4rem 0.7rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; margin-right: 0.25rem; text-decoration: none; display: inline-block; }
         .contract-action-btn.view { background: rgba(33,150,243,0.2); color: #2196F3; }
         .contract-action-btn.edit { background: rgba(255,152,0,0.2); color: #FF9800; }
         .contract-action-btn.download { background: rgba(76,175,80,0.2); color: #4CAF50; }
@@ -8594,7 +8594,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         
                         <!-- Results Count -->
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                            <span style="color:rgba(255,255,255,0.6); font-size:0.9rem;" id="contractResultCount">Showing all contracts</span>
+                            <span style="color:rgba(255,255,255,0.6); font-size:1rem;" id="contractResultCount">Showing all contracts</span>
                             <div style="display:flex; gap:0.5rem;">
                                 <button onclick="exportContractsExcel()" style="padding:0.4rem 0.8rem; background:rgba(39,174,96,0.2); color:#27ae60; border:none; border-radius:6px; cursor:pointer; font-size:0.8rem;">📊 Export</button>
                             </div>
@@ -8606,7 +8606,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 <thead>
                                     <tr>
                                         <th style="width:40px;">#</th>
-                                        <th style="width:110px;">ID</th>
+                                        <th style="width:155px;white-space:nowrap;">ID</th>
                                         <th>Client</th>
                                         <th style="width:90px;">Entity</th>
                                         <th>Type</th>
@@ -18229,11 +18229,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 const isSub = c.client_type === 'subsidiary';
                 const rowBg = isParent ? 'background:rgba(30,58,95,0.3);' : (needsContract ? 'background:rgba(231,76,60,0.1);' : '');
                 const nameDisplay = isParent ? `🏢 <strong>${c.client_name || '-'}</strong>` : (isSub ? `<span style="color:rgba(255,255,255,0.4);">└</span> ${c.client_name || '-'}` : (c.client_name || '-'));
-                const entityBadge = isParent ? '<span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600;">PARENT</span>' : (isSub ? '<span style="background:rgba(212,175,55,0.15);color:var(--polaris-gold);padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600;">SUB</span>' : '<span style="color:rgba(255,255,255,0.3);font-size:0.7rem;">-</span>');
+                const entityBadge = isParent ? '<span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:3px 10px;border-radius:10px;font-size:0.8rem;font-weight:600;">PARENT</span>' : (isSub ? '<span style="background:rgba(212,175,55,0.15);color:var(--polaris-gold);padding:3px 10px;border-radius:10px;font-size:0.8rem;font-weight:600;">SUB</span>' : '<span style="color:rgba(255,255,255,0.3);font-size:0.8rem;">-</span>');
                 
                 return `<tr style="${rowBg}">
-                <td style="text-align:center;color:rgba(255,255,255,0.4);font-size:0.8rem;">${idx + 1}</td>
-                <td style="font-size:0.75rem;color:rgba(255,255,255,0.5);font-family:monospace;">${c.client_id || '-'}</td>
+                <td style="text-align:center;color:rgba(255,255,255,0.45);font-size:0.95rem;">${idx + 1}</td>
+                <td style="font-size:0.9rem;color:rgba(255,255,255,0.6);font-family:monospace;white-space:nowrap;">${c.client_id || '-'}</td>
                 <td>
                     <a href="javascript:void(0)" onclick="window.selectClientFromContract('${c.client_id}', '${(c.client_name || '').replace(/'/g, "\\'")}');" 
                        style="color:var(--polaris-gold);text-decoration:none;font-weight:${isParent ? '700' : '600'};cursor:pointer;" 
