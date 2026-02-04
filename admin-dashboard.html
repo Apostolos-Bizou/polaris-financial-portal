@@ -19255,9 +19255,40 @@ Email: ${contract.contact_email || '-'}
             console.log('Comparison Quote - Loading clients:', clients.length);
             
             if (clients.length > 0) {
+                // Build hierarchy maps
+                const subMap = {};
                 clients.forEach(c => {
-                    const displayName = c.client_name || c.contact_name || 'Unknown';
-                    select.innerHTML += `<option value="${c.client_id}" data-name="${displayName}">${displayName}</option>`;
+                    if (c.parent_client_id && c.parent_client_id !== '') {
+                        if (!subMap[c.parent_client_id]) subMap[c.parent_client_id] = [];
+                        subMap[c.parent_client_id].push(c.client_id);
+                    }
+                });
+                
+                // Sort: parents first, then their subs
+                const sorted = [];
+                const processed = {};
+                clients.forEach(c => {
+                    if (processed[c.client_id]) return;
+                    const isSub = c.parent_client_id && c.parent_client_id !== '';
+                    if (!isSub) {
+                        sorted.push(c);
+                        processed[c.client_id] = true;
+                        (subMap[c.client_id] || []).forEach(subId => {
+                            const sub = clients.find(cl => cl.client_id === subId);
+                            if (sub && !processed[subId]) { sorted.push(sub); processed[subId] = true; }
+                        });
+                    }
+                });
+                clients.forEach(c => { if (!processed[c.client_id]) { sorted.push(c); processed[c.client_id] = true; } });
+                
+                sorted.forEach(c => {
+                    const baseName = c.client_name || c.contact_name || 'Unknown';
+                    const hasSubs = subMap[c.client_id] && subMap[c.client_id].length > 0;
+                    const isSub = c.parent_client_id && c.parent_client_id !== '';
+                    let displayName = '🏢 ' + baseName;
+                    if (hasSubs) displayName = '🏛️ ' + baseName + ' [MOTHER +' + subMap[c.client_id].length + ' sub]';
+                    else if (isSub) { const p = clients.find(ac => ac.client_id === c.parent_client_id); displayName = '    └─ ' + baseName + ' [sub of ' + (p?.client_name || c.parent_client_id) + ']'; }
+                    select.innerHTML += `<option value="${c.client_id}" data-name="${baseName}">${displayName}</option>`;
                 });
             } else {
                 // Try to load from API
@@ -19266,9 +19297,18 @@ Email: ${contract.contact_email || '-'}
                     .then(result => {
                         if (result.success && result.data) {
                             window.allClientsData = result.data;
-                            result.data.forEach(c => {
-                                const displayName = c.client_name || c.contact_name || 'Unknown';
-                                select.innerHTML += `<option value="${c.client_id}" data-name="${displayName}">${displayName}</option>`;
+                            const allCD = result.data;
+                            const subMap2 = {};
+                            allCD.forEach(c => { if (c.parent_client_id && c.parent_client_id !== '') { if (!subMap2[c.parent_client_id]) subMap2[c.parent_client_id] = []; subMap2[c.parent_client_id].push(c.client_id); } });
+                            
+                            allCD.forEach(c => {
+                                const baseName = c.client_name || c.contact_name || 'Unknown';
+                                const hasSubs = subMap2[c.client_id] && subMap2[c.client_id].length > 0;
+                                const isSub = c.parent_client_id && c.parent_client_id !== '';
+                                let displayName = '🏢 ' + baseName;
+                                if (hasSubs) displayName = '🏛️ ' + baseName + ' [MOTHER +' + subMap2[c.client_id].length + ' sub]';
+                                else if (isSub) { const p = allCD.find(ac => ac.client_id === c.parent_client_id); displayName = '    └─ ' + baseName + ' [sub of ' + (p?.client_name || c.parent_client_id) + ']'; }
+                                select.innerHTML += `<option value="${c.client_id}" data-name="${baseName}">${displayName}</option>`;
                             });
                         }
                     })
