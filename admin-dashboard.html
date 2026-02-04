@@ -8606,8 +8606,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 <thead>
                                     <tr>
                                         <th style="width:40px;">#</th>
-                                        <th>Client</th>
                                         <th style="width:110px;">ID</th>
+                                        <th>Client</th>
                                         <th style="width:90px;">Entity</th>
                                         <th>Type</th>
                                         <th>Status</th>
@@ -18102,20 +18102,24 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-muted);">Loading...</td></tr>';
             
             try {
-                // Load BOTH contracts AND all clients
-                const [contractsResponse, clientsResponse] = await Promise.all([
-                    fetch(`${API_URL}?action=getContracts`),
-                    fetch(`${API_URL}?action=getClients`)
-                ]);
-                
+                // Load contracts from API, use cached clients data (has client_type)
+                const contractsResponse = await fetch(`${API_URL}?action=getContracts`);
                 const contractsResult = await contractsResponse.json();
-                const clientsResult = await clientsResponse.json();
-                
                 const contracts = contractsResult.data || contractsResult || [];
-                const clients = clientsResult.data || clientsResult || [];
                 
-                console.log('📋 Contracts loaded:', contracts.length, contracts);
-                console.log('👥 Clients loaded:', clients.length, clients);
+                // Prefer cached clients (has client_type/parent_client_id), fallback to API
+                let clients;
+                if (window.cachedClientsData && window.cachedClientsData.length > 0) {
+                    clients = window.cachedClientsData;
+                    console.log('👥 Using cached clients data:', clients.length);
+                } else {
+                    const clientsResponse = await fetch(`${API_URL}?action=getClients`);
+                    const clientsResult = await clientsResponse.json();
+                    clients = clientsResult.data || clientsResult || [];
+                    console.log('👥 Clients loaded from API:', clients.length);
+                }
+                
+                console.log('📋 Contracts loaded:', contracts.length);
                 
                 // Create a map of client_id to their contracts
                 const clientContractsMap = {};
@@ -18229,6 +18233,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 return `<tr style="${rowBg}">
                 <td style="text-align:center;color:rgba(255,255,255,0.4);font-size:0.8rem;">${idx + 1}</td>
+                <td style="font-size:0.75rem;color:rgba(255,255,255,0.5);font-family:monospace;">${c.client_id || '-'}</td>
                 <td>
                     <a href="javascript:void(0)" onclick="window.selectClientFromContract('${c.client_id}', '${(c.client_name || '').replace(/'/g, "\\'")}');" 
                        style="color:var(--polaris-gold);text-decoration:none;font-weight:${isParent ? '700' : '600'};cursor:pointer;" 
@@ -18236,7 +18241,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         ${nameDisplay}
                     </a>
                 </td>
-                <td style="font-size:0.75rem;color:rgba(255,255,255,0.5);font-family:monospace;">${c.client_id || '-'}</td>
                 <td style="text-align:center;">${entityBadge}</td>
                 <td><span class="contract-type ${(c.doc_type||'').toLowerCase()}">${c.doc_type || '-'}</span></td>
                 <td><span class="contract-status ${statusClass}">${c.status || '-'}</span></td>
@@ -18449,9 +18453,13 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (isGoogleAppsScript) {
                 google.script.run.withSuccessHandler(populateDropdowns).withFailureHandler(function(e){console.error(e);}).getClientsForContracts();
             } else {
-                // Use Web App API
-                const clients = await callContractAPI('getAllClients');
-                populateDropdowns(clients || []);
+                // Prefer cached data (has client_type/parent_client_id), fallback to API
+                if (window.cachedClientsData && window.cachedClientsData.length > 0) {
+                    populateDropdowns(window.cachedClientsData);
+                } else {
+                    const clients = await callContractAPI('getAllClients');
+                    populateDropdowns(clients || []);
+                }
             }
         }
 
