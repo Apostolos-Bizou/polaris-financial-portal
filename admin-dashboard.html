@@ -18471,7 +18471,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         // Get priority for sorting (lower = higher priority)
         function getContractPriority(status) {
-            const s = (status || '').toLowerCase();
+            const s = String(status || '').toLowerCase();
             if (s === 'active' || s === 'running') return 1;
             if (s === 'signed' || s === 'completed') return 2;
             if (s === 'sent' || s === 'pending signature') return 3;
@@ -18567,7 +18567,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         
         function getStatusClass(status) {
-            const s = (status || '').toLowerCase();
+            const s = String(status || '').toLowerCase();
             if (s === 'active' || s === 'running') return 'active';
             if (s === 'signed' || s === 'completed') return 'completed';
             if (s === 'sent') return 'sent';
@@ -18618,7 +18618,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 if (status === 'No Contract') {
                     filtered = filtered.filter(c => !c.has_contract);
                 } else {
-                    filtered = filtered.filter(c => c.status && c.status.toLowerCase() === status.toLowerCase());
+                    filtered = filtered.filter(c => c.status && String(c.status).toLowerCase() === status.toLowerCase());
                 }
             }
             if(type) filtered = filtered.filter(c => c.doc_type === type);
@@ -18861,7 +18861,7 @@ Email: ${contract.contact_email || '-'}
             document.getElementById('contractInfoDetails').innerHTML = `
                 <div class="contract-detail-row"><span class="contract-detail-label">Contract ID</span><span class="contract-detail-value">${c.contract_id || '-'}</span></div>
                 <div class="contract-detail-row"><span class="contract-detail-label">Type</span><span class="contract-detail-value"><span class="contract-type ${c.doc_type || ''}">${c.doc_type || '-'}</span></span></div>
-                <div class="contract-detail-row"><span class="contract-detail-label">Status</span><span class="contract-detail-value"><span class="contract-status ${(c.status||'').toLowerCase()}">${c.status || '-'}</span></span></div>
+                <div class="contract-detail-row"><span class="contract-detail-label">Status</span><span class="contract-detail-value"><span class="contract-status ${String(c.status||'').toLowerCase()}">${c.status || '-'}</span></span></div>
                 <div class="contract-detail-row"><span class="contract-detail-label">Version</span><span class="contract-detail-value">v${c.version||1}</span></div>
                 <div class="contract-detail-row"><span class="contract-detail-label">Created</span><span class="contract-detail-value">${formatContractDate(c.created_date) || '-'}</span></div>`;
             document.getElementById('contractDatesDetails').innerHTML = `
@@ -18906,7 +18906,7 @@ Email: ${contract.contact_email || '-'}
             
             const actionBtn = document.getElementById('contractActionBtn');
             actionBtn.style.display = 'inline-block';
-            const statusLower = (c.status || '').toLowerCase();
+            const statusLower = String(c.status || '').toLowerCase();
             switch(statusLower) {
                 case 'draft': actionBtn.textContent='📤 Mark as Sent'; actionBtn.onclick=()=>updateContractStatusFromUI(c.contract_id,'Sent'); break;
                 case 'sent': case 'negotiating': case 'pending': actionBtn.textContent='✍️ Mark as Signed'; actionBtn.onclick=()=>updateContractStatusFromUI(c.contract_id,'Signed'); break;
