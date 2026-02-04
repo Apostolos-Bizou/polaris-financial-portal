@@ -21210,19 +21210,167 @@ Email: ${contract.contact_email || '-'}
             openSendDocumentsModal(offerData);
         }
         
+        // ═══════════════════════════════════════════════════════════════
+        // ACCEPT OFFER MODAL SYSTEM
+        // ═══════════════════════════════════════════════════════════════
+        
+        let acceptOfferCurrentId = null;
+        
         async function acceptOffer(offerId) {
-            if (!confirm('Mark offer ' + offerId + ' as ACCEPTED by client?')) return;
-            try {
-                const response = await fetch(API_URL + '?action=updateOfferStatus&offerId=' + encodeURIComponent(offerId) + '&status=accepted&notes=Accepted by client');
-                const result = await response.json();
-                if (result.success) {
-                    alert('✅ Offer accepted! You can now send it for signature.');
-                    loadOffers();
+            acceptOfferCurrentId = offerId;
+            
+            // Find offer data
+            const offer = offersData.find(o => o.offer_id === offerId);
+            if (!offer) { alert('Offer not found: ' + offerId); return; }
+            
+            const clientName = (offer.client_name || 'Unknown').replace(/^[\s]*[🏢└─\s]+/g, '').trim();
+            
+            // Populate modal header
+            document.getElementById('acceptOfferIdLabel').textContent = offerId;
+            document.getElementById('acceptClientNameLabel').textContent = clientName;
+            document.getElementById('acceptCurrentStatus').textContent = (offer.status || 'draft').toUpperCase();
+            document.getElementById('acceptOfferNotes').value = '';
+            document.getElementById('acceptOfferStatus').innerHTML = '';
+            
+            // Build offer summary
+            let summaryHtml = '';
+            
+            // Plans
+            if (offer.items && offer.items.length > 0) {
+                summaryHtml += '<div style="margin-bottom:12px;">';
+                summaryHtml += '<div style="color:rgba(255,255,255,0.4);font-size:0.75rem;margin-bottom:6px;">PLANS</div>';
+                offer.items.forEach(item => {
+                    const planName = item.plan_name || item.program_name || 'Plan';
+                    const principals = item.principals || 0;
+                    const dependents = item.dependents || 0;
+                    const total = principals + dependents;
+                    const regFee = parseFloat(item.reg_fee || 0);
+                    const fundDeposit = parseFloat(item.fund_deposit || 0);
+                    const subtotal = (regFee + fundDeposit) * total;
+                    
+                    summaryHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(39,174,96,0.06);border:1px solid rgba(39,174,96,0.12);border-radius:8px;margin-bottom:6px;">
+                        <div>
+                            <strong style="color:#27ae60;">${planName}</strong>
+                            <div style="color:rgba(255,255,255,0.4);font-size:0.75rem;">${principals} principals + ${dependents} dependents = ${total} members</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="color:white;font-weight:600;">$${subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                            <div style="color:rgba(255,255,255,0.4);font-size:0.7rem;">Reg: $${regFee} | Fund: $${fundDeposit}</div>
+                        </div>
+                    </div>`;
+                });
+                summaryHtml += '</div>';
+            }
+            
+            // Totals
+            const totalMembers = offer.total_members || 0;
+            const grandTotal = parseFloat(offer.grand_total_usd || 0);
+            const dentalFee = offer.dental_addon ? parseFloat(offer.dental_fee || 9.5) : 0;
+            
+            summaryHtml += `<div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:120px;background:rgba(93,173,226,0.08);border:1px solid rgba(93,173,226,0.2);border-radius:10px;padding:10px 14px;text-align:center;">
+                    <div style="color:rgba(255,255,255,0.4);font-size:0.7rem;text-transform:uppercase;">Total Members</div>
+                    <div style="color:#5dade2;font-size:1.4rem;font-weight:700;">${totalMembers}</div>
+                </div>
+                <div style="flex:1;min-width:120px;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:10px;padding:10px 14px;text-align:center;">
+                    <div style="color:rgba(255,255,255,0.4);font-size:0.7rem;text-transform:uppercase;">Grand Total</div>
+                    <div style="color:#27ae60;font-size:1.4rem;font-weight:700;">$${grandTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                </div>`;
+            if (dentalFee > 0) {
+                summaryHtml += `<div style="flex:1;min-width:120px;background:rgba(155,89,182,0.08);border:1px solid rgba(155,89,182,0.2);border-radius:10px;padding:10px 14px;text-align:center;">
+                    <div style="color:rgba(255,255,255,0.4);font-size:0.7rem;text-transform:uppercase;">Dental Add-on</div>
+                    <div style="color:#9b59b6;font-size:1.4rem;font-weight:700;">$${dentalFee}/yr</div>
+                </div>`;
+            }
+            summaryHtml += '</div>';
+            
+            document.getElementById('acceptOfferSummary').innerHTML = summaryHtml;
+            
+            // Build documents list
+            let docsHtml = '';
+            const docTypes = [
+                { key: 'nda', label: 'NDA', icon: '🔒', color: '#e74c3c' },
+                { key: 'dpa', label: 'DPA', icon: '🛡️', color: '#f39c12' },
+                { key: 'asa', label: 'ASA', icon: '📋', color: '#3498db' },
+                { key: 'proposal', label: 'Proposal', icon: '📄', color: '#27ae60' }
+            ];
+            
+            // Check offer documents from offersData
+            let hasAnyDoc = false;
+            docTypes.forEach(dt => {
+                const urlKey = dt.key + '_url';
+                const hasDoc = offer[urlKey] || (offer.documents && offer.documents[dt.key]);
+                const docUrl = offer[urlKey] || (offer.documents && offer.documents[dt.key]) || '';
+                
+                if (hasDoc && docUrl) {
+                    hasAnyDoc = true;
+                    docsHtml += `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:4px;">
+                        <span style="font-size:1.1rem;">${dt.icon}</span>
+                        <span style="color:${dt.color};font-weight:600;flex:1;">${dt.label}</span>
+                        <span style="color:#27ae60;font-size:0.8rem;">✅ Generated</span>
+                        <a href="${docUrl}" target="_blank" style="color:#5dade2;font-size:0.8rem;text-decoration:none;">Open ↗</a>
+                    </div>`;
                 } else {
-                    alert('❌ Error: ' + (result.error || 'Unknown error'));
+                    docsHtml += `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:4px;opacity:0.5;">
+                        <span style="font-size:1.1rem;">${dt.icon}</span>
+                        <span style="color:${dt.color};font-weight:600;flex:1;">${dt.label}</span>
+                        <span style="color:rgba(255,255,255,0.3);font-size:0.8rem;">— Not generated</span>
+                    </div>`;
+                }
+            });
+            
+            if (!hasAnyDoc) {
+                docsHtml = '<p style="color:rgba(255,255,255,0.4);text-align:center;padding:0.5rem;font-size:0.85rem;">No documents generated yet for this offer.</p>';
+            }
+            
+            document.getElementById('acceptOfferDocs').innerHTML = docsHtml;
+            
+            // Show modal
+            document.getElementById('acceptOfferModal').style.display = 'flex';
+        }
+        
+        function closeAcceptOfferModal() {
+            document.getElementById('acceptOfferModal').style.display = 'none';
+            acceptOfferCurrentId = null;
+        }
+        
+        async function confirmAcceptOffer() {
+            if (!acceptOfferCurrentId) return;
+            
+            const btn = document.getElementById('confirmAcceptBtn');
+            const statusDiv = document.getElementById('acceptOfferStatus');
+            const notes = document.getElementById('acceptOfferNotes').value.trim();
+            const notesParam = notes ? 'Accepted by client. ' + notes : 'Accepted by client';
+            
+            // Disable button
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.innerHTML = '⏳ Processing...';
+            statusDiv.innerHTML = '<div style="padding:10px;text-align:center;color:#f39c12;font-size:0.85rem;">Updating offer status...</div>';
+            
+            try {
+                const response = await fetch(API_URL + '?action=updateOfferStatus&offerId=' + encodeURIComponent(acceptOfferCurrentId) + '&status=accepted&notes=' + encodeURIComponent(notesParam));
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusDiv.innerHTML = '<div style="padding:10px;text-align:center;color:#27ae60;font-size:0.9rem;font-weight:600;">✅ Offer accepted successfully!</div>';
+                    
+                    // Wait, then close modal and refresh
+                    setTimeout(() => {
+                        closeAcceptOfferModal();
+                        loadOffers();
+                    }, 1500);
+                } else {
+                    statusDiv.innerHTML = '<div style="padding:10px;text-align:center;color:#e74c3c;font-size:0.85rem;">❌ Error: ' + (result.error || 'Unknown error') + '</div>';
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.innerHTML = '✅ Accept Offer';
                 }
             } catch (e) {
-                alert('❌ Error: ' + e.message);
+                statusDiv.innerHTML = '<div style="padding:10px;text-align:center;color:#e74c3c;font-size:0.85rem;">❌ Error: ' + e.message + '</div>';
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerHTML = '✅ Accept Offer';
             }
         }
         
@@ -24431,6 +24579,67 @@ const clientData = {
         <div style="padding:1.2rem 1.5rem; display:flex; gap:12px; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.05); margin-top:1rem;">
             <button onclick="closeSignedDocsModal()" style="padding:0.7rem 1.5rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:rgba(255,255,255,0.6); cursor:pointer; font-size:0.9rem;">Cancel</button>
             <button id="signedDocsUploadBtn" onclick="uploadSignedDocsAndMark()" disabled style="padding:0.7rem 2rem; background:linear-gradient(135deg,#1abc9c,#16a085); border:none; border-radius:10px; color:white; cursor:pointer; font-size:0.95rem; font-weight:600; opacity:0.4; transition:all 0.2s;">📤 Upload & Mark as Signed</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- ACCEPT OFFER MODAL -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="acceptOfferModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:99998; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:linear-gradient(135deg, #1a2332 0%, #0f1724 100%); border:1px solid #2d3748; border-radius:20px; width:100%; max-width:650px; max-height:90vh; overflow-y:auto; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, #27ae60, #219a52); padding:1.2rem 1.5rem; display:flex; justify-content:space-between; align-items:center; border-radius:20px 20px 0 0;">
+            <h2 style="color:white; margin:0; font-size:1.3rem; display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.5rem;">✅</span> Accept Offer
+            </h2>
+            <button onclick="closeAcceptOfferModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.2rem;">✕</button>
+        </div>
+        
+        <!-- Info Bar -->
+        <div style="padding:1rem 1.5rem; background:rgba(39,174,96,0.08); border-bottom:1px solid rgba(39,174,96,0.15);">
+            <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+                <div><span style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Offer:</span> <strong id="acceptOfferIdLabel" style="color:#27ae60;">-</strong></div>
+                <div><span style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Client:</span> <strong id="acceptClientNameLabel" style="color:white;">-</strong></div>
+                <div><span style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Status:</span> <strong id="acceptCurrentStatus" style="color:#f39c12;">-</strong></div>
+            </div>
+        </div>
+        
+        <!-- Offer Summary -->
+        <div style="padding:1.2rem 1.5rem;">
+            <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">📋 Offer Summary</div>
+            <div id="acceptOfferSummary" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:1rem;"></div>
+        </div>
+        
+        <!-- Generated Documents -->
+        <div style="padding:0 1.5rem 1rem;">
+            <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">📄 Generated Documents</div>
+            <div id="acceptOfferDocs" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:1rem;"></div>
+        </div>
+        
+        <!-- Acceptance Notes -->
+        <div style="padding:0 1.5rem 1rem;">
+            <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">📝 Acceptance Notes (Optional)</div>
+            <textarea id="acceptOfferNotes" placeholder="e.g. Client confirmed via email on 04/02/2026, verbal agreement by Mr. Papadopoulos..." style="width:100%;min-height:80px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:white;padding:0.8rem;font-size:0.9rem;resize:vertical;font-family:inherit;box-sizing:border-box;" onfocus="this.style.borderColor='rgba(39,174,96,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.15)'"></textarea>
+        </div>
+        
+        <!-- Info Box -->
+        <div style="padding:0 1.5rem;">
+            <div style="background:rgba(243,156,18,0.08);border:1px solid rgba(243,156,18,0.2);border-radius:10px;padding:12px 16px;font-size:0.8rem;color:#f39c12;">
+                ⚠️ <strong>After accepting:</strong> The offer status will change to <strong style="color:#27ae60;">"accepted"</strong>. 
+                You can then click <strong style="color:#9b59b6;">📝 Sign</strong> to send documents for signature.
+                <br><br>
+                💡 If the client has NOT confirmed yet — close this modal and wait for confirmation.
+            </div>
+        </div>
+        
+        <!-- Status -->
+        <div id="acceptOfferStatus" style="padding:0 1.5rem;"></div>
+        
+        <!-- Actions -->
+        <div style="padding:1.2rem 1.5rem; display:flex; gap:12px; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.05); margin-top:1rem;">
+            <button onclick="closeAcceptOfferModal()" style="padding:0.7rem 1.5rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:rgba(255,255,255,0.6); cursor:pointer; font-size:0.9rem;">Cancel</button>
+            <button id="confirmAcceptBtn" onclick="confirmAcceptOffer()" style="padding:0.7rem 2rem; background:linear-gradient(135deg,#27ae60,#219a52); border:none; border-radius:10px; color:white; cursor:pointer; font-size:0.95rem; font-weight:600; transition:all 0.2s; box-shadow:0 4px 15px rgba(39,174,96,0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(39,174,96,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 15px rgba(39,174,96,0.3)'">✅ Accept Offer</button>
         </div>
     </div>
 </div>
