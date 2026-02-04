@@ -20513,7 +20513,7 @@ Email: ${contract.contact_email || '-'}
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    
                     body: JSON.stringify({
                         action: 'generateComparisonQuote',
                         clientId: clientId,
@@ -21804,17 +21804,20 @@ Email: ${contract.contact_email || '-'}
                     const base64 = await fileToBase64(file);
                     const docType = detectSignedDocType(file.name);
                     
+                    const formData = new FormData();
+                    formData.append('payload', JSON.stringify({
+                        action: 'uploadSignedDocument',
+                        offerId: signedUploadOfferId,
+                        clientName: signedUploadClientName,
+                        fileName: 'SIGNED_' + file.name,
+                        base64Data: base64,
+                        mimeType: file.type || 'application/pdf',
+                        docType: docType
+                    }));
+                    
                     const response = await fetch(API_URL, {
                         method: 'POST',
-                        body: JSON.stringify({
-                            action: 'uploadSignedDocument',
-                            offerId: signedUploadOfferId,
-                            clientName: signedUploadClientName,
-                            fileName: 'SIGNED_' + file.name,
-                            base64Data: base64,
-                            mimeType: file.type || 'application/pdf',
-                            docType: docType
-                        })
+                        body: formData
                     });
                     
                     const result = await response.json();
@@ -21870,13 +21873,15 @@ Email: ${contract.contact_email || '-'}
             try {
                 console.log('Creating contract from offer:', offerId);
                 
+                const formData = new FormData();
+                formData.append('payload', JSON.stringify({
+                    action: 'createContractFromOffer',
+                    offerId: offerId
+                }));
+                
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'createContractFromOffer',
-                        offerId: offerId
-                    })
+                    body: formData
                 });
                 
                 const result = await response.json();
@@ -24086,7 +24091,7 @@ const clientData = {
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    
                     body: JSON.stringify({
                         action: 'generateComparisonQuote',
                         clientName: offer.client_name,
@@ -24129,7 +24134,7 @@ const clientData = {
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    
                     body: JSON.stringify({
                         action: 'generateNDA',
                         clientName: offer.client_name,
@@ -24168,7 +24173,7 @@ const clientData = {
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    
                     body: JSON.stringify({
                         action: 'generateDPA',
                         clientName: offer.client_name,
@@ -29586,7 +29591,7 @@ async function sendRenewalEmail() {
         // Use sendRenewalEmail backend action for proper logging
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            
             body: JSON.stringify({
                 action: 'sendRenewalEmail',
                 to_email: toEmail,
@@ -29628,7 +29633,7 @@ async function saveAsNote() {
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            
             body: JSON.stringify({
                 action: 'addFollowUpNote',
                 client_id: clientSelect.value,
