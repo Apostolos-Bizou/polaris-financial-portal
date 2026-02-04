@@ -8644,7 +8644,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             </div>
                         </div>
                         <div class="client-folder-actions">
-                            <button class="client-folder-btn secondary" onclick="openEditClientModal()">✏️ Edit Client</button>
                             <button class="client-folder-btn secondary" onclick="openClientGoogleFolder()">📁 Google Drive</button>
                             <button class="client-folder-btn secondary" onclick="emailClient()">📧 Email</button>
                             <button class="client-folder-btn primary" onclick="createNewContractForClient()">➕ New Contract</button>
@@ -10382,6 +10381,37 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         // Disable by default - enable per chart
         Chart.defaults.plugins.datalabels.display = false;
         
+        // Shared helper: get hierarchy-aware display name for any client
+        function getClientDisplayName(c) {
+            if (!c || c.id === 'all') return '🏢 All Clients (Company Total)';
+            
+            const allClients = window.cachedClientsData || [];
+            const subsidiaryMap = {};
+            const parentNameMap = {};
+            
+            allClients.forEach(function(ac) {
+                if (ac.parent_client_id && ac.parent_client_id !== '') {
+                    if (!subsidiaryMap[ac.parent_client_id]) subsidiaryMap[ac.parent_client_id] = [];
+                    subsidiaryMap[ac.parent_client_id].push(ac.client_id);
+                }
+                parentNameMap[ac.client_id] = ac.client_name || ac.contact_name || ac.client_id;
+            });
+            
+            var subs = subsidiaryMap[c.id];
+            var clientData = c.data || allClients.find(function(ac) { return ac.client_id === c.id; });
+            var parentId = clientData && clientData.parent_client_id ? clientData.parent_client_id : '';
+            var isSubsidiary = parentId !== '';
+            
+            if (subs && subs.length > 0) {
+                return '🏛️ ' + c.name + ' [MOTHER +' + subs.length + ' sub]';
+            } else if (isSubsidiary) {
+                var parentName = parentNameMap[parentId] || parentId;
+                return '    └─ ' + c.name + ' [sub of ' + parentName + ']';
+            } else {
+                return '🏢 ' + c.name;
+            }
+        }
+        
         function populateClientSelector() {
             console.log('🔄 populateClientSelector called with clientsList:', clientsList);
             
@@ -10398,9 +10428,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 console.warn('⚠️ clientsList only has "All Clients" - no real clients loaded');
             }
             
-            // Build hierarchy map for visual indicators
+            // Build hierarchy maps
             const allClients = window.cachedClientsData || [];
-            const subsidiaryMap = {};
+            const subsidiaryMap = {};  // parentId -> [childIds]
+            const parentNameMap = {}; // parentId -> parentName
+            
             allClients.forEach(function(c) {
                 if (c.parent_client_id && c.parent_client_id !== '') {
                     if (!subsidiaryMap[c.parent_client_id]) subsidiaryMap[c.parent_client_id] = [];
@@ -10408,39 +10440,70 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 }
             });
             
-            // Generate options with hierarchy visual indicators
-            selector.innerHTML = clientsList.map(function(c) {
-                var displayName = c.name;
+            // Build parent name lookup
+            clientsList.forEach(function(c) {
+                if (c.id !== 'all') parentNameMap[c.id] = c.name;
+            });
+            
+            // Sort clientsList: group subsidiaries right after their parent
+            var sortedClients = [];
+            var processedIds = {};
+            
+            // First pass: add "all", then parents/standalone, then their subs
+            clientsList.forEach(function(c) {
                 if (c.id === 'all') {
-                    displayName = '🏢 All Clients (Company Total)';
-                } else {
-                    var subs = subsidiaryMap[c.id];
-                    var clientData = c.data || allClients.find(function(ac) { return ac.client_id === c.id; });
-                    var isSubsidiary = clientData && clientData.parent_client_id && clientData.parent_client_id !== '';
-                    
-                    if (subs && subs.length > 0) {
-                        displayName = '🏛️ ' + c.name + ' (+' + subs.length + ' sub)';
-                    } else if (isSubsidiary) {
-                        displayName = '   └─ ' + c.name;
-                    } else {
-                        displayName = '🏢 ' + c.name;
-                    }
+                    sortedClients.push(c);
+                    return;
                 }
-                return '<option value="' + c.id + '">' + displayName + '</option>';
+                if (processedIds[c.id]) return;
+                
+                var clientData = c.data || allClients.find(function(ac) { return ac.client_id === c.id; });
+                var isSubsidiary = clientData && clientData.parent_client_id && clientData.parent_client_id !== '';
+                
+                if (!isSubsidiary) {
+                    // Add parent/standalone
+                    sortedClients.push(c);
+                    processedIds[c.id] = true;
+                    
+                    // Add its subsidiaries right after
+                    var subs = subsidiaryMap[c.id] || [];
+                    subs.forEach(function(subId) {
+                        var subClient = clientsList.find(function(cl) { return cl.id === subId; });
+                        if (subClient && !processedIds[subId]) {
+                            sortedClients.push(subClient);
+                            processedIds[subId] = true;
+                        }
+                    });
+                }
+            });
+            
+            // Second pass: add any remaining subsidiaries whose parent wasn't in list
+            clientsList.forEach(function(c) {
+                if (!processedIds[c.id] && c.id !== 'all') {
+                    sortedClients.push(c);
+                    processedIds[c.id] = true;
+                }
+            });
+            
+            // Generate display name helper - use shared function
+            
+            // Populate main selector with sorted & labeled options
+            selector.innerHTML = sortedClients.map(function(c) {
+                return '<option value="' + c.id + '">' + getClientDisplayName(c) + '</option>';
             }).join('');
             
-            console.log('✅ Selector populated with', clientsList.length, 'options (hierarchy-aware)');
+            console.log('✅ Selector populated with', sortedClients.length, 'options (hierarchy-grouped)');
             
-            // Populate compare selectors (without "All")
-            const clientsOnly = clientsList.filter(c => c.id !== 'all');
+            // Populate compare selectors WITH hierarchy labels too
+            const clientsOnly = sortedClients.filter(c => c.id !== 'all');
             if (compareA) {
                 compareA.innerHTML = clientsOnly.map(c => 
-                    `<option value="${c.id}">${c.name}</option>`
+                    `<option value="${c.id}">${getClientDisplayName(c)}</option>`
                 ).join('');
             }
             if (compareB) {
                 compareB.innerHTML = clientsOnly.map(c => 
-                    `<option value="${c.id}" ${c.id === 'arcadia' ? 'selected' : ''}>${c.name}</option>`
+                    `<option value="${c.id}" ${c.id === 'arcadia' ? 'selected' : ''}>${getClientDisplayName(c)}</option>`
                 ).join('');
             }
         }
@@ -10750,7 +10813,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 clients.forEach(client => {
                     const opt = document.createElement('option');
                     opt.value = client.id;
-                    opt.textContent = client.name.replace('🏢 ', '');
+                    opt.textContent = getClientDisplayName(client);
                     select.appendChild(opt);
                 });
                 console.log('Email clients loaded:', clients.length);
@@ -11359,7 +11422,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 <div class="email-recipient-item">
                     <input type="checkbox" id="bulk_client_${idx}" data-client-id="${client.id}" onchange="updateBulkSelection()">
                     <div class="email-recipient-info">
-                        <div class="email-recipient-name">${client.name.replace('🏢 ', '')}</div>
+                        <div class="email-recipient-name">${getClientDisplayName(client)}</div>
                     </div>
                 </div>
             `).join('');
@@ -11536,7 +11599,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             clients.forEach(client => {
                 const opt = document.createElement('option');
                 opt.value = client.id;
-                opt.textContent = client.name.replace('🏢 ', '');
+                opt.textContent = getClientDisplayName(client);
                 select.appendChild(opt);
             });
             
@@ -11838,7 +11901,14 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                          style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s;"
                          onmouseover="this.style.background='rgba(212,175,67,0.2)'"
                          onmouseout="this.style.background='transparent'">
-                        <div style="color: #d4af37; font-weight: 600;">🏢 ${companyName}</div>
+                        <div style="color: #d4af37; font-weight: 600;">${(() => {
+                            const allCD = window.cachedClientsData || [];
+                            const hasSubs = allCD.some(ac => ac.parent_client_id === c.id);
+                            const pId = c.data?.parent_client_id || '';
+                            if (hasSubs) return '🏛️ ' + companyName + ' [MOTHER]';
+                            if (pId) { const p = allCD.find(ac => ac.client_id === pId); return '└─ ' + companyName + ' [sub of ' + (p?.client_name || pId) + ']'; }
+                            return '🏢 ' + companyName;
+                        })()}</div>
                         ${contactName ? `<div style="color: #7aa0c0; font-size: 0.8rem; margin-top: 2px;">👤 ${contactName}</div>` : ''}
                     </div>
                 `}).join('');
@@ -20558,21 +20628,12 @@ Email: ${contract.contact_email || '-'}
             
             // Extract program names from offer items
             const programs = [];
-            let items = offer.items;
-            if (typeof items === 'string') { try { items = JSON.parse(items); } catch(e) { items = []; } }
-            if (items && Array.isArray(items)) {
-                items.forEach(item => {
-                    const name = item.plan_name || item.program_name || item.program_id || '';
-                    if (name && !programs.includes(name)) {
-                        programs.push(name);
+            if (offer.items && Array.isArray(offer.items)) {
+                offer.items.forEach(item => {
+                    if (item.plan_name && !programs.includes(item.plan_name)) {
+                        programs.push(item.plan_name);
                     }
                 });
-            }
-            // Check dental flag
-            if (offer.includes_dental === true || offer.includes_dental === 'true' || offer.includes_dental === 'TRUE') {
-                if (!programs.some(p => p.toLowerCase().includes('dental'))) {
-                    programs.push('Dental');
-                }
             }
             
             // Prepare offer data for the modal - WITH SIGNATURE FLAG
@@ -20585,7 +20646,6 @@ Email: ${contract.contact_email || '-'}
                 contactEmail: contactEmail,
                 programs: programs,
                 items: offer.items, // Include items for program highlighting
-                includes_dental: offer.includes_dental, // Pass dental flag
                 status: offer.status,
                 totalMembers: offer.total_members,
                 grandTotal: offer.grand_total_usd,
@@ -20678,11 +20738,19 @@ Email: ${contract.contact_email || '-'}
             
             // Use cached data if available
             if (clientsDataLoaded && window.cachedClientsData) {
+                const allCD = window.cachedClientsData;
+                const subMap = {};
+                allCD.forEach(ac => { if (ac.parent_client_id && ac.parent_client_id !== '') { if (!subMap[ac.parent_client_id]) subMap[ac.parent_client_id] = []; subMap[ac.parent_client_id].push(ac.client_id); } });
+                
                 window.cachedClientsData.forEach(c => {
                     const option = document.createElement('option');
                     option.value = c.client_id;
-                    // API returns contacts - use contact_name as display name
-                    option.textContent = c.client_name || c.contact_name || c.name || 'Unknown';
+                    const baseName = c.client_name || c.contact_name || c.name || 'Unknown';
+                    const hasSubs = subMap[c.client_id] && subMap[c.client_id].length > 0;
+                    const isSub = c.parent_client_id && c.parent_client_id !== '';
+                    if (hasSubs) option.textContent = '🏛️ ' + baseName + ' [MOTHER +' + subMap[c.client_id].length + ' sub]';
+                    else if (isSub) { const p = allCD.find(ac => ac.client_id === c.parent_client_id); option.textContent = '    └─ ' + baseName + ' [sub of ' + (p?.client_name || c.parent_client_id) + ']'; }
+                    else option.textContent = '🏢 ' + baseName;
                     option.dataset.email = c.contact_email || c.email || '';
                     option.dataset.contact = c.contact_person || c.contact_name || '';
                     select.appendChild(option);
@@ -20702,8 +20770,12 @@ Email: ${contract.contact_email || '-'}
                     clientList.forEach(c => {
                         const option = document.createElement('option');
                         option.value = c.client_id;
-                        // API returns contacts - use contact_name as display name
-                        option.textContent = c.client_name || c.contact_name || c.name || 'Unknown';
+                        const baseName = c.client_name || c.contact_name || c.name || 'Unknown';
+                        const hasSubs = clientList.some(ac => ac.parent_client_id === c.client_id);
+                        const isSub = c.parent_client_id && c.parent_client_id !== '';
+                        if (hasSubs) option.textContent = '🏛️ ' + baseName + ' [MOTHER]';
+                        else if (isSub) { const p = clientList.find(ac => ac.client_id === c.parent_client_id); option.textContent = '    └─ ' + baseName + ' [sub of ' + (p?.client_name || c.parent_client_id) + ']'; }
+                        else option.textContent = '🏢 ' + baseName;
                         option.dataset.email = c.contact_email || c.email || '';
                         option.dataset.contact = c.contact_person || c.contact_name || '';
                         select.appendChild(option);
@@ -22122,45 +22194,14 @@ const clientData = {
                 } catch (e) {
                     console.error('Error parsing comparison_data:', e);
                 }
-            } else {
+            } else if (offer.items && Array.isArray(offer.items)) {
                 // Standard offer - extract from items
-                let items = offer.items;
-                // Parse items if JSON string
-                if (typeof items === 'string') {
-                    try { items = JSON.parse(items); } catch(e) { items = []; }
-                }
-                if (Array.isArray(items)) {
-                    items.forEach(item => {
-                        // Try plan_name first, then program_id, then program_name
-                        const name = item.plan_name || item.program_name || item.program_id || '';
-                        if (name && !programs.includes(name)) {
-                            programs.push(name);
-                        }
-                    });
-                }
-                
-                // Also map program_id to display names for highlighting
-                // e.g. "gold" → "Gold", "gold_plus" → "Gold Plus"
-                const idToName = {
-                    'silver': 'Silver', 'gold': 'Gold', 'gold_plus': 'Gold Plus',
-                    'gold_plus_plus': 'Gold Plus Plus', 'platinum': 'Platinum', 'diamond': 'Diamond'
-                };
-                programs.forEach((p, idx) => {
-                    const mapped = idToName[p.toLowerCase().replace(/\s+/g, '_')];
-                    if (mapped && !programs.includes(mapped)) {
-                        programs[idx] = mapped;
+                offer.items.forEach(item => {
+                    if (item.plan_name && !programs.includes(item.plan_name)) {
+                        programs.push(item.plan_name);
                     }
                 });
             }
-            
-            // Check dental flag from offer
-            if (offer.includes_dental === true || offer.includes_dental === 'true' || offer.includes_dental === 'TRUE') {
-                if (!programs.some(p => p.toLowerCase().includes('dental'))) {
-                    programs.push('Dental');
-                }
-            }
-            
-            console.log('Final programs for Send modal:', programs);
             
             // Prepare offer data for the modal
             const offerData = {
@@ -22171,7 +22212,6 @@ const clientData = {
                 contactEmail: contactEmail,
                 programs: programs,
                 items: offer.items, // Include items for program highlighting
-                includes_dental: offer.includes_dental, // Pass dental flag
                 status: offer.status,
                 totalMembers: offer.total_members,
                 grandTotal: offer.grand_total_usd,
@@ -23423,7 +23463,7 @@ const clientData = {
         <div style="background:linear-gradient(135deg, #1E3A5F, #2d5a87); padding:1.5rem 2rem; display:flex; justify-content:space-between; align-items:center; border-radius:20px 20px 0 0; position:sticky; top:0; z-index:10;">
             <div style="display:flex; align-items:center; gap:1rem;">
                 
-                <h2 id="clientModalTitle" style="color:white; margin:0; font-size:1.75rem; display:flex; align-items:center; gap:12px;">
+                <h2 style="color:white; margin:0; font-size:1.75rem; display:flex; align-items:center; gap:12px;">
                     <span style="font-size:2rem;">🏢</span> Add New Client
                 </h2>
             </div>
@@ -23590,7 +23630,7 @@ const clientData = {
                 <button onclick="closeAddClientModal()" style="padding:1rem 2rem; background:#4a5568; color:white; border:none; border-radius:10px; cursor:pointer; font-size:1.1rem; font-weight:500; transition:all 0.3s; min-width:140px;" onmouseover="this.style.background='#5a6578'" onmouseout="this.style.background='#4a5568'">
                     Cancel
                 </button>
-                <button id="clientModalSaveBtn" onclick="handleClientModalSave()" style="padding:1rem 2rem; background:linear-gradient(135deg, #27ae60, #1e8449); color:white; border:none; border-radius:10px; cursor:pointer; font-size:1.1rem; font-weight:600; transition:all 0.3s; min-width:180px; display:flex; align-items:center; justify-content:center; gap:8px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(39,174,96,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                <button onclick="saveNewClientWithOffersUpdate()" style="padding:1rem 2rem; background:linear-gradient(135deg, #27ae60, #1e8449); color:white; border:none; border-radius:10px; cursor:pointer; font-size:1.1rem; font-weight:600; transition:all 0.3s; min-width:180px; display:flex; align-items:center; justify-content:center; gap:8px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(39,174,96,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
                     <span>💾</span> Save Client
                 </button>
             </div>
@@ -23615,8 +23655,6 @@ function togglePortalSection() {
 // Auto-generate short name from company name
 document.getElementById('clientName').addEventListener('input', function() {
     const shortField = document.getElementById('clientShort');
-    // Don't auto-generate in edit mode if short name already has value
-    if (window._editClientMode && shortField.value) return;
     if (!shortField.value) { // Only auto-fill if empty
         const words = this.value.trim().split(' ');
         if (words.length >= 2) {
@@ -23627,214 +23665,6 @@ document.getElementById('clientName').addEventListener('input', function() {
         }
     }
 });
-
-// ═══════════════════════════════════════════════════════════════════
-// EDIT CLIENT FEATURE
-// ═══════════════════════════════════════════════════════════════════
-
-// Track edit mode
-window._editClientMode = false;
-window._editClientId = null;
-
-// Smart save handler - routes to add or edit
-function handleClientModalSave() {
-    if (window._editClientMode && window._editClientId) {
-        saveEditClient();
-    } else {
-        saveNewClientWithOffersUpdate();
-    }
-}
-
-// Open edit modal for current client folder
-async function openEditClientModal(clientId) {
-    var targetClientId = clientId || (currentClientFolder ? currentClientFolder.id : null);
-    
-    if (!targetClientId) {
-        alert('No client selected to edit');
-        return;
-    }
-    
-    window._editClientMode = true;
-    window._editClientId = targetClientId;
-    
-    document.getElementById('addClientModal').classList.remove('hidden');
-    document.getElementById('addClientModal').style.display = 'flex';
-    clearClientForm();
-    
-    var titleEl = document.getElementById('clientModalTitle');
-    if (titleEl) titleEl.innerHTML = '<span style="font-size:2rem;">✏️</span> Edit Client';
-    
-    var saveBtn = document.getElementById('clientModalSaveBtn');
-    if (saveBtn) saveBtn.innerHTML = '<span>💾</span> Update Client';
-    
-    showClientStatus('⏳ Loading client data...', 'info');
-    
-    try {
-        var response = await fetch(API_URL + '?action=getClientById&clientId=' + encodeURIComponent(targetClientId));
-        var result = await response.json();
-        
-        if (result.success && result.client) {
-            populateEditForm(result.client);
-            showClientStatus('✅ Client data loaded. Make your changes and click Update.', 'success');
-        } else {
-            showClientStatus('❌ Could not load client: ' + (result.error || 'Unknown error'), 'error');
-        }
-    } catch (e) {
-        showClientStatus('❌ Error loading client: ' + e.message, 'error');
-    }
-}
-
-// Populate form fields with existing client data
-function populateEditForm(client) {
-    var fieldMap = {
-        'clientName': ['client_name', 'company_name'],
-        'clientShort': ['client_short', 'short_name'],
-        'clientCountry': ['country'],
-        'clientTIN': ['tin_number', 'tin'],
-        'clientVAT': ['vat_number', 'vat'],
-        'clientRegAddress': ['registered_address', 'reg_address'],
-        'clientOpAddress': ['operating_address', 'op_address'],
-        'clientContactPerson': ['contact_name', 'contact_person'],
-        'clientCapacity': ['contact_capacity', 'capacity'],
-        'clientEmail': ['contact_email', 'email'],
-        'clientPhone': ['contact_phone', 'phone'],
-        'clientMobile': ['mobile'],
-        'clientFax': ['fax'],
-        'clientSignatoryName': ['authorized_signatory_name', 'signatory_name'],
-        'clientSignatoryTitle': ['authorized_signatory_title', 'signatory_title'],
-        'clientPortalUrl': ['portal_url'],
-        'clientPortalUsername': ['portal_username'],
-        'clientPortalPassword': ['portal_password']
-    };
-    
-    Object.keys(fieldMap).forEach(function(fieldId) {
-        var el = document.getElementById(fieldId);
-        if (!el) return;
-        var columns = fieldMap[fieldId];
-        var value = '';
-        for (var i = 0; i < columns.length; i++) {
-            if (client[columns[i]] && String(client[columns[i]]).trim()) {
-                value = String(client[columns[i]]).trim();
-                break;
-            }
-        }
-        el.value = value;
-    });
-    
-    var clientType = client.client_type || 'parent';
-    var typeSelect = document.getElementById('clientType');
-    if (typeSelect) {
-        typeSelect.value = clientType;
-        if (typeof toggleParentClientDropdown === 'function') toggleParentClientDropdown();
-    }
-    
-    if (clientType === 'subsidiary' && client.parent_client_id) {
-        setTimeout(function() {
-            var parentSelect = document.getElementById('parentClientId');
-            if (parentSelect) parentSelect.value = client.parent_client_id;
-        }, 500);
-    }
-    
-    console.log('✅ Edit form populated for:', client.client_name || client.client_id);
-}
-
-// Save edited client
-async function saveEditClient() {
-    var clientId = window._editClientId;
-    if (!clientId) { showClientStatus('❌ No client ID for update', 'error'); return; }
-    
-    var clientName = document.getElementById('clientName').value.trim();
-    var contactPerson = document.getElementById('clientContactPerson').value.trim();
-    var email = document.getElementById('clientEmail').value.trim();
-    
-    if (!clientName) { showClientStatus('Company Name is required', 'error'); return; }
-    if (!contactPerson) { showClientStatus('Contact Person is required', 'error'); return; }
-    if (!email) { showClientStatus('Email is required', 'error'); return; }
-    
-    var clientData = {
-        client_name: clientName,
-        client_short: document.getElementById('clientShort').value.trim(),
-        country: document.getElementById('clientCountry').value.trim(),
-        tin_number: document.getElementById('clientTIN').value.trim(),
-        vat_number: document.getElementById('clientVAT').value.trim(),
-        registered_address: document.getElementById('clientRegAddress').value.trim(),
-        operating_address: document.getElementById('clientOpAddress').value.trim(),
-        contact_name: contactPerson,
-        contact_capacity: document.getElementById('clientCapacity').value.trim(),
-        contact_email: email,
-        contact_phone: document.getElementById('clientPhone').value.trim(),
-        mobile: document.getElementById('clientMobile').value.trim(),
-        fax: document.getElementById('clientFax').value.trim(),
-        authorized_signatory_name: document.getElementById('clientSignatoryName').value.trim(),
-        authorized_signatory_title: document.getElementById('clientSignatoryTitle').value.trim(),
-        portal_url: (document.getElementById('clientPortalUrl') || {}).value || '',
-        portal_username: (document.getElementById('clientPortalUsername') || {}).value || '',
-        portal_password: (document.getElementById('clientPortalPassword') || {}).value || '',
-        client_type: document.getElementById('clientType').value || 'parent',
-        parent_client_id: document.getElementById('parentClientId').value || ''
-    };
-    
-    showClientStatus('⏳ Updating client...', 'info');
-    
-    var saveBtn = document.getElementById('clientModalSaveBtn');
-    if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '⏳ Updating...'; }
-    
-    try {
-        var url = API_URL + '?action=updateClient&clientId=' + encodeURIComponent(clientId) + '&client=' + encodeURIComponent(JSON.stringify(clientData));
-        console.log('📤 Updating client:', clientId);
-        
-        var response = await fetch(url);
-        var result = await response.json();
-        
-        if (result.success) {
-            showClientStatus('✅ ' + result.message, 'success');
-            
-            if (typeof loadClientsForContractDropdowns === 'function') loadClientsForContractDropdowns();
-            if (typeof loadOfferClients === 'function') loadOfferClients();
-            if (typeof loadCompareClients === 'function') loadCompareClients();
-            
-            if (currentClientFolder && currentClientFolder.id === clientId) {
-                currentClientFolder.name = clientName;
-                document.getElementById('clientFolderName').innerHTML = clientName + ' <span>Portfolio</span>';
-                var initials = clientName.split(' ').map(function(w){ return w[0]; }).join('').substring(0, 2).toUpperCase();
-                document.getElementById('clientFolderAvatar').textContent = initials;
-            }
-            
-            setTimeout(function() {
-                closeAddClientModal();
-                resetEditMode();
-            }, 1500);
-        } else {
-            showClientStatus('❌ Error: ' + (result.error || 'Unknown error'), 'error');
-        }
-    } catch (e) {
-        showClientStatus('❌ Error: ' + e.message, 'error');
-    } finally {
-        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<span>💾</span> Update Client'; }
-    }
-}
-
-// Reset edit mode
-function resetEditMode() {
-    window._editClientMode = false;
-    window._editClientId = null;
-    var titleEl = document.getElementById('clientModalTitle');
-    if (titleEl) titleEl.innerHTML = '<span style="font-size:2rem;">🏢</span> Add New Client';
-    var saveBtn = document.getElementById('clientModalSaveBtn');
-    if (saveBtn) saveBtn.innerHTML = '<span>💾</span> Save Client';
-}
-
-// Override closeAddClientModal to also reset edit mode
-var _originalCloseAddClientModal = typeof closeAddClientModal === 'function' ? closeAddClientModal : null;
-closeAddClientModal = function() {
-    resetEditMode();
-    if (_originalCloseAddClientModal) {
-        _originalCloseAddClientModal();
-    } else {
-        var modal = document.getElementById('addClientModal');
-        if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
-    }
-};
 
 </script>
 
@@ -24948,7 +24778,14 @@ function searchModalClients(query) {
                  style="padding: 12px 18px; cursor: pointer; border-bottom: 1px solid #2d3748; transition: background 0.2s;"
                  onmouseover="this.style.background='rgba(212,175,67,0.2)'"
                  onmouseout="this.style.background='transparent'">
-                <div style="color: #d4af37; font-weight: 600; font-size: 0.95rem;">🏢 ${companyName}</div>
+                <div style="color: #d4af37; font-weight: 600; font-size: 0.95rem;">${(() => {
+                    const allCD = window.cachedClientsData || [];
+                    const hasSubs = allCD.some(ac => ac.parent_client_id === c.id);
+                    const pId = c.data?.parent_client_id || '';
+                    if (hasSubs) return '🏛️ ' + companyName + ' [MOTHER]';
+                    if (pId) { const p = allCD.find(ac => ac.client_id === pId); return '└─ ' + companyName + ' [sub of ' + (p?.client_name || pId) + ']'; }
+                    return '🏢 ' + companyName;
+                })()}</div>
                 ${contactName ? `<div style="color: #7aa0c0; font-size: 0.8rem; margin-top: 2px;">👤 ${contactName}</div>` : ''}
             </div>
         `}).join('');
@@ -25371,33 +25208,12 @@ function highlightOfferPrograms(offer) {
     // Parse offer items to get programs
     let programs = [];
     try {
-        let items = offer.items;
-        // Parse if string
-        if (typeof items === 'string') {
-            try { items = JSON.parse(items); } catch(e) { items = []; }
-        }
-        if (items && Array.isArray(items)) {
-            programs = items.map(item => (item.plan_name || item.program_name || item.program_id || item.program || '').toLowerCase().trim()).filter(Boolean);
+        if (offer.items) {
+            const items = typeof offer.items === 'string' ? JSON.parse(offer.items) : offer.items;
+            programs = items.map(item => (item.plan_name || item.program || '').toLowerCase().trim()).filter(Boolean);
         }
     } catch (e) {
         console.log('Could not parse offer items:', e);
-    }
-    
-    // Also check programs array passed directly (from openSendDocumentsFromOffer)
-    if (offer.programs && Array.isArray(offer.programs)) {
-        offer.programs.forEach(p => {
-            const lower = p.toLowerCase().trim();
-            if (lower && !programs.includes(lower)) {
-                programs.push(lower);
-            }
-        });
-    }
-    
-    // Check dental flag
-    if (offer.includes_dental === true || offer.includes_dental === 'true' || offer.includes_dental === 'TRUE') {
-        if (!programs.some(p => p.includes('dental'))) {
-            programs.push('dental');
-        }
     }
     
     console.log('Offer programs to highlight:', programs);
@@ -26157,31 +25973,8 @@ async function loadDriveTemplates() {
         
     } catch (error) {
         console.error('Error loading Drive templates:', error);
-        
-        // FALLBACK: Use regular emailTemplates if Drive fails
-        if (emailTemplates && emailTemplates.length > 0) {
-            console.log('📋 Falling back to regular email templates:', emailTemplates.length);
-            select.innerHTML = '<option value="">-- Select Email Template --</option>';
-            emailTemplates.forEach(template => {
-                const option = document.createElement('option');
-                option.value = template.template_id || template.id;
-                option.textContent = '📝 ' + (template.template_name || template.name);
-                select.appendChild(option);
-            });
-            // Store as driveEmailTemplates for compatibility
-            driveEmailTemplates = emailTemplates.map(t => ({
-                id: t.template_id || t.id,
-                name: t.template_name || t.name,
-                fullName: t.template_name || t.name,
-                icon: '📝',
-                category: t.category || 'general'
-            }));
-            if (statusDiv) statusDiv.innerHTML = '📋 Using cached templates (' + emailTemplates.length + ')';
-            setTimeout(() => { if (statusDiv) statusDiv.innerHTML = ''; }, 3000);
-        } else {
-            select.innerHTML = '<option value="">-- Select Email Template --</option><option value="" disabled>❌ Error loading templates</option>';
-            if (statusDiv) statusDiv.innerHTML = '❌ Error: ' + error.message + ' <button onclick="refreshDriveTemplates()" style="background: #4a5568; border: none; color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Retry</button>';
-        }
+        select.innerHTML = '<option value="">-- Select Email Template --</option><option value="" disabled>❌ Error loading templates</option>';
+        if (statusDiv) statusDiv.innerHTML = '❌ Error: ' + error.message + ' <button onclick="refreshDriveTemplates()" style="background: #4a5568; border: none; color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Retry</button>';
     }
 }
 
