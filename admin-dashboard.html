@@ -17686,14 +17686,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             statusDiv.innerHTML = '<p style="color:#d4a843;text-align:center;">⏳ ' + (isEdit ? 'Updating' : 'Saving') + ' client...</p>';
             
             try {
-                let url;
-                if (isEdit) {
-                    url = `${API_URL}?action=updateClient&clientId=${encodeURIComponent(window._editingClientId)}&client=${encodeURIComponent(JSON.stringify(clientData))}`;
-                } else {
-                    url = `${API_URL}?action=addClient&client=${encodeURIComponent(JSON.stringify(clientData))}`;
-                }
+                const postData = isEdit 
+                    ? { action: 'updateClient', clientId: window._editingClientId, client: clientData }
+                    : { action: 'addClient', client: clientData };
                 
-                const response = await fetch(url);
+                const response = await fetch(`${API_URL}?action=${isEdit ? 'updateClient' : 'addClient'}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(postData)
+                });
                 const result = await response.json();
                 
                 if (result.success) {
@@ -20799,6 +20800,9 @@ Email: ${contract.contact_email || '-'}
                         <button onclick="openSendDocumentsFromOffer('${offer.offer_id}')" style="padding:0.5rem 0.75rem;font-size:0.8rem;background:linear-gradient(135deg,#d4a843,#c49932);color:#1e3a5f;border:none;border-radius:6px;cursor:pointer;width:60px;font-weight:600;" title="Send Documents via Email">📨 Send</button>
                     </div>
                     <!-- OFFER → CONTRACT WORKFLOW BUTTONS -->
+                    <div style="text-align:center;width:70px;${offer.status !== 'sent' && offer.status !== 'draft' ? 'display:none;' : ''}">
+                        <button onclick="acceptOffer('${offer.offer_id}')" style="padding:0.5rem 0.75rem;font-size:0.8rem;background:#27ae60;color:white;border:none;border-radius:6px;cursor:pointer;width:70px;" title="Mark as Accepted by Client">✅ Accept</button>
+                    </div>
                     <div style="text-align:center;width:70px;${offer.status !== 'accepted' ? 'display:none;' : ''}">
                         <button onclick="sendOfferForSignature('${offer.offer_id}')" style="padding:0.5rem 0.75rem;font-size:0.8rem;background:#9b59b6;color:white;border:none;border-radius:6px;cursor:pointer;width:70px;" title="Convert to PDF & Send for Signature">📝 Sign</button>
                     </div>
@@ -21188,6 +21192,22 @@ Email: ${contract.contact_email || '-'}
             openSendDocumentsModal(offerData);
         }
         
+        async function acceptOffer(offerId) {
+            if (!confirm('Mark offer ' + offerId + ' as ACCEPTED by client?')) return;
+            try {
+                const response = await fetch(API_URL + '?action=updateOfferStatus&offerId=' + encodeURIComponent(offerId) + '&status=accepted&notes=Accepted by client');
+                const result = await response.json();
+                if (result.success) {
+                    alert('✅ Offer accepted! You can now send it for signature.');
+                    loadOffers();
+                } else {
+                    alert('❌ Error: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('❌ Error: ' + e.message);
+            }
+        }
+        
         async function markOfferAsSigned(offerId) {
             if (!confirm('Mark this offer as SIGNED?\n\nThis will update the status to "signed" and allow contract creation.')) {
                 return;
@@ -21215,7 +21235,7 @@ Email: ${contract.contact_email || '-'}
         }
         
         async function createContractFromOfferUI(offerId) {
-            if (!confirm('Create a new CONTRACT from this offer?\n\nThis will:\n1. Create a new contract record\n2. Update offer status to "converted"')) {
+            if (!confirm('Create a new CONTRACT from this offer?\n\nThis will:\n1. Create a new contract record\n2. Update offer status to "converted"\n3. ACTIVATE the client (visible in KPIs & Dashboard)\n4. Set contract period: 1 year from today')) {
                 return;
             }
             
@@ -21235,7 +21255,17 @@ Email: ${contract.contact_email || '-'}
                 console.log('Result:', result);
                 
                 if (result.success) {
-                    alert('✅ Contract created!\n\nContract ID: ' + result.data.contract_id);
+                    var d = result.data;
+                    var msg = '✅ Contract Created & Client Activated!\n\n';
+                    msg += '📄 Contract: ' + d.contract_id + '\n';
+                    msg += '🏢 Client: ' + (d.client_id || '') + '\n';
+                    msg += '👥 Members: ' + (d.total_members || 0) + '\n';
+                    msg += '💰 Value: $' + (d.grand_total || 0).toLocaleString() + '\n';
+                    msg += '📅 Start: ' + (d.contract_start ? new Date(d.contract_start).toLocaleDateString() : '-') + '\n';
+                    msg += '📅 End: ' + (d.contract_end ? new Date(d.contract_end).toLocaleDateString() : '-') + '\n\n';
+                    msg += '✅ Client is now ACTIVE in the Dashboard KPIs!';
+                    alert(msg);
+                    
                     loadOffers(); // Refresh offers table
                     
                     // Ask if user wants to go to Contract Center
