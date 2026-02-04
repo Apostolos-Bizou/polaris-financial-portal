@@ -10475,17 +10475,23 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             
             console.log('✅ Selector populated with', clientsList.length, 'options + GROUP options (hierarchy-aware)');
             
-            // Populate compare selectors (without "All" and without GROUPs)
-            const clientsOnly = clientsList.filter(c => c.id !== 'all');
+            // Populate compare selectors with hierarchy indicators
+            const clientsOnly = clientsList.filter(c => c.id !== 'all')
+                .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            const buildCompareOpts = (selected) => {
+                return clientsOnly.map(c => {
+                    const cd = c.data || allClients.find(ac => ac.client_id === c.id);
+                    const isP = cd && (cd.client_type || '').toLowerCase() === 'parent';
+                    const isS = cd && cd.parent_client_id && cd.parent_client_id !== '';
+                    const prefix = isP ? '🏢 ' : (isS ? '  └ ' : '');
+                    return `<option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${prefix}${c.name}</option>`;
+                }).join('');
+            };
             if (compareA) {
-                compareA.innerHTML = clientsOnly.map(c => 
-                    `<option value="${c.id}">${c.name}</option>`
-                ).join('');
+                compareA.innerHTML = buildCompareOpts('');
             }
             if (compareB) {
-                compareB.innerHTML = clientsOnly.map(c => 
-                    `<option value="${c.id}" ${c.id === 'arcadia' ? 'selected' : ''}>${c.name}</option>`
-                ).join('');
+                compareB.innerHTML = buildCompareOpts('arcadia');
             }
         }
         
@@ -12003,15 +12009,20 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 dropdown.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); text-align: center;">No clients found</div>';
             } else {
                 dropdown.innerHTML = filtered.slice(0, 10).map(c => {
-                    // ALWAYS use client_name from data - this is the COMPANY name
                     const companyName = (c.data?.client_name || c.name || 'Unknown').replace('🏢 ', '');
                     const contactName = c.data?.contact_name || '';
+                    const cType = (c.data?.client_type || '').toLowerCase();
+                    const isP = cType === 'parent';
+                    const isS = cType === 'subsidiary';
+                    const bgStyle = isP ? 'background:rgba(30,58,95,0.4);' : '';
+                    const icon = isP ? '🏢' : (isS ? '<span style="color:rgba(255,255,255,0.3);">└</span>' : '🏢');
+                    const badge = isP ? ' <span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:1px 6px;border-radius:8px;font-size:0.7rem;font-weight:600;margin-left:6px;">PARENT</span>' : (isS ? ' <span style="background:rgba(212,175,55,0.15);color:#d4af37;padding:1px 6px;border-radius:8px;font-size:0.7rem;font-weight:600;margin-left:6px;">SUB</span>' : '');
                     return `
                     <div onclick="selectSendDocsClient('${c.id}', '${companyName.replace(/'/g, "\\'")}', this)" 
-                         style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s;"
+                         style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s;${bgStyle}"
                          onmouseover="this.style.background='rgba(212,175,67,0.2)'"
-                         onmouseout="this.style.background='transparent'">
-                        <div style="color: #d4af37; font-weight: 600;">🏢 ${companyName}</div>
+                         onmouseout="this.style.background='${isP ? 'rgba(30,58,95,0.4)' : 'transparent'}'">
+                        <div style="color: #d4af37; font-weight: ${isP ? '700' : '600'};">${icon} ${companyName}${badge}</div>
                         ${contactName ? `<div style="color: #7aa0c0; font-size: 0.8rem; margin-top: 2px;">👤 ${contactName}</div>` : ''}
                     </div>
                 `}).join('');
@@ -19253,9 +19264,13 @@ Email: ${contract.contact_email || '-'}
             recent.forEach(o => {
                 const st = (o.status || 'draft').toLowerCase();
                 const date = o.created_date ? new Date(o.created_date).toLocaleDateString() : '-';
-                html += `<div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem; background:rgba(255,255,255,0.02); border-radius:8px;">
+                const cd = (window.cachedClientsData || []).find(c => c.client_id === o.client_id);
+                const ct = cd ? (cd.client_type || '').toLowerCase() : '';
+                const actBg = ct === 'parent' ? 'rgba(30,58,95,0.3)' : 'rgba(255,255,255,0.02)';
+                const actIcon = ct === 'parent' ? '🏢 ' : (ct === 'subsidiary' ? '<span style="color:rgba(255,255,255,0.3);">└</span> ' : '');
+                html += `<div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem; background:${actBg}; border-radius:8px;">
                     <span style="font-size:1.25rem;">${statusIcons[st] || '📋'}</span>
-                    <div style="flex:1; min-width:0;"><div style="font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${o.client_name || 'Unknown'}</div><div style="font-size:0.75rem; color:rgba(255,255,255,0.5);">${o.offer_id || ''} • ${date}</div></div>
+                    <div style="flex:1; min-width:0;"><div style="font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${actIcon}${o.client_name || 'Unknown'}</div><div style="font-size:0.75rem; color:rgba(255,255,255,0.5);">${o.offer_id || ''} • ${date}</div></div>
                     <span style="font-size:0.8rem; padding:0.25rem 0.5rem; background:${statusColors[st] || '#6c757d'}22; color:${statusColors[st] || '#6c757d'}; border-radius:4px;">${st}</span>
                 </div>`;
             });
@@ -19423,22 +19438,49 @@ Email: ${contract.contact_email || '-'}
             
             console.log('Comparison Quote - Loading clients:', clients.length);
             
-            if (clients.length > 0) {
-                clients.forEach(c => {
+            const buildHierarchyOptions = (clientArr) => {
+                const parents = clientArr.filter(c => (c.client_type || '').toLowerCase() === 'parent')
+                    .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                const sorted = [...clientArr].sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                
+                if (parents.length > 0) {
+                    const groupOG = document.createElement('optgroup');
+                    groupOG.label = '🏢 Groups';
+                    parents.forEach(p => {
+                        const subs = clientArr.filter(s => s.parent_client_id === p.client_id);
+                        const opt = document.createElement('option');
+                        opt.value = p.client_id;
+                        opt.dataset.name = p.client_name || 'Unknown';
+                        opt.textContent = `🏢 ${p.client_name || 'Unknown'} (+${subs.length} sub)`;
+                        groupOG.appendChild(opt);
+                    });
+                    select.appendChild(groupOG);
+                }
+                
+                const indivOG = document.createElement('optgroup');
+                indivOG.label = '👤 All Clients';
+                sorted.forEach(c => {
+                    const isP = (c.client_type || '').toLowerCase() === 'parent';
+                    const isS = (c.client_type || '').toLowerCase() === 'subsidiary';
                     const displayName = c.client_name || c.contact_name || 'Unknown';
-                    select.innerHTML += `<option value="${c.client_id}" data-name="${displayName}">${displayName}</option>`;
+                    const opt = document.createElement('option');
+                    opt.value = c.client_id;
+                    opt.dataset.name = displayName;
+                    opt.textContent = `${isP ? '🏢 ' : isS ? '  └ ' : ''}${displayName}`;
+                    indivOG.appendChild(opt);
                 });
+                select.appendChild(indivOG);
+            };
+            
+            if (clients.length > 0) {
+                buildHierarchyOptions(clients);
             } else {
-                // Try to load from API
                 fetch(API_URL + '?action=getClients')
                     .then(r => r.json())
                     .then(result => {
                         if (result.success && result.data) {
                             window.allClientsData = result.data;
-                            result.data.forEach(c => {
-                                const displayName = c.client_name || c.contact_name || 'Unknown';
-                                select.innerHTML += `<option value="${c.client_id}" data-name="${displayName}">${displayName}</option>`;
-                            });
+                            buildHierarchyOptions(result.data);
                         }
                     })
                     .catch(e => console.error('Error loading clients:', e));
@@ -20463,7 +20505,13 @@ Email: ${contract.contact_email || '-'}
             return `
                 <tr style="height:90px;">
                     <td style="padding:1rem;"><strong>${offer.offer_id}</strong>${typeBadge}</td>
-                    <td style="padding:1rem;">${offer.client_name || 'N/A'}</td>
+                    <td style="padding:1rem;">${(() => {
+                        const cd = (window.cachedClientsData || []).find(c => c.client_id === offer.client_id);
+                        const ct = cd ? (cd.client_type || '').toLowerCase() : '';
+                        if (ct === 'parent') return '<span style="color:#5dade2;font-weight:700;">🏢 ' + (offer.client_name || 'N/A') + '</span> <span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">PARENT</span>';
+                        if (ct === 'subsidiary') return '<span style="color:rgba(255,255,255,0.4);">└</span> ' + (offer.client_name || 'N/A') + ' <span style="background:rgba(212,175,55,0.15);color:#d4af37;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">SUB</span>';
+                        return offer.client_name || 'N/A';
+                    })()}</td>
                     <td style="padding:1rem;">${formatContractDate(offer.offer_date)}</td>
                     <td style="padding:1rem;">${offer.total_members || 0}</td>
                     <td style="padding:1rem;"><strong>$${(offer.grand_total_usd || 0).toLocaleString()}</strong></td>
@@ -20905,17 +20953,41 @@ Email: ${contract.contact_email || '-'}
             const firstOptions = '<option value="">-- Select a client or enter new --</option><option value="new">+ Add New Client</option>';
             select.innerHTML = firstOptions;
             
-            // Use cached data if available
+            // Use cached data if available - with parent/sub hierarchy
             if (clientsDataLoaded && window.cachedClientsData) {
-                window.cachedClientsData.forEach(c => {
-                    const option = document.createElement('option');
-                    option.value = c.client_id;
-                    // API returns contacts - use contact_name as display name
-                    option.textContent = c.client_name || c.contact_name || c.name || 'Unknown';
-                    option.dataset.email = c.contact_email || c.email || '';
-                    option.dataset.contact = c.contact_person || c.contact_name || '';
-                    select.appendChild(option);
+                const clients = window.cachedClientsData;
+                const parents = clients.filter(c => (c.client_type || '').toLowerCase() === 'parent')
+                    .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                const sorted = [...clients].sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                
+                if (parents.length > 0) {
+                    const groupOG = document.createElement('optgroup');
+                    groupOG.label = '🏢 Groups';
+                    parents.forEach(p => {
+                        const subs = clients.filter(s => s.parent_client_id === p.client_id);
+                        const opt = document.createElement('option');
+                        opt.value = p.client_id;
+                        opt.textContent = `🏢 ${p.client_name || 'Unknown'} (+${subs.length} sub)`;
+                        opt.dataset.email = p.contact_email || p.email || '';
+                        opt.dataset.contact = p.contact_person || p.contact_name || '';
+                        groupOG.appendChild(opt);
+                    });
+                    select.appendChild(groupOG);
+                }
+                
+                const indivOG = document.createElement('optgroup');
+                indivOG.label = '👤 All Clients';
+                sorted.forEach(c => {
+                    const isP = (c.client_type || '').toLowerCase() === 'parent';
+                    const isS = (c.client_type || '').toLowerCase() === 'subsidiary';
+                    const opt = document.createElement('option');
+                    opt.value = c.client_id;
+                    opt.textContent = `${isP ? '🏢 ' : isS ? '  └ ' : ''}${c.client_name || c.contact_name || c.name || 'Unknown'}`;
+                    opt.dataset.email = c.contact_email || c.email || '';
+                    opt.dataset.contact = c.contact_person || c.contact_name || '';
+                    indivOG.appendChild(opt);
                 });
+                select.appendChild(indivOG);
                 return;
             }
             
@@ -20928,15 +21000,38 @@ Email: ${contract.contact_email || '-'}
                     window.cachedClientsData = clientList;
                     clientsDataLoaded = true;
                     
-                    clientList.forEach(c => {
-                        const option = document.createElement('option');
-                        option.value = c.client_id;
-                        // API returns contacts - use contact_name as display name
-                        option.textContent = c.client_name || c.contact_name || c.name || 'Unknown';
-                        option.dataset.email = c.contact_email || c.email || '';
-                        option.dataset.contact = c.contact_person || c.contact_name || '';
-                        select.appendChild(option);
+                    const parents = clientList.filter(c => (c.client_type || '').toLowerCase() === 'parent')
+                        .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                    const sorted = [...clientList].sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+                    
+                    if (parents.length > 0) {
+                        const groupOG = document.createElement('optgroup');
+                        groupOG.label = '🏢 Groups';
+                        parents.forEach(p => {
+                            const subs = clientList.filter(s => s.parent_client_id === p.client_id);
+                            const opt = document.createElement('option');
+                            opt.value = p.client_id;
+                            opt.textContent = `🏢 ${p.client_name || 'Unknown'} (+${subs.length} sub)`;
+                            opt.dataset.email = p.contact_email || p.email || '';
+                            opt.dataset.contact = p.contact_person || p.contact_name || '';
+                            groupOG.appendChild(opt);
+                        });
+                        select.appendChild(groupOG);
+                    }
+                    
+                    const indivOG = document.createElement('optgroup');
+                    indivOG.label = '👤 All Clients';
+                    sorted.forEach(c => {
+                        const isP = (c.client_type || '').toLowerCase() === 'parent';
+                        const isS = (c.client_type || '').toLowerCase() === 'subsidiary';
+                        const opt = document.createElement('option');
+                        opt.value = c.client_id;
+                        opt.textContent = `${isP ? '🏢 ' : isS ? '  └ ' : ''}${c.client_name || c.contact_name || c.name || 'Unknown'}`;
+                        opt.dataset.email = c.contact_email || c.email || '';
+                        opt.dataset.contact = c.contact_person || c.contact_name || '';
+                        indivOG.appendChild(opt);
                     });
+                    select.appendChild(indivOG);
                     console.log('✅ Clients loaded:', clientList.length, 'items');
                 }
             } catch (e) {
