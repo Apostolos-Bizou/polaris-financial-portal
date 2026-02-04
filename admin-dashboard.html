@@ -9716,7 +9716,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay, [id$="Modal"], [id$="Center"]').forEach(m => { if (m.style.display !== 'none' && m.style.display !== '') m.style.display = 'none'; }); } });
         window.addEventListener('offline', () => alert('⚠️ No internet connection! Some features may not work.')); window.addEventListener('online', () => alert('✅ Connection restored!'));
         document.addEventListener('click', e => { const btn = e.target.closest('button'); if (btn && !btn.dataset.noGuard) { if (btn.dataset.busy) { e.stopImmediatePropagation(); e.preventDefault(); return; } btn.dataset.busy = '1'; setTimeout(() => delete btn.dataset.busy, 2000); } }, true);
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzNtZrTfndEPGotMf5oCB07W4uJQ9dWjqilTLuGiJG0zW8wCYVEBgwL3e34OvOOgZpb/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwRyYphm9v3JYyFLHAzuv0aTlAcWnqUFmym1es5IjFfMiRtQUsr4BI82k2vih7cLlxi/exec';
         const EMAIL_TEMPLATES_FOLDER_ID = '1cj4aLgolPRwJvjRrkiNAUhQ7ZD_HRfE2';
         
         // ═══════════════════════════════════════════════════════════════════
