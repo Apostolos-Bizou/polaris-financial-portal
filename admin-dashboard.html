@@ -17493,19 +17493,25 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             var select = document.getElementById('parentClientId');
             var allClients = window.cachedClientsData || [];
             
-            // Filter only parent clients (exclude subsidiaries)
-            var parentClients = allClients.filter(function(c) {
-                return (!c.parent_client_id || c.parent_client_id === '') && c.client_type !== 'subsidiary';
+            // Show ALL clients (sorted: parents first, then subsidiaries)
+            var sorted = allClients.slice().sort(function(a, b) {
+                var aIsParent = (!a.parent_client_id || a.parent_client_id === '') && a.client_type !== 'subsidiary';
+                var bIsParent = (!b.parent_client_id || b.parent_client_id === '') && b.client_type !== 'subsidiary';
+                if (aIsParent && !bIsParent) return -1;
+                if (!aIsParent && bIsParent) return 1;
+                return (a.client_name || '').localeCompare(b.client_name || '');
             });
             
             var html = '<option value="">-- Select Parent Company --</option>';
-            parentClients.forEach(function(c) {
-                var name = c.client_name || c.name || c.client_id;
-                html += '<option value="' + c.client_id + '">🏛️ ' + name + '</option>';
+            sorted.forEach(function(c) {
+                var name = (c.client_name || c.name || c.client_id).replace(/^[\s]*[🏢└─┌┐┘┤├│┬┴┼\-\s]+/g, '').trim();
+                var isParent = (!c.parent_client_id || c.parent_client_id === '') && c.client_type !== 'subsidiary';
+                var icon = isParent ? '🏛️' : '└─';
+                html += '<option value="' + c.client_id + '">' + icon + ' ' + name + '</option>';
             });
             
             select.innerHTML = html;
-            console.log('✅ Parent dropdown populated with', parentClients.length, 'parent clients');
+            console.log('✅ Parent dropdown populated with', sorted.length, 'clients');
         }
         
         function resetClientHierarchyFields() {
