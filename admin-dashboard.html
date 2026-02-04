@@ -20812,6 +20812,7 @@ Email: ${contract.contact_email || '-'}
                     <div style="text-align:center;width:70px;${offer.status !== 'signed' ? 'display:none;' : ''}">
                         <button onclick="createContractFromOfferUI('${offer.offer_id}')" style="padding:0.5rem 0.75rem;font-size:0.8rem;background:linear-gradient(135deg,#d4a843,#c49932);color:#1e3a5f;border:none;border-radius:6px;cursor:pointer;width:70px;font-weight:600;" title="Create Contract">📄 Contract</button>
                     </div>
+                    <div id="signedDocsLinks-${offer.offer_id}" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;"></div>
                 `;
             }
             
@@ -21063,6 +21064,23 @@ Email: ${contract.contact_email || '-'}
                         if (cqLink && cqUrl) {
                             cqLink.innerHTML = `<a href="${cqUrl}" target="_blank" style="color:#8b5cf6;">📊 Open</a>`;
                         }
+                        
+                        // v3.30: Signed document links
+                        const signedContainer = document.getElementById('signedDocsLinks-' + offerId);
+                        if (signedContainer) {
+                            const signedTypes = ['signed_asa', 'signed_nda', 'signed_dpa', 'signed_proposal', 'signed_document'];
+                            const signedLabels = { signed_asa: '📋 ASA', signed_nda: '📜 NDA', signed_dpa: '🔒 DPA', signed_proposal: '📄 Prop', signed_document: '📄 Doc' };
+                            let signedHtml = '';
+                            signedTypes.forEach(st => {
+                                const url = getUrl(docs[st]);
+                                if (url) {
+                                    signedHtml += `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:rgba(26,188,156,0.12);border:1px solid rgba(26,188,156,0.3);border-radius:5px;color:#1abc9c;font-size:0.7rem;font-weight:600;text-decoration:none;white-space:nowrap;" title="Signed ${st.replace('signed_', '').toUpperCase()}">${signedLabels[st] || '📄'} ✓</a>`;
+                                }
+                            });
+                            if (signedHtml) {
+                                signedContainer.innerHTML = '<span style="color:rgba(255,255,255,0.35);font-size:0.65rem;margin-right:2px;">SIGNED:</span>' + signedHtml;
+                            }
+                        }
                     });
                     console.log('Document links loaded for', Object.keys(docsMap).length, 'offers');
                 }
@@ -21208,29 +21226,206 @@ Email: ${contract.contact_email || '-'}
             }
         }
         
+        // ═══════════════════════════════════════════════════════════════
+        // SIGNED DOCUMENTS UPLOAD SYSTEM
+        // ═══════════════════════════════════════════════════════════════
+        
+        let signedUploadOfferId = null;
+        let signedUploadClientName = '';
+        let signedUploadFiles = [];
+        
         async function markOfferAsSigned(offerId) {
-            if (!confirm('Mark this offer as SIGNED?\n\nThis will update the status to "signed" and allow contract creation.')) {
+            signedUploadOfferId = offerId;
+            signedUploadFiles = [];
+            
+            // Find offer data
+            const offer = offersData.find(o => o.offer_id === offerId);
+            signedUploadClientName = offer ? (offer.client_name || '').replace(/^[\s]*[🏢└─\s]+/g, '').trim() : 'Unknown';
+            
+            // Build modal
+            const modal = document.getElementById('signedDocsModal');
+            if (!modal) { console.error('signedDocsModal not found'); return; }
+            document.getElementById('signedDocsOfferId').textContent = offerId;
+            document.getElementById('signedDocsClientName').textContent = signedUploadClientName;
+            document.getElementById('signedDocsFileList').innerHTML = '<p style="color:rgba(255,255,255,0.4);text-align:center;padding:2rem;">No files selected yet. Use the buttons above.</p>';
+            document.getElementById('signedDocsStatus').innerHTML = '';
+            document.getElementById('signedDocsUploadBtn').disabled = true;
+            document.getElementById('signedDocsUploadBtn').style.opacity = '0.4';
+            document.getElementById('signedDocsFileInput').value = '';
+            modal.style.display = 'flex';
+        }
+        
+        function closeSignedDocsModal() {
+            document.getElementById('signedDocsModal').style.display = 'none';
+            signedUploadOfferId = null;
+            signedUploadFiles = [];
+        }
+        
+        function openSignedDocsLocal() {
+            document.getElementById('signedDocsFileInput').click();
+        }
+        
+        function openSignedDocsDrive() {
+            // Open client's Drive folder in new tab
+            const offer = offersData.find(o => o.offer_id === signedUploadOfferId);
+            if (offer && offer.gdrive_folder_url) {
+                window.open(offer.gdrive_folder_url, '_blank');
+            } else {
+                window.open('https://drive.google.com', '_blank');
+            }
+            // Show hint
+            document.getElementById('signedDocsStatus').innerHTML = '<p style="color:#d4a843;text-align:center;font-size:0.85rem;">📁 Drive opened — after downloading the signed files, use 💻 My Computer to upload them here.</p>';
+        }
+        
+        function handleSignedDocsFiles(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+            signedUploadFiles = [...signedUploadFiles, ...files];
+            renderSignedFileList();
+        }
+        
+        function removeSignedFile(index) {
+            signedUploadFiles.splice(index, 1);
+            renderSignedFileList();
+        }
+        
+        function renderSignedFileList() {
+            const container = document.getElementById('signedDocsFileList');
+            const uploadBtn = document.getElementById('signedDocsUploadBtn');
+            
+            if (signedUploadFiles.length === 0) {
+                container.innerHTML = '<p style="color:rgba(255,255,255,0.4);text-align:center;padding:2rem;">No files selected yet. Use the buttons above.</p>';
+                uploadBtn.disabled = true;
+                uploadBtn.style.opacity = '0.4';
                 return;
             }
             
-            try {
-                console.log('Marking offer as signed:', offerId);
+            uploadBtn.disabled = false;
+            uploadBtn.style.opacity = '1';
+            
+            const icons = { 'application/pdf': '📕', 'image/': '🖼️', 'application/msword': '📘', 'application/vnd': '📘' };
+            
+            container.innerHTML = signedUploadFiles.map((f, idx) => {
+                const icon = Object.entries(icons).find(([k]) => f.type.startsWith(k))?.[1] || '📄';
+                const docType = detectSignedDocType(f.name);
+                const typeLabel = docType.replace('signed_', '').toUpperCase();
+                return `
+                    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.25);border-radius:10px;margin-bottom:8px;">
+                        <span style="font-size:1.4rem;">${icon}</span>
+                        <div style="flex:1;min-width:0;">
+                            <div style="color:white;font-weight:500;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</div>
+                            <div style="display:flex;gap:8px;margin-top:2px;">
+                                <span style="color:rgba(255,255,255,0.4);font-size:0.75rem;">${(f.size / 1024).toFixed(0)} KB</span>
+                                <span style="background:rgba(39,174,96,0.2);color:#27ae60;padding:1px 6px;border-radius:4px;font-size:0.7rem;font-weight:600;">${typeLabel}</span>
+                            </div>
+                        </div>
+                        <button onclick="removeSignedFile(${idx})" style="background:rgba(231,76,60,0.15);border:1px solid rgba(231,76,60,0.3);color:#e74c3c;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;justify-content:center;">✕</button>
+                    </div>`;
+            }).join('');
+        }
+        
+        function detectSignedDocType(fileName) {
+            const lower = fileName.toLowerCase();
+            if (lower.includes('asa') || lower.includes('agreement') || lower.includes('service')) return 'signed_asa';
+            if (lower.includes('nda') || lower.includes('non-disclosure') || lower.includes('confidential')) return 'signed_nda';
+            if (lower.includes('dpa') || lower.includes('data') || lower.includes('privacy')) return 'signed_dpa';
+            if (lower.includes('proposal') || lower.includes('quote')) return 'signed_proposal';
+            return 'signed_document';
+        }
+        
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        async function uploadSignedDocsAndMark() {
+            if (signedUploadFiles.length === 0) return;
+            
+            const statusDiv = document.getElementById('signedDocsStatus');
+            const uploadBtn = document.getElementById('signedDocsUploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.style.opacity = '0.4';
+            
+            let uploaded = 0;
+            let errors = [];
+            let uploadedLinks = [];
+            
+            for (let i = 0; i < signedUploadFiles.length; i++) {
+                const file = signedUploadFiles[i];
+                statusDiv.innerHTML = `
+                    <div style="text-align:center;padding:1rem;">
+                        <div style="font-size:2rem;margin-bottom:0.5rem;">⏳</div>
+                        <div style="color:#d4a843;font-weight:500;">Uploading ${i + 1}/${signedUploadFiles.length}</div>
+                        <div style="color:rgba(255,255,255,0.5);font-size:0.85rem;margin-top:4px;">${file.name}</div>
+                        <div style="margin-top:8px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;">
+                            <div style="height:100%;width:${((i) / signedUploadFiles.length * 100)}%;background:#d4a843;border-radius:2px;transition:width 0.3s;"></div>
+                        </div>
+                    </div>`;
                 
-                const url = API_URL + '?action=markOfferAsSigned&offerId=' + encodeURIComponent(offerId);
-                const response = await fetch(url);
-                const result = await response.json();
-                
-                console.log('Result:', result);
-                
-                if (result.success) {
-                    alert('✅ Offer marked as signed!');
-                    loadOffers(); // Refresh table
-                } else {
-                    alert('❌ Error: ' + (result.error || 'Unknown error'));
+                try {
+                    const base64 = await fileToBase64(file);
+                    const docType = detectSignedDocType(file.name);
+                    
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'uploadSignedDocument',
+                            offerId: signedUploadOfferId,
+                            clientName: signedUploadClientName,
+                            fileName: 'SIGNED_' + file.name,
+                            base64Data: base64,
+                            mimeType: file.type || 'application/pdf',
+                            docType: docType
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        uploaded++;
+                        uploadedLinks.push({ name: file.name, url: result.data.fileUrl, docType: docType });
+                    } else {
+                        errors.push(file.name + ': ' + (result.error || 'Unknown'));
+                    }
+                } catch (e) {
+                    errors.push(file.name + ': ' + e.message);
                 }
-            } catch (error) {
-                console.error('markOfferAsSigned error:', error);
-                alert('❌ Error updating status: ' + error.message);
+            }
+            
+            // Mark offer as signed
+            if (uploaded > 0) {
+                statusDiv.innerHTML = '<div style="text-align:center;padding:1rem;"><div style="font-size:2rem;">⏳</div><div style="color:#d4a843;">Marking offer as signed...</div></div>';
+                try {
+                    await fetch(API_URL + '?action=markOfferAsSigned&offerId=' + encodeURIComponent(signedUploadOfferId));
+                } catch(e) { console.error('Status update error:', e); }
+            }
+            
+            // Show results
+            let html = '';
+            if (uploaded > 0) {
+                html += `<div style="background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);border-radius:12px;padding:1.2rem;margin-bottom:0.5rem;">
+                    <div style="color:#27ae60;font-weight:600;font-size:1rem;margin-bottom:0.8rem;">✅ ${uploaded} file(s) uploaded — Offer marked as SIGNED!</div>`;
+                uploadedLinks.forEach(link => {
+                    const typeLabel = link.docType.replace('signed_', '').toUpperCase();
+                    html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;">
+                        <a href="${link.url}" target="_blank" style="color:#d4a843;text-decoration:none;font-weight:500;">📄 ${link.name}</a>
+                        <span style="background:rgba(212,175,55,0.15);color:#d4a843;padding:2px 8px;border-radius:4px;font-size:0.7rem;">${typeLabel}</span>
+                    </div>`;
+                });
+                html += '</div>';
+            }
+            if (errors.length > 0) {
+                html += `<div style="color:#e74c3c;font-size:0.85rem;margin-top:0.5rem;">❌ Errors: ${errors.join(', ')}</div>`;
+            }
+            statusDiv.innerHTML = html;
+            
+            // Refresh offers table after delay
+            if (uploaded > 0) {
+                setTimeout(() => { loadOffers(); }, 2000);
             }
         }
         
@@ -24177,6 +24372,69 @@ const clientData = {
         }
     </script>
 <!-- ADD NEW CLIENT MODAL - IMPROVED VERSION -->
+<!-- SIGNED DOCUMENTS UPLOAD MODAL -->
+<div id="signedDocsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:99998; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:linear-gradient(135deg, #1a2332 0%, #0f1724 100%); border:1px solid #2d3748; border-radius:20px; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, #1abc9c, #16a085); padding:1.2rem 1.5rem; display:flex; justify-content:space-between; align-items:center; border-radius:20px 20px 0 0;">
+            <h2 style="color:white; margin:0; font-size:1.3rem; display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.5rem;">📤</span> Upload Signed Documents
+            </h2>
+            <button onclick="closeSignedDocsModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.2rem;">✕</button>
+        </div>
+        
+        <!-- Info Bar -->
+        <div style="padding:1rem 1.5rem; background:rgba(26,188,156,0.08); border-bottom:1px solid rgba(26,188,156,0.15);">
+            <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+                <div><span style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Offer:</span> <strong id="signedDocsOfferId" style="color:#1abc9c;">-</strong></div>
+                <div><span style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Client:</span> <strong id="signedDocsClientName" style="color:white;">-</strong></div>
+            </div>
+        </div>
+        
+        <!-- Upload Buttons: Drive + My Computer -->
+        <div style="padding:1.2rem 1.5rem;">
+            <p style="color:rgba(255,255,255,0.6);font-size:0.85rem;margin:0 0 1rem;">Upload the signed documents received from the client:</p>
+            
+            <div style="display:flex; gap:12px; margin-bottom:1.2rem;">
+                <!-- Google Drive -->
+                <div onclick="openSignedDocsDrive()" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; padding:1.2rem 1rem; background:rgba(66,133,244,0.08); border:2px dashed rgba(66,133,244,0.3); border-radius:14px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='rgba(66,133,244,0.15)';this.style.borderColor='rgba(66,133,244,0.6)'" onmouseout="this.style.background='rgba(66,133,244,0.08)';this.style.borderColor='rgba(66,133,244,0.3)'">
+                    <span style="font-size:2rem;">📁</span>
+                    <span style="color:#4285f4;font-weight:600;font-size:0.9rem;">Google Drive</span>
+                    <span style="color:rgba(255,255,255,0.35);font-size:0.7rem;">Open client folder</span>
+                </div>
+                <!-- My Computer -->
+                <div onclick="openSignedDocsLocal()" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; padding:1.2rem 1rem; background:rgba(212,175,55,0.08); border:2px dashed rgba(212,175,55,0.3); border-radius:14px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.15)';this.style.borderColor='rgba(212,175,55,0.6)'" onmouseout="this.style.background='rgba(212,175,55,0.08)';this.style.borderColor='rgba(212,175,55,0.3)'">
+                    <span style="font-size:2rem;">💻</span>
+                    <span style="color:#d4a843;font-weight:600;font-size:0.9rem;">My Computer</span>
+                    <span style="color:rgba(255,255,255,0.35);font-size:0.7rem;">Select local files</span>
+                </div>
+            </div>
+            
+            <input type="file" id="signedDocsFileInput" multiple accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.tif,.tiff" style="display:none;" onchange="handleSignedDocsFiles(event)">
+            
+            <!-- Auto-detect hint -->
+            <div style="background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:8px 12px;font-size:0.75rem;color:#d4a843;margin-bottom:1rem;">
+                💡 Files are auto-categorized by name: <strong>ASA</strong>, <strong>NDA</strong>, <strong>DPA</strong>, <strong>Proposal</strong>. Include the document type in the filename for best results.
+            </div>
+        </div>
+        
+        <!-- Selected Files List -->
+        <div style="padding:0 1.5rem;">
+            <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;font-weight:600;margin-bottom:8px;">SELECTED FILES</div>
+            <div id="signedDocsFileList" style="max-height:200px;overflow-y:auto;"></div>
+        </div>
+        
+        <!-- Status -->
+        <div id="signedDocsStatus" style="padding:0 1.5rem;"></div>
+        
+        <!-- Actions -->
+        <div style="padding:1.2rem 1.5rem; display:flex; gap:12px; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.05); margin-top:1rem;">
+            <button onclick="closeSignedDocsModal()" style="padding:0.7rem 1.5rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:rgba(255,255,255,0.6); cursor:pointer; font-size:0.9rem;">Cancel</button>
+            <button id="signedDocsUploadBtn" onclick="uploadSignedDocsAndMark()" disabled style="padding:0.7rem 2rem; background:linear-gradient(135deg,#1abc9c,#16a085); border:none; border-radius:10px; color:white; cursor:pointer; font-size:0.95rem; font-weight:600; opacity:0.4; transition:all 0.2s;">📤 Upload & Mark as Signed</button>
+        </div>
+    </div>
+</div>
+
 <div id="addClientModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:99999; align-items:center; justify-content:center; padding:10px;">
     <div style="background:linear-gradient(135deg, #1a2332 0%, #0f1724 100%); border:1px solid #2d3748; border-radius:20px; width:100%; max-width:1000px; max-height:95vh; overflow-y:auto; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
         
