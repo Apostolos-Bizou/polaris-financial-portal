@@ -17493,25 +17493,53 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             var select = document.getElementById('parentClientId');
             var allClients = window.cachedClientsData || [];
             
-            // Show ALL clients (sorted: parents first, then subsidiaries)
-            var sorted = allClients.slice().sort(function(a, b) {
-                var aIsParent = (!a.parent_client_id || a.parent_client_id === '') && a.client_type !== 'subsidiary';
-                var bIsParent = (!b.parent_client_id || b.parent_client_id === '') && b.client_type !== 'subsidiary';
-                if (aIsParent && !bIsParent) return -1;
-                if (!aIsParent && bIsParent) return 1;
-                return (a.client_name || '').localeCompare(b.client_name || '');
+            // Build hierarchy map (same as offers dropdown)
+            var parentMap = {};
+            var parentClients = [];
+            
+            allClients.forEach(function(c) {
+                if ((c.client_type || '').toLowerCase() === 'parent') {
+                    parentClients.push(c);
+                }
+                if (c.parent_client_id && c.parent_client_id !== '') {
+                    if (!parentMap[c.parent_client_id]) parentMap[c.parent_client_id] = [];
+                    parentMap[c.parent_client_id].push(c);
+                }
             });
             
+            // Sort parents alphabetically
+            parentClients.sort(function(a, b) { return (a.client_name || '').localeCompare(b.client_name || ''); });
+            
             var html = '<option value="">-- Select Parent Company --</option>';
-            sorted.forEach(function(c) {
-                var name = (c.client_name || c.name || c.client_id).replace(/^[\s]*[🏢└─┌┐┘┤├│┬┴┼\-\s]+/g, '').trim();
-                var isParent = (!c.parent_client_id || c.parent_client_id === '') && c.client_type !== 'subsidiary';
-                var icon = isParent ? '🏛️' : '└─';
-                html += '<option value="' + c.client_id + '">' + icon + ' ' + name + '</option>';
+            
+            // Build grouped options: each parent followed by its subsidiaries
+            parentClients.forEach(function(p) {
+                var cleanName = (p.client_name || '').replace(/^[\s]*[🏢└─┌┐┘┤├│┬┴┼\-\s]+/g, '').trim();
+                var subs = (parentMap[p.client_id] || []).sort(function(a, b) { return (a.client_name || '').localeCompare(b.client_name || ''); });
+                var subCount = subs.length;
+                
+                // Parent option
+                html += '<option value="' + p.client_id + '">🏛️ ' + cleanName + (subCount > 0 ? ' [MOTHER +' + subCount + ' sub]' : '') + '</option>';
+                
+                // Subsidiary options under this parent
+                subs.forEach(function(s) {
+                    var subName = (s.client_name || '').replace(/^[\s]*[🏢└─┌┐┘┤├│┬┴┼\-\s]+/g, '').trim();
+                    html += '<option value="' + s.client_id + '">   └─ ' + subName + '</option>';
+                });
+            });
+            
+            // Also add standalone clients (no parent, not a parent type)
+            var standalone = allClients.filter(function(c) {
+                return (c.client_type || '').toLowerCase() !== 'parent' && (!c.parent_client_id || c.parent_client_id === '');
+            }).sort(function(a, b) { return (a.client_name || '').localeCompare(b.client_name || ''); });
+            
+            standalone.forEach(function(c) {
+                var name = (c.client_name || '').replace(/^[\s]*[🏢└─┌┐┘┤├│┬┴┼\-\s]+/g, '').trim();
+                html += '<option value="' + c.client_id + '">🏢 ' + name + '</option>';
             });
             
             select.innerHTML = html;
-            console.log('✅ Parent dropdown populated with', sorted.length, 'clients');
+            console.log('✅ Parent dropdown populated with', allClients.length, 'clients (grouped)');
         }
         
         function resetClientHierarchyFields() {
