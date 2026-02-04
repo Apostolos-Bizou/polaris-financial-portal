@@ -20354,6 +20354,37 @@ Email: ${contract.contact_email || '-'}
                         // Fallback to offer_id comparison (newer IDs have larger timestamps)
                         return (b.offer_id || '').localeCompare(a.offer_id || '');
                     });
+                    
+                    // Fix offers with 0 totals but valid items - recalculate from items
+                    result.data.forEach(offer => {
+                        if (offer.items && Array.isArray(offer.items) && offer.items.length > 0) {
+                            let calcPrin = 0, calcDep = 0, calcReg = 0, calcFund = 0;
+                            offer.items.forEach(item => {
+                                const p = parseInt(item.principals || item.num_principals || 0);
+                                const d = parseInt(item.dependents || item.num_dependents || 0);
+                                calcPrin += p;
+                                calcDep += d;
+                                calcReg += parseFloat(item.subtotal_reg || item.reg_fee || 0);
+                                calcFund += parseFloat(item.subtotal_fund || item.fund_deposit || 0);
+                            });
+                            const calcMembers = calcPrin + calcDep;
+                            const calcDental = offer.includes_dental ? calcMembers * (typeof DENTAL_FEE !== 'undefined' ? DENTAL_FEE : 9.50) : 0;
+                            const calcTotal = calcReg + calcFund + calcDental;
+                            
+                            // Only override if API returned 0 but items have data
+                            if ((!offer.total_members || offer.total_members == 0) && calcMembers > 0) {
+                                console.log('🔧 Fixing offer', offer.offer_id, '- recalculated members:', calcMembers, 'total:', calcTotal);
+                                offer.total_principals = calcPrin;
+                                offer.total_dependents = calcDep;
+                                offer.total_members = calcMembers;
+                                offer.subtotal_reg_fees = calcReg;
+                                offer.subtotal_fund_deposit = calcFund;
+                                offer.subtotal_dental = calcDental;
+                                offer.grand_total_usd = calcTotal;
+                            }
+                        }
+                    });
+                    
                     offersData = result.data;
                     window.offersData = result.data; // Sync to global for navigation
                     allOffersData = result.data; // Also store for filtering
@@ -20393,6 +20424,31 @@ Email: ${contract.contact_email || '-'}
                         if (dateB - dateA !== 0) return dateB - dateA;
                         return (b.offer_id || '').localeCompare(a.offer_id || '');
                     });
+                    
+                    // Fix offers with 0 totals - recalculate from items
+                    result.data.forEach(offer => {
+                        if (offer.items && Array.isArray(offer.items) && offer.items.length > 0) {
+                            let calcPrin = 0, calcDep = 0, calcReg = 0, calcFund = 0;
+                            offer.items.forEach(item => {
+                                calcPrin += parseInt(item.principals || item.num_principals || 0);
+                                calcDep += parseInt(item.dependents || item.num_dependents || 0);
+                                calcReg += parseFloat(item.subtotal_reg || item.reg_fee || 0);
+                                calcFund += parseFloat(item.subtotal_fund || item.fund_deposit || 0);
+                            });
+                            const calcMembers = calcPrin + calcDep;
+                            const calcDental = offer.includes_dental ? calcMembers * (typeof DENTAL_FEE !== 'undefined' ? DENTAL_FEE : 9.50) : 0;
+                            if ((!offer.total_members || offer.total_members == 0) && calcMembers > 0) {
+                                offer.total_principals = calcPrin;
+                                offer.total_dependents = calcDep;
+                                offer.total_members = calcMembers;
+                                offer.subtotal_reg_fees = calcReg;
+                                offer.subtotal_fund_deposit = calcFund;
+                                offer.subtotal_dental = calcDental;
+                                offer.grand_total_usd = calcReg + calcFund + calcDental;
+                            }
+                        }
+                    });
+                    
                     offersData = result.data;
                     window.offersData = result.data; // Sync to global for navigation
                     allOffersData = result.data;
@@ -20541,11 +20597,12 @@ Email: ${contract.contact_email || '-'}
                 <tr style="height:90px;">
                     <td style="padding:1rem;"><strong>${offer.offer_id}</strong>${typeBadge}</td>
                     <td style="padding:1rem;">${(() => {
+                        const cleanName = (offer.client_name || 'N/A').replace(/^[\s]*[🏢└\s]+/g, '').trim() || 'N/A';
                         const cd = (window.cachedClientsData || []).find(c => c.client_id === offer.client_id);
                         const ct = cd ? (cd.client_type || '').toLowerCase() : '';
-                        if (ct === 'parent') return '<span style="color:#5dade2;font-weight:700;">🏢 ' + (offer.client_name || 'N/A') + '</span> <span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">PARENT</span>';
-                        if (ct === 'subsidiary') return '<span style="color:#d4af37;">└</span> <span style="color:#d4af37;">' + (offer.client_name || 'N/A') + '</span> <span style="background:rgba(212,175,55,0.15);color:#d4af37;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">SUB</span>';
-                        return offer.client_name || 'N/A';
+                        if (ct === 'parent') return '<span style="color:#5dade2;font-weight:700;">🏢 ' + cleanName + '</span> <span style="background:rgba(30,58,95,0.6);color:#5dade2;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">PARENT</span>';
+                        if (ct === 'subsidiary') return '<span style="color:#d4af37;">└</span> <span style="color:#d4af37;">' + cleanName + '</span> <span style="background:rgba(212,175,55,0.15);color:#d4af37;padding:1px 6px;border-radius:8px;font-size:0.65rem;font-weight:600;">SUB</span>';
+                        return cleanName;
                     })()}</td>
                     <td style="padding:1rem;">${formatContractDate(offer.offer_date)}</td>
                     <td style="padding:1rem;">${offer.total_members || 0}</td>
@@ -21598,7 +21655,10 @@ const clientData = {
         function getOfferClientName() {
             const select = document.getElementById('offerClientSelect');
             if (select.value === '' || select.value === 'new') return 'Prospective Client';
-            return select.options[select.selectedIndex].text;
+            // Clean hierarchy prefixes from dropdown text
+            let name = select.options[select.selectedIndex].text;
+            name = name.replace(/^[\s]*[🏢└\s]+/g, '').replace(/\s*\(\+\d+\s*sub\)/gi, '').trim();
+            return name || 'Unknown Client';
         }
         
         function getSelectedOfferPlans() {
@@ -21682,6 +21742,9 @@ const clientData = {
             let contactPerson = '';
             let contactEmail = '';
             
+            // Clean client name - remove hierarchy prefixes (🏢, └, extra spaces)
+            clientName = clientName.replace(/^[\s]*[🏢└\s]+/g, '').replace(/\s*\(\+\d+\s*sub\)/gi, '').trim();
+            
             if (clientId === 'new' || clientId === '') {
                 // No client selected - offer can still be saved as draft
                 clientName = 'Prospective Client';
@@ -21694,12 +21757,46 @@ const clientData = {
                 contactPerson = selectedOption.dataset.contact || '';
             }
             
-            // Map plans to items format expected by API
-            const items = plans.map(plan => ({
-                program_id: plan.program_id,
-                principals: plan.principals,
-                dependents: plan.dependents
-            }));
+            const tierIndex = currentOfferTier - 1;
+            const dentalIncluded = document.getElementById('offerDentalCheckbox')?.checked || false;
+            const DENTAL_FEE_VAL = typeof DENTAL_FEE !== 'undefined' ? DENTAL_FEE : 9.50;
+            
+            // Calculate totals from plans
+            let totalPrincipals = 0;
+            let totalDependents = 0;
+            let totalReg = 0;
+            let totalFund = 0;
+            
+            // Map plans to items format with FULL data
+            const items = plans.map(plan => {
+                const prin = plan.principals || 0;
+                const dep = plan.dependents || 0;
+                const total = prin + dep;
+                totalPrincipals += prin;
+                totalDependents += dep;
+                
+                const regFee = total * (plan.regFee || 0);
+                const fundDep = total * (plan.fundDeposit || 0);
+                totalReg += regFee;
+                totalFund += fundDep;
+                
+                return {
+                    program_id: plan.program_id,
+                    plan_name: plan.plan || plan.program_id,
+                    principals: prin,
+                    dependents: dep,
+                    total_members: total,
+                    reg_fee_per_member: plan.regFee || 0,
+                    fund_dep_per_member: plan.fundDeposit || 0,
+                    subtotal_reg: regFee,
+                    subtotal_fund: fundDep,
+                    subtotal_total: regFee + fundDep
+                };
+            });
+            
+            const grandTotalMembers = totalPrincipals + totalDependents;
+            const dentalTotal = dentalIncluded ? grandTotalMembers * DENTAL_FEE_VAL : 0;
+            const grandTotal = totalReg + totalFund + dentalTotal;
             
             const offerData = {
                 client_id: clientId,
@@ -21707,12 +21804,23 @@ const clientData = {
                 contact_person: contactPerson,
                 contact_email: contactEmail,
                 tier: currentOfferTier,
-                includes_dental: document.getElementById('offerDentalCheckbox')?.checked || false,
+                includes_dental: dentalIncluded,
                 validity_days: parseInt(document.getElementById('offerValidityDays')?.value) || 30,
                 notes: document.getElementById('offerNotes')?.value || '',
                 items: items,
+                // Send pre-calculated totals as backup for backend
+                total_principals: totalPrincipals,
+                total_dependents: totalDependents,
+                total_members: grandTotalMembers,
+                subtotal_reg_fees: totalReg,
+                subtotal_fund_deposit: totalFund,
+                subtotal_dental: dentalTotal,
+                grand_total_usd: grandTotal,
                 created_by: currentUser?.full_name || 'Admin'
             };
+            
+            console.log('📋 SAVE OFFER DATA:', JSON.stringify(offerData, null, 2));
+            console.log('📋 Items count:', items.length, 'Total members:', grandTotalMembers, 'Grand total:', grandTotal);
             
             // Show loading state
             const saveBtn = document.querySelector('button[onclick="saveOfferDraft()"]');
@@ -21741,10 +21849,49 @@ const clientData = {
                 console.log('Save result:', result);
                 
                 if (result.success) {
+                    const displayMembers = grandTotalMembers;
+                    const displayTotal = grandTotal;
                     alert('✅ Offer saved successfully!\n\n' +
                           '📋 Offer ID: ' + result.offer_id + '\n' +
-                          '👥 Total Members: ' + result.total_members + '\n' +
-                          '💰 Grand Total: $' + (result.grand_total || 0).toLocaleString());
+                          '👥 Total Members: ' + displayMembers.toLocaleString() + '\n' +
+                          '💰 Grand Total: $' + displayTotal.toLocaleString() + '\n' +
+                          '📦 Plans: ' + items.length + ' plan(s)');
+                    
+                    // Force correct values into local cache so table displays properly
+                    // Backend may not store these yet, so we inject them locally
+                    const savedOffer = {
+                        offer_id: result.offer_id,
+                        client_id: clientId,
+                        client_name: clientName,
+                        contact_person: contactPerson,
+                        contact_email: contactEmail,
+                        offer_date: new Date().toISOString().split('T')[0],
+                        status: 'draft',
+                        offer_type: 'standard',
+                        tier: currentOfferTier,
+                        includes_dental: dentalIncluded,
+                        total_principals: totalPrincipals,
+                        total_dependents: totalDependents,
+                        total_members: grandTotalMembers,
+                        subtotal_reg_fees: totalReg,
+                        subtotal_fund_deposit: totalFund,
+                        subtotal_dental: dentalTotal,
+                        grand_total_usd: grandTotal,
+                        items: items
+                    };
+                    
+                    // Add to local offersData so the list view shows correct values
+                    if (typeof offersData !== 'undefined' && Array.isArray(offersData)) {
+                        // Remove any existing with same ID and add fresh
+                        const existIdx = offersData.findIndex(o => o.offer_id === result.offer_id);
+                        if (existIdx >= 0) {
+                            offersData[existIdx] = savedOffer;
+                        } else {
+                            offersData.unshift(savedOffer);
+                        }
+                    }
+                    
+                    console.log('📋 Saved offer locally:', savedOffer);
                     
                     resetOfferForm();
                     
@@ -21752,8 +21899,13 @@ const clientData = {
                     if (typeof switchOffersTab === 'function') {
                         switchOffersTab('list');
                     }
-                    if (typeof loadOffers === 'function') {
-                        loadOffers(); // This now also updates stats
+                    // DON'T call loadOffers() - it would overwrite our local values with backend zeros
+                    // Instead, render from local data which now has correct values
+                    if (typeof renderOffersTable === 'function') {
+                        allOffersData = [...offersData];
+                        window.offersData = offersData;
+                        renderOffersTable();
+                        if (typeof updateOfferStats === 'function') updateOfferStats();
                     }
                 } else {
                     alert('❌ Error saving offer:\n' + (result.error || 'Unknown error'));
@@ -22425,8 +22577,8 @@ const clientData = {
             // Check if this is a Comparison Quote
             const isComparison = offer.offer_type === 'comparison' || (offerId && offerId.startsWith('CQ-'));
             
-            // Get CLIENT NAME from offer
-            let clientName = offer.client_name || 'Unknown Client';
+            // Get CLIENT NAME from offer - clean hierarchy prefixes
+            let clientName = (offer.client_name || 'Unknown Client').replace(/^[\s]*[🏢└\s]+/g, '').trim() || 'Unknown Client';
             
             // Get contact info DIRECTLY from offer
             let contactName = offer.contact_person || '';
@@ -22513,10 +22665,35 @@ const clientData = {
         
         async function viewOffer(offerId) {
             // Find the offer in loaded data
-            const offer = offersData.find(o => o.offer_id === offerId);
+            let offer = offersData.find(o => o.offer_id === offerId);
             if (!offer) {
                 alert('Offer not found: ' + offerId);
                 return;
+            }
+            
+            // If items are missing or totals are 0, try to fetch complete data from API
+            if ((!offer.items || offer.items.length === 0) || (offer.total_members == 0 && offer.grand_total_usd == 0)) {
+                console.log('📋 Offer missing items/totals, fetching from API...');
+                try {
+                    const resp = await fetch(API_URL + '?action=getOfferById&offerId=' + encodeURIComponent(offerId));
+                    const result = await resp.json();
+                    if (result.success && result.data) {
+                        // Merge API data with local data
+                        const apiData = result.data;
+                        console.log('📋 API returned full offer:', apiData);
+                        offer = { ...offer, ...apiData };
+                        // Update in offersData too
+                        const idx = offersData.findIndex(o => o.offer_id === offerId);
+                        if (idx >= 0) offersData[idx] = offer;
+                    }
+                } catch (e) {
+                    console.error('Error fetching offer details:', e);
+                }
+            }
+            
+            // Clean client_name of hierarchy prefixes for display
+            if (offer.client_name) {
+                offer.client_name = offer.client_name.replace(/^[\s]*[🏢└\s]+/g, '').trim();
             }
             
             // Store for later use
