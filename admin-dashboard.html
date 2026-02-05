@@ -18179,38 +18179,79 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         function openClientGoogleFolder() {
             if (currentClientFolder) {
                 // Try to find folder URL from client data
-                const client = (window.cachedClientsData || []).find(c => c.client_name === currentClientFolder.name);
-                if (client && client.folder_url) {
-                    window.open(client.folder_url, '_blank');
+                const client = (window.cachedClientsData || []).find(c => 
+                    c.client_name === currentClientFolder.name || c.client_id === currentClientFolder.id
+                );
+                
+                // Check multiple possible folder URL fields
+                let folderUrl = client?.folder_url || client?.gdrive_folder_url || client?.google_drive_url;
+                
+                if (!folderUrl && client?.folder_id) {
+                    folderUrl = 'https://drive.google.com/drive/folders/' + client.folder_id;
+                }
+                
+                if (folderUrl) {
+                    window.open(folderUrl, '_blank');
                 } else {
-                    alert('Folder URL not found for this client');
+                    // Try to search for folder in Drive
+                    const searchUrl = 'https://drive.google.com/drive/search?q=' + encodeURIComponent(currentClientFolder.name);
+                    if (confirm('Direct folder URL not found.\n\nOpen Google Drive search for "' + currentClientFolder.name + '"?')) {
+                        window.open(searchUrl, '_blank');
+                    }
                 }
             }
         }
         
         function emailClient() {
             if (currentClientFolder) {
-                closeContractCenter();
+                // Go to Send Documents modal with client pre-selected
+                enterModule('offers');
                 setTimeout(() => {
-                    openEmailCenter();
-                    // Pre-select client
-                    const clientSelect = document.getElementById('emailClient');
-                    if (clientSelect) {
-                        for (let option of clientSelect.options) {
-                            if (option.text.includes(currentClientFolder.name)) {
-                                clientSelect.value = option.value;
-                                break;
+                    // Open Send Documents modal
+                    if (typeof openSendDocumentsModal === 'function') {
+                        openSendDocumentsModal();
+                        // Pre-search for client
+                        setTimeout(() => {
+                            const searchInput = document.getElementById('sendDocsModalClientSearch');
+                            if (searchInput) {
+                                searchInput.value = currentClientFolder.name;
+                                searchInput.dispatchEvent(new Event('input'));
                             }
-                        }
+                        }, 300);
                     }
-                }, 300);
+                }, 500);
             }
         }
         
         function createNewContractForClient() {
             if (currentClientFolder) {
-                alert('Create new contract for: ' + currentClientFolder.name);
-                // TODO: Open contract creation form pre-filled with client
+                // Go to New Proposal with client pre-selected
+                enterModule('newproposal');
+                setTimeout(() => {
+                    // Pre-select client in offer form
+                    const clientSelect = document.getElementById('offerClientSelect');
+                    if (clientSelect) {
+                        // Find and select the client
+                        for (let option of clientSelect.options) {
+                            if (option.text.includes(currentClientFolder.name) || option.value === currentClientFolder.id) {
+                                clientSelect.value = option.value;
+                                clientSelect.dispatchEvent(new Event('change'));
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Also try comparison quote client select
+                    const compareSelect = document.getElementById('compareClientSelect');
+                    if (compareSelect) {
+                        for (let option of compareSelect.options) {
+                            if (option.text.includes(currentClientFolder.name) || option.value === currentClientFolder.id) {
+                                compareSelect.value = option.value;
+                                break;
+                            }
+                        }
+                    }
+                }, 500);
             }
         }
         function toggleFinancialTerms() { 
@@ -21909,18 +21950,89 @@ Email: ${contract.contact_email || '-'}
             }
         }
         
+        // Contract creation modal state
+        let createContractOfferId = null;
+        let createContractOfferData = null;
+        
         async function createContractFromOfferUI(offerId) {
-            if (!confirm('Create a new CONTRACT from this offer?\n\nThis will:\n1. Create a new contract record\n2. Update offer status to "converted"\n3. ACTIVATE the client (visible in KPIs & Dashboard)\n4. Set contract period: 1 year from today')) {
+            createContractOfferId = offerId;
+            
+            // Find offer data
+            const offer = (window.offersData || []).find(o => o.offer_id === offerId);
+            createContractOfferData = offer;
+            
+            // Populate modal
+            document.getElementById('contractOfferIdLabel').textContent = offerId;
+            document.getElementById('contractClientNameLabel').textContent = offer?.client_name || 'Unknown';
+            
+            // Set default dates (today + 1 year)
+            const today = new Date();
+            const nextYear = new Date(today);
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+            
+            document.getElementById('contractStartDate').value = today.toISOString().split('T')[0];
+            document.getElementById('contractEndDate').value = nextYear.toISOString().split('T')[0];
+            document.getElementById('contractAutoRenew').checked = false;
+            
+            // Populate summary
+            let summary = '';
+            if (offer) {
+                summary = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div>👥 <strong>Members:</strong> ${(offer.total_members || 0).toLocaleString()}</div>
+                        <div>💰 <strong>Value:</strong> $${(offer.grand_total_usd || 0).toLocaleString()}</div>
+                        <div>📊 <strong>Tier:</strong> ${offer.tier || '-'}</div>
+                        <div>🦷 <strong>Dental:</strong> ${offer.includes_dental ? 'Yes' : 'No'}</div>
+                    </div>
+                `;
+            }
+            document.getElementById('contractOfferSummary').innerHTML = summary;
+            document.getElementById('createContractStatus').innerHTML = '';
+            
+            // Show modal
+            document.getElementById('createContractModal').style.display = 'flex';
+        }
+        
+        function closeCreateContractModal() {
+            document.getElementById('createContractModal').style.display = 'none';
+            createContractOfferId = null;
+            createContractOfferData = null;
+        }
+        
+        async function confirmCreateContract() {
+            if (!createContractOfferId) return;
+            
+            const startDate = document.getElementById('contractStartDate').value;
+            const endDate = document.getElementById('contractEndDate').value;
+            const autoRenew = document.getElementById('contractAutoRenew').checked;
+            
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
                 return;
             }
             
+            if (new Date(endDate) <= new Date(startDate)) {
+                alert('End date must be after start date');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('createContractStatus');
+            const btn = document.getElementById('confirmCreateContractBtn');
+            
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Creating...';
+            statusDiv.innerHTML = '<div style="color:#d4a843;font-size:0.9rem;">Creating contract...</div>';
+            
             try {
-                console.log('Creating contract from offer:', offerId);
+                console.log('Creating contract from offer:', createContractOfferId);
                 
                 const formData = new FormData();
                 formData.append('payload', JSON.stringify({
                     action: 'createContractFromOffer',
-                    offerId: offerId
+                    offerId: createContractOfferId,
+                    contractStart: startDate,
+                    contractEnd: endDate,
+                    autoRenew: autoRenew
                 }));
                 
                 const response = await fetch(API_URL, {
@@ -21933,29 +22045,40 @@ Email: ${contract.contact_email || '-'}
                 
                 if (result.success) {
                     var d = result.data;
-                    var msg = '✅ Contract Created & Client Activated!\n\n';
-                    msg += '📄 Contract: ' + d.contract_id + '\n';
-                    msg += '🏢 Client: ' + (d.client_id || '') + '\n';
-                    msg += '👥 Members: ' + (d.total_members || 0) + '\n';
-                    msg += '💰 Value: $' + (d.grand_total || 0).toLocaleString() + '\n';
-                    msg += '📅 Start: ' + (d.contract_start ? new Date(d.contract_start).toLocaleDateString() : '-') + '\n';
-                    msg += '📅 End: ' + (d.contract_end ? new Date(d.contract_end).toLocaleDateString() : '-') + '\n\n';
-                    msg += '✅ Client is now ACTIVE in the Dashboard KPIs!';
-                    alert(msg);
+                    statusDiv.innerHTML = `
+                        <div style="background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);border-radius:10px;padding:1rem;color:#27ae60;">
+                            <div style="font-weight:600;margin-bottom:8px;">✅ Contract Created Successfully!</div>
+                            <div style="font-size:0.85rem;color:rgba(255,255,255,0.7);">
+                                📄 Contract: <strong>${d.contract_id}</strong><br>
+                                📅 Period: ${new Date(d.contract_start).toLocaleDateString('el-GR')} - ${new Date(d.contract_end).toLocaleDateString('el-GR')}<br>
+                                👥 Members: ${(d.total_members || 0).toLocaleString()}<br>
+                                ✅ Client is now ACTIVE!
+                            </div>
+                        </div>
+                    `;
+                    
+                    btn.innerHTML = '✅ Done';
                     
                     loadOffers(); // Refresh offers table
                     
-                    // Ask if user wants to go to Contract Center
-                    if (confirm('Go to Contract Center now?')) {
-                        enterModule('contracts');
-                        setTimeout(() => loadContracts(), 500);
-                    }
+                    // Close modal after 2 seconds and ask to go to Contract Center
+                    setTimeout(() => {
+                        closeCreateContractModal();
+                        if (confirm('Go to Contract Center now?')) {
+                            enterModule('contracts');
+                            setTimeout(() => loadContracts(), 500);
+                        }
+                    }, 2000);
                 } else {
-                    alert('❌ Error: ' + (result.error || 'Unknown error'));
+                    statusDiv.innerHTML = `<div style="color:#e74c3c;font-size:0.9rem;">❌ Error: ${result.error || 'Unknown error'}</div>`;
+                    btn.disabled = false;
+                    btn.innerHTML = '📄 Create Contract';
                 }
             } catch (error) {
-                console.error('createContractFromOfferUI error:', error);
-                alert('❌ Error creating contract: ' + error.message);
+                console.error('createContract error:', error);
+                statusDiv.innerHTML = `<div style="color:#e74c3c;font-size:0.9rem;">❌ Error: ${error.message}</div>`;
+                btn.disabled = false;
+                btn.innerHTML = '📄 Create Contract';
             }
         }
         
@@ -24976,6 +25099,72 @@ const clientData = {
         <div style="padding:1.2rem 1.5rem; display:flex; gap:12px; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.05); margin-top:1rem;">
             <button onclick="closeAcceptOfferModal()" style="padding:0.7rem 1.5rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:rgba(255,255,255,0.6); cursor:pointer; font-size:0.9rem;">Cancel</button>
             <button id="confirmAcceptBtn" onclick="confirmAcceptOffer()" style="padding:0.7rem 2rem; background:linear-gradient(135deg,#27ae60,#219a52); border:none; border-radius:10px; color:white; cursor:pointer; font-size:0.95rem; font-weight:600; transition:all 0.2s; box-shadow:0 4px 15px rgba(39,174,96,0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(39,174,96,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 15px rgba(39,174,96,0.3)'">✅ Accept Offer</button>
+        </div>
+    </div>
+</div>
+
+<!-- CONTRACT CREATION MODAL -->
+<div id="createContractModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:99998; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:linear-gradient(135deg, #1a2332 0%, #0f1724 100%); border:1px solid #2d3748; border-radius:20px; width:100%; max-width:550px; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, #d4a843, #c49932); padding:1.2rem 1.5rem; display:flex; justify-content:space-between; align-items:center; border-radius:20px 20px 0 0;">
+            <h2 style="color:#1e3a5f; margin:0; font-size:1.3rem; display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.5rem;">📄</span> Create Contract
+            </h2>
+            <button onclick="closeCreateContractModal()" style="background:rgba(0,0,0,0.2); border:none; color:#1e3a5f; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.2rem;">✕</button>
+        </div>
+        
+        <!-- Info Bar -->
+        <div style="padding:1rem 1.5rem; background:rgba(212,168,67,0.08); border-bottom:1px solid rgba(212,168,67,0.15);">
+            <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+                <div><span style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Offer:</span> <strong id="contractOfferIdLabel" style="color:#d4a843;">-</strong></div>
+                <div><span style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Client:</span> <strong id="contractClientNameLabel" style="color:white;">-</strong></div>
+            </div>
+        </div>
+        
+        <!-- Contract Dates -->
+        <div style="padding:1.5rem;">
+            <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;font-weight:600;margin-bottom:15px;text-transform:uppercase;letter-spacing:1px;">📅 Contract Period</div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div>
+                    <label style="display:block;color:rgba(255,255,255,0.7);font-size:0.85rem;margin-bottom:6px;">Start Date</label>
+                    <input type="date" id="contractStartDate" style="width:100%;padding:0.8rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:white;font-size:0.95rem;box-sizing:border-box;" />
+                </div>
+                <div>
+                    <label style="display:block;color:rgba(255,255,255,0.7);font-size:0.85rem;margin-bottom:6px;">End Date</label>
+                    <input type="date" id="contractEndDate" style="width:100%;padding:0.8rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:white;font-size:0.95rem;box-sizing:border-box;" />
+                </div>
+            </div>
+            
+            <!-- Auto Renew -->
+            <div style="margin-top:1.2rem; display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" id="contractAutoRenew" style="width:20px;height:20px;cursor:pointer;" />
+                <label for="contractAutoRenew" style="color:rgba(255,255,255,0.8);font-size:0.9rem;cursor:pointer;">🔄 Auto-renew contract annually</label>
+            </div>
+        </div>
+        
+        <!-- Offer Summary -->
+        <div style="padding:0 1.5rem 1rem;">
+            <div style="color:rgba(255,255,255,0.5);font-size:0.8rem;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">📋 Offer Summary</div>
+            <div id="contractOfferSummary" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:1rem;font-size:0.9rem;color:rgba(255,255,255,0.8);"></div>
+        </div>
+        
+        <!-- Info Box -->
+        <div style="padding:0 1.5rem;">
+            <div style="background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:10px;padding:12px 16px;font-size:0.8rem;color:#27ae60;">
+                ✅ <strong>After creating:</strong> The client will be <strong>ACTIVATED</strong> and visible in Dashboard KPIs.
+                <br>The offer status will change to <strong>"converted"</strong>.
+            </div>
+        </div>
+        
+        <!-- Status -->
+        <div id="createContractStatus" style="padding:1rem 1.5rem;"></div>
+        
+        <!-- Actions -->
+        <div style="padding:1.2rem 1.5rem; display:flex; gap:12px; justify-content:flex-end; border-top:1px solid rgba(255,255,255,0.05); margin-top:0.5rem;">
+            <button onclick="closeCreateContractModal()" style="padding:0.7rem 1.5rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:rgba(255,255,255,0.6); cursor:pointer; font-size:0.9rem;">Cancel</button>
+            <button id="confirmCreateContractBtn" onclick="confirmCreateContract()" style="padding:0.7rem 2rem; background:linear-gradient(135deg,#d4a843,#c49932); border:none; border-radius:10px; color:#1e3a5f; cursor:pointer; font-size:0.95rem; font-weight:600; transition:all 0.2s; box-shadow:0 4px 15px rgba(212,168,67,0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(212,168,67,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 15px rgba(212,168,67,0.3)'">📄 Create Contract</button>
         </div>
     </div>
 </div>
