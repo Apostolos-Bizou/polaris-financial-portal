@@ -17665,31 +17665,44 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 const statsPending = document.getElementById('dashStatPending');
                 const offersNotif = document.getElementById('dashOffersNotif');
                 
-                // v3.33: Fetch active clients count from API
+                // v3.34: Fetch all stats from API
                 let activeClientCount = '--';
                 let activeContractCount = '--';
+                let totalMembers = 0;
+                
                 try {
                     const [clientsResp, contractsResp] = await Promise.all([
                         fetch(API_URL + '?action=getActiveClients'),
                         fetch(API_URL + '?action=getContractStats')
                     ]);
+                    
                     const clientsData = await clientsResp.json();
                     const contractsData = await contractsResp.json();
-                    activeClientCount = clientsData.data?.length || 0;
+                    
+                    // v3.34: Get total members from ACTIVE CLIENTS (not contracts)
+                    if (clientsData.success && clientsData.data) {
+                        activeClientCount = clientsData.data.length || 0;
+                        clientsData.data.forEach(client => {
+                            // Sum total_members from all active clients
+                            const members = parseInt(client.total_members || client.members || client.member_count || 0);
+                            totalMembers += members;
+                            console.log('📊 Client:', client.client_name, 'Members:', members);
+                        });
+                    }
+                    
                     activeContractCount = contractsData.active || 0;
+                    
+                    console.log('📊 Dashboard stats - Active clients:', activeClientCount, 'Contracts:', activeContractCount, 'Members:', totalMembers);
                 } catch (e) { console.log('Stats fetch error:', e); }
                 
-                // Use cached offers data
+                // Use cached offers data for open offers count
                 const offerCount = window.offersData?.filter(o => !['converted', 'rejected', 'lost'].includes((o.status || '').toLowerCase())).length || '--';
                 
-                // Calculate totals
-                let totalMembers = 0;
+                // Count pending signatures from offers
                 let pendingCount = 0;
-                
                 if (window.offersData) {
                     window.offersData.forEach(offer => {
-                        if (offer.total_members) totalMembers += parseInt(offer.total_members) || 0;
-                        if (offer.status === 'pending_signature') pendingCount++;
+                        if (offer.status === 'pending_signature' || offer.status === 'sent') pendingCount++;
                     });
                 }
                 
