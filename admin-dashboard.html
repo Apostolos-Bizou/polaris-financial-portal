@@ -17721,7 +17721,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 if (statsClients) animateNumber(statsClients, activeClientCount);
                 if (statsOffers) animateNumber(statsOffers, offerCount);
                 if (statsContracts) animateNumber(statsContracts, activeContractCount);
-                if (statsMembers) animateNumber(statsMembers, totalMembers > 0 ? totalMembers.toLocaleString() : '--');
+                if (statsMembers) animateNumber(statsMembers, totalMembers > 0 ? totalMembers : '--');
                 if (statsPending) animateNumber(statsPending, pendingCount);
                 
                 // Show notification badge if pending offers
