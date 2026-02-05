@@ -816,7 +816,7 @@
             padding: 0.3rem 0.8rem; border-radius: 15px;
             font-size: 0.7rem; font-weight: 700;
         }
-        .user-section { display: flex; align-items: center; gap: 0.6rem; }
+        .user-section { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
         .client-badge {
             display: flex; align-items: center; gap: 0.5rem;
             background: var(--bg-card); border: 1px solid var(--border-color);
@@ -840,9 +840,9 @@
         }
         .client-selector {
             background: var(--bg-dark); border: 2px solid var(--border-color);
-            color: var(--text-primary); padding: 0.6rem 1rem;
-            border-radius: 10px; font-family: inherit; font-size: 0.9rem;
-            min-width: 250px; cursor: pointer;
+            color: var(--text-primary); padding: 0.45rem 0.7rem;
+            border-radius: 10px; font-family: inherit; font-size: 0.8rem;
+            min-width: 200px; cursor: pointer;
             transition: all 0.3s;
         }
         .client-selector:focus { outline: none; border-color: var(--polaris-gold); }
@@ -1085,18 +1085,27 @@
         
         /* Unified Header Action Buttons */
         .header-action-btn {
-            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            display: flex; align-items: center; justify-content: center; gap: 0.35rem;
             background: linear-gradient(135deg, #d4a843, #b8860b);
-            color: #1e3a5f; padding: 0.6rem 1rem;
-            border: none; border-radius: 25px; cursor: pointer;
+            color: #1e3a5f; padding: 0.45rem 0.7rem;
+            border: none; border-radius: 20px; cursor: pointer;
             font-family: 'Montserrat', sans-serif;
-            font-size: 0.8rem; font-weight: 700;
-            transition: all 0.3s; box-shadow: 0 4px 15px rgba(212,168,67,0.3);
-            min-width: 120px; white-space: nowrap;
+            font-size: 0.72rem; font-weight: 700;
+            transition: all 0.3s; box-shadow: 0 3px 10px rgba(212,168,67,0.3);
+            min-width: auto; white-space: nowrap;
         }
         .header-action-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(212,168,67,0.5);
+            box-shadow: 0 6px 20px rgba(212,168,67,0.5);
+        }
+        .header-action-btn.kpi-test-btn {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            animation: kpiPulse 3s ease-in-out infinite;
+        }
+        @keyframes kpiPulse {
+            0%, 100% { box-shadow: 0 3px 10px rgba(231,76,60,0.3); }
+            50% { box-shadow: 0 3px 15px rgba(231,76,60,0.6); }
         }
         
         /* Email Center Modal - Modal Size (not fullscreen) */
@@ -7072,6 +7081,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 <button onclick="openRenewals()" class="header-action-btn" style="background: linear-gradient(135deg, #1B5E20, #2E7D32); color: white;">
                     <span>📋</span> Follow Up
                 </button>
+                <button onclick="runKPITest()" class="header-action-btn kpi-test-btn" id="kpiTestBtn" title="Run KPI Diagnostic Test">
+                    <span>🧪</span> KPI Test
+                </button>
                 <div class="client-selector-wrapper">
                     <select id="clientSelector" class="client-selector" onchange="handleClientChange()">
                         <option value="all">🏢 All Clients (Company Total)</option>
@@ -11289,6 +11301,79 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 btn.textContent = 'Sign In';
                 btn.disabled = false;
             }
+        }
+        
+        // ═══════════════════════════════════════════════════════════════
+        // KPI DIAGNOSTIC TEST - Built-in test using current API_URL
+        // ═══════════════════════════════════════════════════════════════
+        async function runKPITest() {
+            const btn = document.getElementById('kpiTestBtn');
+            if (btn) { btn.innerHTML = '<span>⏳</span> Testing...'; btn.style.opacity = '0.7'; }
+            
+            const tests = [
+                ['📋 Active Clients', 'getActiveClients', d => d.count > 0 ? '✅ PASS — ' + d.count + ' clients' : '❌ FAIL — 0'],
+                ['📊 Contract Stats', 'getContractStats', d => d.data && d.data.total > 0 ? '✅ PASS — Total=' + d.data.total + ' Active=' + d.data.active : '❌ FAIL — 0'],
+                ['📜 Contracts List', 'getContracts', d => d.count > 0 ? '✅ PASS — ' + d.count + ' contracts' : '❌ FAIL — 0'],
+                ['💰 Dashboard KPIs', 'getDashboardKPIs', d => d.summary && d.summary.total_members > 0 ? '✅ PASS — Members=' + d.summary.total_members.toLocaleString() + ' Revenue=$' + d.summary.estimated_revenue.toLocaleString() : '❌ FAIL — No summary data'],
+                ['📈 KPI Summary ALL', 'getClientKPISummary&clientId=ALL', d => d.kpis && d.kpis.total_members > 0 ? '✅ PASS — Members=' + d.kpis.total_members.toLocaleString() + ' Claims=' + d.kpis.total_claims.toLocaleString() : '❌ FAIL — 0'],
+                ['📊 Master Comparison', 'getMasterComparison', d => d.data && d.data.latest_period ? '✅ PASS — Period=' + d.data.latest_period + ' Members=' + (d.data.latest_members || 0).toLocaleString() : '❌ FAIL — No data'],
+                ['🏢 CEO Dashboard', 'getCEODashboard', d => d.summary && d.summary.gross_revenue > 0 ? '✅ PASS — Revenue=$' + d.summary.gross_revenue.toLocaleString() + ' Profit=$' + d.summary.net_profit.toLocaleString() : '❌ FAIL — 0'],
+                ['🏥 CBMS Report', 'getCBMSReportData', d => d.data && d.data.length > 0 ? '✅ PASS — ' + d.data.length + ' records' : '❌ FAIL — 0'],
+                ['📁 Clients', 'getClients', d => d.count > 0 ? '✅ PASS — ' + d.count + ' clients' : '❌ FAIL — 0'],
+                ['📧 Email Templates', 'getEmailTemplates', d => d.data && d.data.length > 0 ? '✅ PASS — ' + d.data.length + ' templates' : '❌ FAIL — 0'],
+                ['📋 Offers', 'getOffers', d => d.data ? '✅ INFO — ' + (d.count || d.data.length || 0) + ' offers' : '⚠️ No offers sheet']
+            ];
+            
+            let pass = 0;
+            let total = tests.length;
+            let lines = [];
+            
+            for (const [name, action, check] of tests) {
+                try {
+                    const r = await fetch(API_URL + '?action=' + action);
+                    const d = await r.json();
+                    const result = check(d);
+                    if (result.startsWith('✅')) pass++;
+                    lines.push({ name, result, time: '' });
+                } catch (e) {
+                    lines.push({ name, result: '❌ ERROR — ' + e.message, time: '' });
+                }
+            }
+            
+            // Build results modal
+            const overlay = document.createElement('div');
+            overlay.id = 'kpiTestOverlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:999999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);';
+            overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+            
+            const scoreColor = pass >= 10 ? '#00ff88' : pass >= 7 ? '#ffd700' : '#ff4444';
+            const scoreEmoji = pass >= 10 ? '🏆' : pass >= 7 ? '⭐' : '⚠️';
+            
+            let html = '<div style="background:linear-gradient(135deg,#0a1628,#1e3a5f);border:2px solid ' + scoreColor + ';border-radius:20px;padding:2.5rem;max-width:700px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5);">';
+            html += '<h1 style="text-align:center;font-family:Montserrat,sans-serif;margin:0 0 0.5rem 0;font-size:1.8rem;color:' + scoreColor + ';">🚀 POLARIS KPI TEST</h1>';
+            html += '<h2 style="text-align:center;font-family:Montserrat,sans-serif;margin:0 0 1.5rem 0;font-size:2.2rem;color:' + scoreColor + ';">' + scoreEmoji + ' ' + pass + '/' + total + ' PASSED</h2>';
+            html += '<div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:1rem;">';
+            
+            lines.forEach(function(l) {
+                const isPass = l.result.startsWith('✅');
+                const isInfo = l.result.startsWith('✅ INFO');
+                const bg = isPass ? 'rgba(0,255,100,0.08)' : 'rgba(255,50,50,0.08)';
+                const border = isPass ? 'rgba(0,255,100,0.2)' : 'rgba(255,50,50,0.2)';
+                html += '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:8px;padding:0.7rem 1rem;margin:0.4rem 0;font-family:monospace;font-size:0.85rem;color:#e0e0e0;">';
+                html += '<strong>' + l.name + '</strong><br>' + l.result;
+                html += '</div>';
+            });
+            
+            html += '</div>';
+            html += '<p style="text-align:center;color:#666;margin:1rem 0 0.5rem 0;font-size:0.75rem;">API: ...' + API_URL.slice(-45) + '</p>';
+            html += '<div style="text-align:center;margin-top:1rem;"><button onclick="document.getElementById(\'kpiTestOverlay\').remove()" style="background:linear-gradient(135deg,' + scoreColor + ',#1e3a5f);color:white;border:none;padding:0.7rem 2rem;border-radius:25px;font-family:Montserrat,sans-serif;font-weight:700;font-size:1rem;cursor:pointer;">✓ Close</button></div>';
+            html += '</div>';
+            
+            overlay.innerHTML = html;
+            document.body.appendChild(overlay);
+            
+            // Restore button
+            if (btn) { btn.innerHTML = '<span>🧪</span> KPI Test'; btn.style.opacity = '1'; }
         }
         
         function handleLogout() { 
