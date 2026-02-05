@@ -18206,18 +18206,33 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (currentClientFolder) {
                 // Go to Send Documents modal with client pre-selected
                 enterModule('offers');
-                setTimeout(() => {
+                setTimeout(async () => {
                     // Open Send Documents modal
                     if (typeof openSendDocumentsModal === 'function') {
                         openSendDocumentsModal();
-                        // Pre-search for client
-                        setTimeout(() => {
-                            const searchInput = document.getElementById('sendDocsModalClientSearch');
-                            if (searchInput) {
-                                searchInput.value = currentClientFolder.name;
-                                searchInput.dispatchEvent(new Event('input'));
+                        
+                        // Wait for modal to open, then select the client
+                        setTimeout(async () => {
+                            // Find client ID from cached data
+                            const clientData = (window.cachedClientsData || []).find(c => 
+                                c.client_name === currentClientFolder.name || c.client_id === currentClientFolder.id
+                            );
+                            
+                            if (clientData && typeof selectModalClient === 'function') {
+                                // Use selectModalClient to properly load client + recipients + offers
+                                await selectModalClient(clientData.client_id, clientData.client_name);
+                            } else if (currentClientFolder.id) {
+                                // Fallback with ID
+                                await selectModalClient(currentClientFolder.id, currentClientFolder.name);
+                            } else {
+                                // Last fallback: just search
+                                const searchInput = document.getElementById('sendDocsModalClientSearch');
+                                if (searchInput) {
+                                    searchInput.value = currentClientFolder.name;
+                                    searchInput.dispatchEvent(new Event('keyup'));
+                                }
                             }
-                        }, 300);
+                        }, 500);
                     }
                 }, 500);
             }
@@ -29105,8 +29120,8 @@ function openRenewals() {
     document.getElementById('mainDashboardBtn').style.display = 'flex';
     document.body.style.overflow = 'hidden';
     
-    // Show loading state immediately
-    populateNoteClientDropdown(); // This can run immediately with cached data
+    // Load client dropdown (async now)
+    populateNoteClientDropdown();
     
     // Load other data in parallel
     loadRenewalsData();
@@ -29509,7 +29524,7 @@ function createRenewalOffer(clientId) {
     }, 500);
 }
 
-function populateNoteClientDropdown() {
+async function populateNoteClientDropdown() {
     const select = document.getElementById('noteClientSelect');
     if (!select) return;
     
@@ -29519,36 +29534,37 @@ function populateNoteClientDropdown() {
     let clients = [];
     
     // 1. Try cachedClientsData (from preload)
-    if (window.cachedClientsData && cachedClientsData.length > 0) {
-        clients = cachedClientsData;
+    if (window.cachedClientsData && window.cachedClientsData.length > 0) {
+        clients = window.cachedClientsData;
     }
     // 2. Try allClientsData
     else if (typeof allClientsData !== 'undefined' && allClientsData.length > 0) {
         clients = allClientsData;
     }
-    // 3. Try clientsList
-    else if (typeof clientsList !== 'undefined' && clientsList.length > 0) {
-        clients = clientsList.filter(c => c.id !== 'all').map(c => ({
-            client_id: c.id,
-            client_name: c.name.replace('🏢 ', ''),
-            contact_email: c.email || '',
-            contact_name: c.contact || ''
-        }));
+    // 3. Fetch from API if no cached data
+    else {
+        try {
+            const response = await fetch(API_URL + '?action=getClients');
+            const result = await response.json();
+            if (result.success && result.data) {
+                clients = result.data;
+                window.cachedClientsData = result.data; // Cache for next time
+            }
+        } catch (e) {
+            console.log('Could not fetch clients:', e);
+        }
     }
     
     if (clients.length > 0) {
+        // Sort clients alphabetically
+        clients.sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+        
         clients.forEach(client => {
             const name = client.client_name || client.name || '';
             const id = client.client_id || client.id || name;
             const email = client.contact_email || client.email || '';
             const contact = client.contact_name || client.contact_person || '';
             options += `<option value="${id}" data-email="${email}" data-contact="${contact}">${name}</option>`;
-        });
-    } else {
-        // Last resort - extract from offers
-        const clientsFromOffers = [...new Set(renewalsData.offers.map(o => o.client_name).filter(Boolean))];
-        clientsFromOffers.forEach(name => { 
-            options += `<option value="${name}">${name}</option>`; 
         });
     }
     
