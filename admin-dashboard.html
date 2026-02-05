@@ -88,6 +88,8 @@
             animation: twinkle 2s infinite;
         }
         @keyframes twinkle {
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
             0%, 100% { opacity: 0.3; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.2); }
         }
@@ -7384,12 +7386,64 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     </div>
     
     <main class="main-content" id="mainContent" style="display:none">
-        <div class="page-header">
-            <h1 class="page-title">🏢 Admin Dashboard</h1>
-            <p class="page-subtitle">
-                Company-wide analytics and insights
-                <span class="client-filter-badge" id="clientFilterBadge">All Clients</span>
-            </p>
+        <!-- v3.36: Dashboard Loading Overlay with Ship Animation -->
+        <div id="dashboardLoadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,20,40,0.92); z-index:99999; display:none; flex-direction:column; align-items:center; justify-content:center;">
+            <div style="text-align:center;">
+                <div style="font-size:2rem; color:#d4af37; margin-bottom:10px; font-weight:700;">POLARIS</div>
+                <div style="font-size:0.9rem; color:#8899aa; margin-bottom:25px;" id="dashLoadingLabel">Loading Dashboard Data...</div>
+                <!-- Ship Track -->
+                <div style="position:relative; width:320px; height:50px; margin:0 auto 15px auto;">
+                    <div style="position:absolute; bottom:8px; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent);"></div>
+                    <div id="dashLoadingShip" style="position:absolute; bottom:5px; left:0; transition:left 0.4s ease;">
+                        <svg width="50" height="35" viewBox="0 0 70 45" fill="none">
+                            <path d="M2 32 L8 38 L52 38 L68 32 L52 32 L48 25 L12 25 L8 32 Z" fill="#1e3a5f" stroke="#d4af37" stroke-width="1.5"/>
+                            <path d="M52 38 L68 32 L52 32" fill="#2d5a87" stroke="#d4af37" stroke-width="1"/>
+                            <rect x="15" y="18" width="30" height="7" rx="1" fill="#2d5a87" stroke="#d4af37" stroke-width="1"/>
+                            <rect x="12" y="8" width="18" height="10" rx="1" fill="#1e3a5f" stroke="#d4af37" stroke-width="1"/>
+                            <rect x="14" y="10" width="4" height="4" rx="0.5" fill="#f5d76e"/>
+                            <rect x="20" y="10" width="4" height="4" rx="0.5" fill="#f5d76e"/>
+                            <rect x="26" y="10" width="4" height="4" rx="0.5" fill="#f5d76e"/>
+                            <rect x="17" y="2" width="6" height="6" fill="#c0392b"/>
+                            <circle cx="15" cy="0" r="2.5" fill="rgba(255,255,255,0.4)">
+                                <animate attributeName="cx" values="15;8;2" dur="2s" repeatCount="indefinite"/>
+                                <animate attributeName="opacity" values="0.5;0.3;0" dur="2s" repeatCount="indefinite"/>
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+                <!-- Progress Bar -->
+                <div style="width:320px; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; margin:0 auto; overflow:hidden;">
+                    <div id="dashLoadingBar" style="width:0%; height:100%; background:linear-gradient(90deg, #B8860B, #D4AF37, #f5d76e); border-radius:3px; transition:width 0.3s ease;"></div>
+                </div>
+                <div style="font-size:0.75rem; color:#5a6a7a; margin-top:8px;" id="dashLoadingStep">Connecting to server...</div>
+            </div>
+        </div>
+
+        <div class="page-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+            <div>
+                <h1 class="page-title">🏢 Admin Dashboard</h1>
+                <p class="page-subtitle">
+                    Company-wide analytics and insights
+                    <span class="client-filter-badge" id="clientFilterBadge">All Clients</span>
+                </p>
+            </div>
+            <button onclick="refreshDashboardData()" id="dashRefreshBtn" style="
+                padding: 10px 22px;
+                background: linear-gradient(135deg, #1e3a5f, #2d5a87);
+                border: 2px solid #d4af37;
+                border-radius: 10px;
+                color: #d4af37;
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(212,175,55,0.2);
+            " onmouseover="this.style.background='linear-gradient(135deg, #2d5a87, #3d6a97)'; this.style.boxShadow='0 6px 25px rgba(212,175,55,0.4)';" onmouseout="this.style.background='linear-gradient(135deg, #1e3a5f, #2d5a87)'; this.style.boxShadow='0 4px 15px rgba(212,175,55,0.2)';">
+                <span id="refreshIcon" style="font-size:18px;">🔄</span> Refresh Data
+            </button>
         </div>
         
         <!-- Quarter Selector Bar -->
@@ -11831,6 +11885,74 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         // MAIN DASHBOARD KPIs - REAL DATA FROM FinancialData SHEET
         // ═══════════════════════════════════════════════════════════════════
         
+        // ═══════════════════════════════════════════════════════════════════
+        // v3.36: DASHBOARD REFRESH WITH SHIP LOADING ANIMATION
+        // ═══════════════════════════════════════════════════════════════════
+        
+        function showDashboardLoading(show) {
+            const overlay = document.getElementById('dashboardLoadingOverlay');
+            if (overlay) overlay.style.display = show ? 'flex' : 'none';
+        }
+        
+        function updateDashboardLoading(pct, label, step) {
+            const bar = document.getElementById('dashLoadingBar');
+            const ship = document.getElementById('dashLoadingShip');
+            const labelEl = document.getElementById('dashLoadingLabel');
+            const stepEl = document.getElementById('dashLoadingStep');
+            if (bar) bar.style.width = pct + '%';
+            if (ship) ship.style.left = Math.min(pct, 85) * 2.7 + 'px'; // 0-270px range on 320px track
+            if (labelEl && label) labelEl.textContent = label;
+            if (stepEl && step) stepEl.textContent = step;
+        }
+        
+        async function refreshDashboardData() {
+            const btn = document.getElementById('dashRefreshBtn');
+            const icon = document.getElementById('refreshIcon');
+            if (btn) btn.disabled = true;
+            if (icon) icon.style.animation = 'spin 1s linear infinite';
+            
+            showDashboardLoading(true);
+            updateDashboardLoading(5, 'Refreshing Dashboard Data...', 'Connecting to server...');
+            
+            try {
+                // Step 1: Load clients
+                updateDashboardLoading(15, 'Loading clients...', '📋 Fetching client list');
+                await loadClientsFromAPI();
+                populateClientSelector();
+                
+                // Step 2: Load KPIs
+                updateDashboardLoading(35, 'Loading KPIs...', '📊 Fetching financial data for ' + (selectedQuarters[0] || 'Q1') + ' ' + selectedYear);
+                const clientId = selectedClient || 'ALL';
+                await loadMainDashboardKPIs(clientId);
+                
+                // Step 3: Load charts data
+                updateDashboardLoading(60, 'Loading charts...', '📈 Building chart data');
+                loadDataForSelectedQuarters();
+                
+                // Step 4: Load additional data
+                updateDashboardLoading(80, 'Loading details...', '🏥 Fetching categories & geographic data');
+                try { await loadData(); } catch(e) {}
+                
+                // Step 5: Done
+                updateDashboardLoading(100, '✅ Data loaded successfully!', 'All data is up to date');
+                
+                const lastUpdated = document.getElementById('lastUpdated');
+                if (lastUpdated) lastUpdated.textContent = new Date().toLocaleString();
+                
+                // Brief pause to show completion
+                await new Promise(r => setTimeout(r, 600));
+                
+            } catch (error) {
+                console.error('Refresh error:', error);
+                updateDashboardLoading(100, '⚠️ Partial load', 'Some data may not have loaded: ' + error.message);
+                await new Promise(r => setTimeout(r, 1500));
+            } finally {
+                showDashboardLoading(false);
+                if (btn) btn.disabled = false;
+                if (icon) icon.style.animation = '';
+            }
+        }
+
         async function loadMainDashboardKPIs(clientId) {
             try {
                 // ═══════════════════════════════════════════════════════════════
@@ -18774,9 +18896,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (mainDashboardBtn) mainDashboardBtn.style.display = 'none';
             
             isInAppView = true;
+            
+            // v3.36: Auto-load data when entering Admin Dashboard
+            refreshDashboardData();
         }
         
         // Go to Analytics Dashboard (same as goToMainDashboard - for POLARIS Portal button)
+        function goToAnalyticsDashboard() {
+            goToMainDashboard();
+        }
         function goToAnalyticsDashboard() {
             goToMainDashboard();
         }
