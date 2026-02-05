@@ -10949,68 +10949,41 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         function organizeClientsHierarchically(clients) {
             if (!clients || !Array.isArray(clients)) return [];
             
-            // Plan suffixes that indicate a child/sub-company
-            const planSuffixes = ['GOLD', 'PLATINUM', 'SILVER', 'BRONZE', 'GOLD CW', 'PLATINUM CW', 'SILVER CW'];
-            
-            // Separate parents and children
-            const parents = [];
-            const children = [];
-            
-            clients.forEach(client => {
-                const name = (client.client_name || client.name || '').toUpperCase().trim();
-                
-                // Check if this is a child (ends with a plan suffix)
-                let isChild = false;
-                for (const suffix of planSuffixes) {
-                    if (name.endsWith(' ' + suffix)) {
-                        isChild = true;
-                        break;
-                    }
-                }
-                
-                if (isChild) {
-                    children.push({ ...client, isChild: true });
-                } else {
-                    parents.push({ ...client, isChild: false });
-                }
+            // Use ACTUAL parent_client_id and client_type fields (same as Contract Center)
+            const parents = clients.filter(c => (c.client_type || '').toLowerCase() === 'parent')
+                .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+            const subsidiaries = clients.filter(c => (c.client_type || '').toLowerCase() === 'subsidiary');
+            const others = clients.filter(c => {
+                const t = (c.client_type || '').toLowerCase();
+                return t !== 'parent' && t !== 'subsidiary';
             });
             
-            // Sort parents alphabetically
-            parents.sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
-            
-            // Build final list: parent followed by its children
+            // Build final list: parent followed by its subsidiaries
             const result = [];
-            const usedChildren = new Set();
+            const usedIds = new Set();
             
             parents.forEach(parent => {
-                result.push(parent);
+                const pid = parent.client_id || parent.id || '';
+                result.push({ ...parent, isChild: false });
+                usedIds.add(pid);
                 
-                // Find children that belong to this parent
-                const parentBaseName = (parent.client_name || '').toUpperCase()
-                    .replace(/ (LTD|INC|SA|LLC|CORP|CO|COMPANY|MARITIME|MARINE|SHIPPING|SHIPMANAGEMENT|TRUST|BULKERS|TANKERS).*$/i, '')
-                    .trim();
+                // Find subsidiaries that belong to this parent
+                const parentSubs = subsidiaries
+                    .filter(s => s.parent_client_id === pid)
+                    .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
                 
-                // Get children for this parent
-                const parentChildren = children.filter(child => {
-                    if (usedChildren.has(child.client_id || child.id)) return false;
-                    const childName = (child.client_name || '').toUpperCase();
-                    // Child name starts with parent base name or first word
-                    return childName.startsWith(parentBaseName + ' ') || 
-                           childName.startsWith(parentBaseName.split(' ')[0] + ' ');
-                });
-                
-                // Sort children and add them
-                parentChildren.sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
-                parentChildren.forEach(child => {
-                    usedChildren.add(child.client_id || child.id);
-                    result.push(child);
+                parentSubs.forEach(sub => {
+                    const sid = sub.client_id || sub.id || '';
+                    usedIds.add(sid);
+                    result.push({ ...sub, isChild: true });
                 });
             });
             
-            // Add any remaining children that didn't match a parent
-            const remainingChildren = children.filter(c => !usedChildren.has(c.client_id || c.id));
-            remainingChildren.sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
-            remainingChildren.forEach(child => result.push(child));
+            // Add any remaining clients (subsidiaries without matched parent or others)
+            const remaining = [...subsidiaries, ...others]
+                .filter(c => !usedIds.has(c.client_id || c.id || ''))
+                .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''));
+            remaining.forEach(c => result.push({ ...c, isChild: (c.client_type || '').toLowerCase() === 'subsidiary' }));
             
             return result;
         }
@@ -11128,15 +11101,26 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const allClients = window.cachedClientsData || [];
             
             if (allClients.length > 0) {
-                // Organize hierarchically using naming patterns
+                // Organize hierarchically using client_type and parent_client_id
                 const organized = organizeClientsHierarchically(allClients);
                 
                 // INDIVIDUAL OPTIONS - sorted with hierarchy indicators
                 const individualOptGroup = document.createElement('optgroup');
                 individualOptGroup.label = '👤 All Clients';
                 
-                // Track parents for GROUP options
+                // Track parents for GROUP options using ACTUAL fields
                 const parentGroups = [];
+                const parentClients = allClients.filter(c => (c.client_type || '').toLowerCase() === 'parent');
+                const subClients = allClients.filter(c => (c.client_type || '').toLowerCase() === 'subsidiary');
+                
+                parentClients.forEach(p => {
+                    const pid = p.client_id || p.id || '';
+                    const pname = p.client_name || p.name || '';
+                    const childCount = subClients.filter(s => s.parent_client_id === pid).length;
+                    if (childCount > 0) {
+                        parentGroups.push({ id: pid, name: pname, count: childCount + 1 });
+                    }
+                });
                 
                 organized.forEach(client => {
                     const id = client.client_id || client.id || '';
@@ -11149,11 +11133,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         opt.textContent = '└ ' + name;
                     } else {
                         opt.textContent = '🏢 ' + name;
-                        // Check if this parent has children
-                        const childCount = organized.filter(c => c.isChild && isChildOf(name, c.client_name || c.name)).length;
-                        if (childCount > 0) {
-                            parentGroups.push({ id, name, count: childCount + 1 });
-                        }
                     }
                     individualOptGroup.appendChild(opt);
                 });
@@ -11165,7 +11144,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     parentGroups.forEach(p => {
                         const opt = document.createElement('option');
                         opt.value = `GROUP:${p.id}`;
-                        opt.textContent = `🏢 ${p.name} (+${p.count - 1} sub)`;
+                        opt.textContent = `🏢 ${p.name} (${p.count} entities)`;
                         groupOptGroup.appendChild(opt);
                     });
                     selector.appendChild(groupOptGroup);
@@ -11213,12 +11192,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             }
         }
         
-        // Helper to check if child belongs to parent by name
-        function isChildOf(parentName, childName) {
-            if (!parentName || !childName) return false;
-            const parentBase = parentName.toUpperCase().replace(/ (LTD|INC|SA|LLC|CORP|CO|COMPANY|MARITIME|MARINE|SHIPPING|SHIPMANAGEMENT|TRUST|BULKERS|TANKERS).*$/i, '').trim();
-            const childUpper = childName.toUpperCase();
-            return childUpper.startsWith(parentBase + ' ') || childUpper.startsWith(parentBase.split(' ')[0] + ' ');
+        // Helper: check if a client is a subsidiary of a parent (using actual data fields)
+        function isChildOf(parentId, childClient) {
+            if (!parentId || !childClient) return false;
+            return (childClient.parent_client_id === parentId);
         }
         
         
@@ -12598,18 +12575,36 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         function populateBulkClients() {
             const container = document.getElementById('bulkClientsList');
-            const clients = clientsList.filter(c => c.id !== 'all');
             
-            if (clients.length === 0) {
+            // Use cachedClientsData for proper hierarchy
+            const allClients = window.cachedClientsData || [];
+            let clientsToShow = [];
+            
+            if (allClients.length > 0) {
+                const organized = organizeClientsHierarchically(allClients);
+                clientsToShow = organized.map(c => ({
+                    id: c.client_id || c.id || '',
+                    name: c.client_name || c.name || '',
+                    isChild: c.isChild
+                }));
+            } else {
+                clientsToShow = clientsList.filter(c => c.id !== 'all').map(c => ({
+                    id: c.id,
+                    name: c.name.replace('🏢 ', ''),
+                    isChild: false
+                }));
+            }
+            
+            if (clientsToShow.length === 0) {
                 container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">No clients available</p>';
                 return;
             }
             
-            container.innerHTML = clients.map((client, idx) => `
+            container.innerHTML = clientsToShow.map((client, idx) => `
                 <div class="email-recipient-item">
                     <input type="checkbox" id="bulk_client_${idx}" data-client-id="${client.id}" onchange="updateBulkSelection()">
                     <div class="email-recipient-info">
-                        <div class="email-recipient-name">${client.name.replace('🏢 ', '')}</div>
+                        <div class="email-recipient-name">${client.isChild ? '└ ' : '🏢 '}${client.name}</div>
                     </div>
                 </div>
             `).join('');
@@ -12782,13 +12777,27 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const select = document.getElementById('scheduleClient');
             select.innerHTML = '<option value="">-- Select client --</option><option value="ALL">📢 ALL CLIENTS</option>';
             
-            const clients = clientsList.filter(c => c.id !== 'all');
-            clients.forEach(client => {
-                const opt = document.createElement('option');
-                opt.value = client.id;
-                opt.textContent = client.name.replace('🏢 ', '');
-                select.appendChild(opt);
-            });
+            // Use cachedClientsData for proper hierarchy
+            const allClients = window.cachedClientsData || [];
+            
+            if (allClients.length > 0) {
+                const organized = organizeClientsHierarchically(allClients);
+                organized.forEach(client => {
+                    const opt = document.createElement('option');
+                    opt.value = client.client_id || client.id || '';
+                    const name = client.client_name || client.name || '';
+                    opt.textContent = client.isChild ? '  └ ' + name : '🏢 ' + name;
+                    select.appendChild(opt);
+                });
+            } else {
+                const clients = clientsList.filter(c => c.id !== 'all');
+                clients.forEach(client => {
+                    const opt = document.createElement('option');
+                    opt.value = client.id;
+                    opt.textContent = client.name.replace('🏢 ', '');
+                    select.appendChild(opt);
+                });
+            }
             
             // Set default date to tomorrow
             const tomorrow = new Date();
