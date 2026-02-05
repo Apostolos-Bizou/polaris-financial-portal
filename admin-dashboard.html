@@ -17193,10 +17193,22 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 const statsPending = document.getElementById('dashStatPending');
                 const offersNotif = document.getElementById('dashOffersNotif');
                 
-                // Use cached data if available
-                const clientCount = window.clientsData?.length || '--';
-                const offerCount = window.offersData?.length || '--';
-                const contractCount = window.contractsData?.length || '--';
+                // v3.33: Fetch active clients count from API
+                let activeClientCount = '--';
+                let activeContractCount = '--';
+                try {
+                    const [clientsResp, contractsResp] = await Promise.all([
+                        fetch(API_URL + '?action=getActiveClients'),
+                        fetch(API_URL + '?action=getContractStats')
+                    ]);
+                    const clientsData = await clientsResp.json();
+                    const contractsData = await contractsResp.json();
+                    activeClientCount = clientsData.data?.length || 0;
+                    activeContractCount = contractsData.active || 0;
+                } catch (e) { console.log('Stats fetch error:', e); }
+                
+                // Use cached offers data
+                const offerCount = window.offersData?.filter(o => !['converted', 'rejected', 'lost'].includes((o.status || '').toLowerCase())).length || '--';
                 
                 // Calculate totals
                 let totalMembers = 0;
@@ -17210,9 +17222,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 }
                 
                 // Animate number updates
-                if (statsClients) animateNumber(statsClients, clientCount);
+                if (statsClients) animateNumber(statsClients, activeClientCount);
                 if (statsOffers) animateNumber(statsOffers, offerCount);
-                if (statsContracts) animateNumber(statsContracts, contractCount);
+                if (statsContracts) animateNumber(statsContracts, activeContractCount);
                 if (statsMembers) animateNumber(statsMembers, totalMembers > 0 ? totalMembers.toLocaleString() : '--');
                 if (statsPending) animateNumber(statsPending, pendingCount);
                 
@@ -21903,7 +21915,7 @@ Email: ${contract.contact_email || '-'}
                     
                     // Ask if user wants to go to Contract Center
                     if (confirm('Go to Contract Center now?')) {
-                        showPage('contractCenter');
+                        enterModule('contracts');
                         setTimeout(() => loadContracts(), 500);
                     }
                 } else {
