@@ -10293,6 +10293,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         window.addEventListener('offline', () => alert('⚠️ No internet connection! Some features may not work.')); window.addEventListener('online', () => alert('✅ Connection restored!'));
         document.addEventListener('click', e => { const btn = e.target.closest('button'); if (btn && !btn.dataset.noGuard) { if (btn.dataset.busy) { e.stopImmediatePropagation(); e.preventDefault(); return; } btn.dataset.busy = '1'; setTimeout(() => delete btn.dataset.busy, 2000); } }, true);
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyz26LfSV2RXtrdtSwV6OFjDPMIEvPE62FqYqiZH6W1I4FpeTs3NVcaUuXBRIhJVsVc/exec";
+        const API_URL = SCRIPT_URL; //script.google.com/macros/s/AKfycbyz26LfSV2RXtrdtSwV6OFjDPMIEvPE62FqYqiZH6W1I4FpeTs3NVcaUuXBRIhJVsVc/exec";
         const EMAIL_TEMPLATES_FOLDER_ID = '1cj4aLgolPRwJvjRrkiNAUhQ7ZD_HRfE2';
         
         // ═══════════════════════════════════════════════════════════════════
