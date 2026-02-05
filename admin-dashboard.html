@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-06 v3.45 - Cyprus Financial: Top Clients table now filters by selected group -->
+<!-- VERSION: 2026-02-06 v3.46 - Quarter Comparison: Fixed GROUP selection (aggregates data from all group entities) -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10905,61 +10905,132 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (badge) badge.textContent = '⏳ Loading...';
             
             try {
+                // v3.45: Handle GROUP selection - collect all client IDs in group
+                let clientIdsToQuery = [];
+                let isGroupMode = false;
+                
+                if (clientId && clientId.startsWith('GROUP:')) {
+                    isGroupMode = true;
+                    const parentId = clientId.replace('GROUP:', '');
+                    const allClients = window.cachedClientsData || [];
+                    
+                    // Parent + all subsidiaries
+                    clientIdsToQuery.push(parentId);
+                    allClients.forEach(c => {
+                        if (c.parent_client_id === parentId) {
+                            clientIdsToQuery.push(c.client_id);
+                        }
+                    });
+                    console.log(`📊 GROUP mode: ${clientIdsToQuery.length} clients in group`);
+                } else if (clientId && clientId !== 'all') {
+                    clientIdsToQuery = [clientId];
+                }
+                
                 // Load data for each selected quarter
-                // In cumulative mode: each quarter shows YTD (Q1 to that quarter)
-                // In single mode: each quarter shows only that quarter's data
-                const promises = quarters.map(q => {
+                const promises = quarters.map(async (q) => {
                     let startDate, endDate;
                     
                     if (cumulativeMode) {
-                        // Cumulative: Q1 to this quarter
                         const q1Range = getQuarterDateRange('Q1', selectedYear);
                         const qRange = getQuarterDateRange(q, selectedYear);
-                        startDate = q1Range.start; // Always 01/01
+                        startDate = q1Range.start;
                         endDate = qRange.end;
                     } else {
-                        // Single: only this quarter
                         const qRange = getQuarterDateRange(q, selectedYear);
                         startDate = qRange.start;
                         endDate = qRange.end;
                     }
                     
-                    const params = new URLSearchParams({ action: 'getClientKPISummary' });
-                    if (clientId && clientId !== 'all') {
-                        params.append('clientId', clientId);
+                    if (isGroupMode && clientIdsToQuery.length > 0) {
+                        // GROUP: Load each client and aggregate
+                        const clientPromises = clientIdsToQuery.map(cId => {
+                            const params = new URLSearchParams({ 
+                                action: 'getClientKPISummary',
+                                clientId: cId,
+                                startDate: startDate,
+                                endDate: endDate,
+                                quarter: q,
+                                year: selectedYear.toString()
+                            });
+                            return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
+                        });
+                        
+                        const clientResults = await Promise.all(clientPromises);
+                        
+                        // Aggregate results
+                        const aggregated = { total_members: 0, total_claims: 0, total_cost_usd: 0 };
+                        clientResults.forEach(r => {
+                            if (r && r.kpis) {
+                                aggregated.total_members += (r.kpis.total_members || 0);
+                                aggregated.total_claims += (r.kpis.total_claims || 0);
+                                aggregated.total_cost_usd += (r.kpis.total_cost_usd || 0);
+                            }
+                        });
+                        
+                        return { quarter: q, data: { kpis: aggregated }, startDate, endDate };
                     } else {
-                        params.append('clientId', 'ALL');
+                        // Single client or ALL
+                        const params = new URLSearchParams({ action: 'getClientKPISummary' });
+                        if (clientIdsToQuery.length === 1) {
+                            params.append('clientId', clientIdsToQuery[0]);
+                        } else {
+                            params.append('clientId', 'ALL');
+                        }
+                        params.append('startDate', startDate);
+                        params.append('endDate', endDate);
+                        params.append('quarter', q);
+                        params.append('year', selectedYear.toString());
+                        
+                        const data = await fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
+                        return { quarter: q, data, startDate, endDate };
                     }
-                    params.append('startDate', startDate);
-                    params.append('endDate', endDate);
-                    params.append('quarter', q);
-                    params.append('year', selectedYear.toString());
-                    
-                    return fetch(`${API_URL}?${params.toString()}`)
-                        .then(r => r.json())
-                        .then(data => ({ quarter: q, data, startDate, endDate }))
-                        .catch(e => ({ quarter: q, data: null, error: e }));
                 });
                 
                 // Also load aggregate for the KPI cards at the bottom
-                const aggregateParams = new URLSearchParams({ action: 'getClientKPISummary' });
-                if (clientId && clientId !== 'all') {
-                    aggregateParams.append('clientId', clientId);
-                } else {
-                    aggregateParams.append('clientId', 'ALL');
-                }
-                
-                // Aggregate always covers Q1 to latest selected quarter
                 const lastQ = quarters[quarters.length - 1];
                 const q1Range = getQuarterDateRange('Q1', selectedYear);
                 const lastRange = getQuarterDateRange(lastQ, selectedYear);
-                aggregateParams.append('startDate', q1Range.start);
-                aggregateParams.append('endDate', lastRange.end);
-                aggregateParams.append('year', selectedYear.toString());
                 
-                const aggregatePromise = fetch(`${API_URL}?${aggregateParams.toString()}`)
-                    .then(r => r.json())
-                    .catch(e => null);
+                let aggregatePromise;
+                if (isGroupMode && clientIdsToQuery.length > 0) {
+                    // GROUP: aggregate across all clients
+                    const clientAggPromises = clientIdsToQuery.map(cId => {
+                        const params = new URLSearchParams({ 
+                            action: 'getClientKPISummary',
+                            clientId: cId,
+                            startDate: q1Range.start,
+                            endDate: lastRange.end,
+                            year: selectedYear.toString()
+                        });
+                        return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
+                    });
+                    
+                    aggregatePromise = Promise.all(clientAggPromises).then(results => {
+                        const agg = { kpis: { total_members: 0, total_claims: 0, total_cost_usd: 0 }};
+                        results.forEach(r => {
+                            if (r && r.kpis) {
+                                agg.kpis.total_members += (r.kpis.total_members || 0);
+                                agg.kpis.total_claims += (r.kpis.total_claims || 0);
+                                agg.kpis.total_cost_usd += (r.kpis.total_cost_usd || 0);
+                            }
+                        });
+                        return agg;
+                    });
+                } else {
+                    const aggregateParams = new URLSearchParams({ action: 'getClientKPISummary' });
+                    if (clientIdsToQuery.length === 1) {
+                        aggregateParams.append('clientId', clientIdsToQuery[0]);
+                    } else {
+                        aggregateParams.append('clientId', 'ALL');
+                    }
+                    aggregateParams.append('startDate', q1Range.start);
+                    aggregateParams.append('endDate', lastRange.end);
+                    aggregateParams.append('year', selectedYear.toString());
+                    
+                    aggregatePromise = fetch(`${API_URL}?${aggregateParams.toString()}`)
+                        .then(r => r.json())
+                        .catch(e => null);
+                }
                 
                 const [results, aggregateData] = await Promise.all([
                     Promise.all(promises),
