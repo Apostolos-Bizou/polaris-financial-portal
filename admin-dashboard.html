@@ -12277,62 +12277,46 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         if (!r.data) debugMsg += ` ⚠️ NO DATA`;
                     });
                     
-                    // Sum all quarter results
-                    const cumKpis = { total_members: 0, total_claims: 0, total_cost_usd: 0, new_enrollments: 0, cancellations: 0 };
-                    const cumClaimTypes = { cases: { inpatient: 0, outpatient: 0, exgratia: 0 }, costs: { inpatient: 0, outpatient: 0, exgratia: 0 } };
-                    const cumMemberTypes = { members: { principal: 0, dependent: 0 } };
-                    let cumPlanBreakdown = null;
+                    // ═══ v4.3 FIX: API already returns cumulative data ═══
+                    // Since API returns cumulative data (Q2 = Q1+Q2, Q3 = Q1+Q2+Q3),
+                    // we just use the LATEST quarter's data (it already has everything)
+                    const sortedQuarters = [...quartersToLoad].sort();
+                    const latestQuarter = sortedQuarters[sortedQuarters.length - 1];
+                    const latestResult = results.find(r => r.quarter === latestQuarter);
                     
-                    results.forEach(r => {
-                        if (!r.data || r.data.error) {
-                            console.warn(`⚠️ ${r.quarter} returned error or null`);
-                            return;
-                        }
-                        const k = r.data.kpis;
-                        if (k) {
-                            cumKpis.total_members += (k.total_members || 0);
-                            cumKpis.total_claims += (k.total_claims || 0);
-                            cumKpis.total_cost_usd += (k.total_cost_usd || 0);
-                            cumKpis.new_enrollments += (k.new_enrollments || k.enrollments || 0);
-                            cumKpis.cancellations += (k.cancellations || 0);
-                        }
-                        const ct = r.data.claimTypes;
-                        if (ct) {
-                            if (ct.cases) {
-                                cumClaimTypes.cases.inpatient += (ct.cases.inpatient || 0);
-                                cumClaimTypes.cases.outpatient += (ct.cases.outpatient || 0);
-                                cumClaimTypes.cases.exgratia += (ct.cases.exgratia || 0);
-                            }
-                            if (ct.costs) {
-                                cumClaimTypes.costs.inpatient += (ct.costs.inpatient || 0);
-                                cumClaimTypes.costs.outpatient += (ct.costs.outpatient || 0);
-                                cumClaimTypes.costs.exgratia += (ct.costs.exgratia || 0);
-                            }
-                        }
-                        const mt = r.data.memberTypes;
-                        if (mt && mt.members) {
-                            cumMemberTypes.members.principal += (mt.members.principal || 0);
-                            cumMemberTypes.members.dependent += (mt.members.dependent || 0);
-                        }
-                        // Plan breakdown: sum across quarters
-                        if (r.data.planBreakdown) {
-                            if (!cumPlanBreakdown) cumPlanBreakdown = {};
-                            ['gold', 'platinum', 'silver'].forEach(plan => {
-                                if (r.data.planBreakdown[plan]) {
-                                    if (!cumPlanBreakdown[plan]) cumPlanBreakdown[plan] = { members: 0 };
-                                    cumPlanBreakdown[plan].members += (r.data.planBreakdown[plan].members || 0);
-                                }
-                            });
-                        }
-                    });
+                    let cumKpis, cumClaimTypes, cumMemberTypes, cumPlanBreakdown;
                     
-                    // ═══ v4.2 DEBUG: Add totals and show alert ═══
-                    debugMsg += '\n\n══════════════════\n📊 CUMULATIVE TOTALS:';
-                    debugMsg += `\nMembers: ${cumKpis.total_members.toLocaleString()}`;
-                    debugMsg += `\nClaims: ${cumKpis.total_claims.toLocaleString()}`;
-                    debugMsg += `\nCost: $${cumKpis.total_cost_usd.toLocaleString()}`;
+                    if (latestResult && latestResult.data && !latestResult.data.error) {
+                        // Use the latest quarter's cumulative data directly
+                        cumKpis = {
+                            total_members: latestResult.data.kpis?.total_members || 0,
+                            total_claims: latestResult.data.kpis?.total_claims || 0,
+                            total_cost_usd: latestResult.data.kpis?.total_cost_usd || 0,
+                            new_enrollments: latestResult.data.kpis?.new_enrollments || 0,
+                            cancellations: latestResult.data.kpis?.cancellations || 0
+                        };
+                        cumClaimTypes = latestResult.data.claimTypes || { cases: { inpatient: 0, outpatient: 0, exgratia: 0 }, costs: { inpatient: 0, outpatient: 0, exgratia: 0 } };
+                        cumMemberTypes = latestResult.data.memberTypes || { members: { principal: 0, dependent: 0 } };
+                        cumPlanBreakdown = latestResult.data.planBreakdown || null;
+                        
+                        console.log(`✅ v4.3: Using ${latestQuarter} cumulative data (already contains Q1→${latestQuarter}):`, cumKpis);
+                    } else {
+                        // Fallback if latest quarter failed
+                        cumKpis = { total_members: 0, total_claims: 0, total_cost_usd: 0, new_enrollments: 0, cancellations: 0 };
+                        cumClaimTypes = { cases: { inpatient: 0, outpatient: 0, exgratia: 0 }, costs: { inpatient: 0, outpatient: 0, exgratia: 0 } };
+                        cumMemberTypes = { members: { principal: 0, dependent: 0 } };
+                        cumPlanBreakdown = null;
+                        console.warn('⚠️ v4.3: Latest quarter data unavailable, using zeros');
+                    }
+                    
+                    // ═══ v4.3 DEBUG: Show cumulative result ═══
+                    debugMsg += `\n\n══════════════════\n📊 CUMULATIVE (from ${latestQuarter}):`;
+                    debugMsg += `\nMembers: ${(cumKpis.total_members || 0).toLocaleString()}`;
+                    debugMsg += `\nClaims: ${(cumKpis.total_claims || 0).toLocaleString()}`;
+                    debugMsg += `\nCost: $${(cumKpis.total_cost_usd || 0).toLocaleString()}`;
                     debugMsg += '\n══════════════════';
                     alert(debugMsg);
+
                     
                     // Build combined data object (same structure as single-quarter response)
                     data = {
