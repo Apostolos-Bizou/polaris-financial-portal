@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-05 v3.40 - Email Center body fix + New API URL -->
+<!-- VERSION: 2026-02-06 v3.41 - Email Center: Full placeholder replacement (subject, body, portal URL, username/password from Users) -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -13101,9 +13101,13 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const clientId = document.getElementById('emailClient').value;
             const container = document.getElementById('emailRecipients');
             
+            // Reset user credentials
+            window.clientUserCredentials = null;
+            
             if (!clientId) {
                 container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">Select a client to see available contacts</p>';
                 updateSendButton();
+                updatePreview(); // Refresh preview
                 return;
             }
             
@@ -13121,6 +13125,22 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     clientContacts = [];
                     container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">No contacts found. Use "Additional Email" below to add recipients.</p>';
                 }
+                
+                // Load user credentials for this client from Users sheet
+                try {
+                    const usersResponse = await fetch(`${API_URL}?action=getUsers`);
+                    const users = await usersResponse.json();
+                    if (Array.isArray(users)) {
+                        window.clientUserCredentials = users.find(u => u.client_id === clientId) || null;
+                        console.log('📋 User credentials for client:', window.clientUserCredentials);
+                    }
+                } catch (userErr) {
+                    console.log('Could not load user credentials:', userErr);
+                }
+                
+                // Update preview with new client data and credentials
+                updatePreview();
+                
             } catch (err) {
                 console.error('Error loading contacts:', err);
                 // Fallback - allow manual email entry
@@ -13232,6 +13252,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             
             if (template) {
                 selectedTemplate = template;
+                // Set subject - will be updated with placeholders in updatePreview()
                 document.getElementById('emailSubject').value = template.subject;
                 updatePreview();
             } else {
@@ -13245,6 +13266,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         function updatePreview() {
             const previewBox = document.getElementById('emailPreviewBox');
+            const subjectInput = document.getElementById('emailSubject');
             
             if (!selectedTemplate) {
                 previewBox.innerHTML = '<p style="color: #999; text-align: center;">Select a template to see preview</p>';
@@ -13256,22 +13278,43 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const client = dashboardData?.clients?.find(c => c.client_id === clientId);
             
             let preview = selectedTemplate.body_html || getDefaultTemplateBody(selectedTemplate.template_id);
+            let subject = selectedTemplate.subject || '';
             
-            // Replace placeholders
+            // Replace placeholders in both body and subject
             if (client) {
-                preview = preview.replace(/\{\{client_name\}\}/g, client.client_name || '');
-                preview = preview.replace(/\{\{contact_name\}\}/g, client.contact_name || 'Valued Customer');
+                preview = preview.replace(/\{\{client_name\}\}/gi, client.client_name || '');
+                preview = preview.replace(/\{\{contact_name\}\}/gi, client.contact_name || 'Valued Customer');
+                subject = subject.replace(/\{\{client_name\}\}/gi, client.client_name || '');
+                subject = subject.replace(/\{\{contact_name\}\}/gi, client.contact_name || 'Valued Customer');
             }
-            preview = preview.replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
-            preview = preview.replace(/\{\{year\}\}/g, new Date().getFullYear());
-            preview = preview.replace(/\{\{portal_url\}\}/g, 'https://polaris-portal.com');
+            preview = preview.replace(/\{\{current_date\}\}/gi, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
+            preview = preview.replace(/\{\{year\}\}/gi, new Date().getFullYear());
+            subject = subject.replace(/\{\{current_date\}\}/gi, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
+            subject = subject.replace(/\{\{year\}\}/gi, new Date().getFullYear());
+            
+            // Portal URL - CORRECT URL
+            const portalUrl = 'https://apostolos-bizou.github.io/polaris-financial-portal/';
+            preview = preview.replace(/\{\{portal_url\}\}/gi, portalUrl);
+            
+            // Username and Password from clientUserCredentials (loaded when client selected)
+            if (window.clientUserCredentials) {
+                preview = preview.replace(/\{\{username\}\}/gi, window.clientUserCredentials.username || '[No username]');
+                preview = preview.replace(/\{\{password\}\}/gi, window.clientUserCredentials.password || '[No password]');
+            } else {
+                // Fallback - show warning if no user account exists
+                preview = preview.replace(/\{\{username\}\}/gi, '<span style="color: orange; background: #fff3cd; padding: 0 4px; border-radius: 3px;" title="No user account found for this client">[No user account]</span>');
+                preview = preview.replace(/\{\{password\}\}/gi, '<span style="color: orange; background: #fff3cd; padding: 0 4px; border-radius: 3px;" title="No user account found for this client">[No user account]</span>');
+            }
             
             // Meeting template specific placeholders
             if (selectedTemplate.template_id === 'meeting_01') {
-                preview = preview.replace(/\{\{greeting\}\}/g, getGreetingText());
-                preview = preview.replace(/\{\{attendees_text\}\}/g, buildAttendeesText() || '[Select team members above]');
-                preview = preview.replace(/\{\{signatures\}\}/g, buildSignaturesHTML() || '[Select team members above]');
+                preview = preview.replace(/\{\{greeting\}\}/gi, getGreetingText());
+                preview = preview.replace(/\{\{attendees_text\}\}/gi, buildAttendeesText() || '[Select team members above]');
+                preview = preview.replace(/\{\{signatures\}\}/gi, buildSignaturesHTML() || '[Select team members above]');
             }
+            
+            // Update subject field with replaced placeholders
+            subjectInput.value = subject;
             
             // Show preview
             previewBox.innerHTML = preview || '<p>Template preview not available</p>';
