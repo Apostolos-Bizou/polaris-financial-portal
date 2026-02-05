@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-06 v3.41 - Email Center: Full placeholder replacement (subject, body, portal URL, username/password from Users) -->
+<!-- VERSION: 2026-02-06 v3.42 - Cyprus Financial: Now filters by selected client group -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11836,7 +11836,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 console.log(`🏢 GROUP selected: ${groupName} (${activeGroupIds.length} active entities)`, activeGroupIds);
                 
-                // Load aggregated KPIs for the group
+                // Load aggregated KPIs for the group (also updates CEO Financial)
                 loadGroupKPIs(activeGroupIds, groupName);
                 return;
             }
@@ -12029,6 +12029,22 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 // Refresh charts
                 loadDataForSelectedQuarters();
+                
+                // v3.41: Update CEO Financial Dashboard with group data
+                try {
+                    const groupCurrent = {
+                        members: displayGroupMembers,
+                        claims: aggregated.total_claims,
+                        approved_usd: aggregated.total_cost_usd
+                    };
+                    updateCEOFinancialDashboard(groupCurrent, []);
+                    console.log(`💰 CEO Financial updated for group ${groupName}:`, groupCurrent);
+                } catch(e) {
+                    console.error('CEO Financial update error:', e);
+                }
+                
+                // Hide loading overlay
+                showDashboardLoading(false);
                 
                 console.log(`✅ GROUP KPIs aggregated for ${groupName}:`, aggregated);
                 
