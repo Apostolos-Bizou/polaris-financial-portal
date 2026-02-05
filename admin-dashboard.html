@@ -1107,8 +1107,274 @@
             0%, 100% { box-shadow: 0 3px 10px rgba(231,76,60,0.3); }
             50% { box-shadow: 0 3px 15px rgba(231,76,60,0.6); }
         }
-        
-        /* Email Center Modal - Modal Size (not fullscreen) */
+
+        /* ═══════════ KPI COMMAND CENTER ═══════════ */
+        .kpi-cc-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #0a0e1a;
+            z-index: 999999; overflow-y: auto; overflow-x: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .kpi-cc-overlay.kpi-cc-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .kpi-cc-grid-bg {
+            position: fixed; inset: 0;
+            background-image: linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+            background-size: 60px 60px; pointer-events: none;
+        }
+        .kpi-cc-glow { position: fixed; width: 500px; height: 500px; border-radius: 50%; filter: blur(150px); opacity: 0.12; pointer-events: none; }
+        .kpi-cc-glow.g1 { top: -200px; left: -100px; background: #00ff88; }
+        .kpi-cc-glow.g2 { bottom: -200px; right: -100px; background: #00b4ff; }
+        .kpi-cc-container { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+        .kpi-cc-close {
+            position: fixed; top: 1.2rem; right: 1.5rem; width: 48px; height: 48px;
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            background: #141c30; color: #8892a8; font-size: 1.5rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; z-index: 100;
+            transition: all 0.3s;
+        }
+        .kpi-cc-close:hover { border-color: #ff3366; color: #ff3366; background: rgba(255,51,102,0.1); }
+        .kpi-cc-header { text-align: center; margin-bottom: 2rem; }
+        .kpi-cc-header h1 {
+            font-family: 'Montserrat', sans-serif; font-size: 1.8rem; font-weight: 800;
+            letter-spacing: 3px; background: linear-gradient(135deg, #00ff88, #00b4ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .kpi-cc-header .kpi-cc-sub { font-family: monospace; font-size: 0.8rem; color: #8892a8; letter-spacing: 2px; }
+
+        /* Score Hero */
+        .kpi-cc-score-hero { display: flex; align-items: center; justify-content: center; gap: 2.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .kpi-cc-ring-wrap { position: relative; width: 180px; height: 180px; flex-shrink: 0; }
+        .kpi-cc-ring-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 8; }
+        .kpi-cc-ring-progress {
+            fill: none; stroke: url(#kpiCCGrad); stroke-width: 8; stroke-linecap: round;
+            stroke-dasharray: 565.48; stroke-dashoffset: 565.48;
+            transform: rotate(-90deg); transform-origin: center;
+            transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1);
+            filter: drop-shadow(0 0 10px rgba(0,255,136,0.4));
+        }
+        .kpi-cc-ring-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
+        .kpi-cc-score-num { font-family: 'Montserrat', sans-serif; font-size: 3.2rem; font-weight: 900; color: #00ff88; line-height: 1; text-shadow: 0 0 25px rgba(0,255,136,0.4); }
+        .kpi-cc-score-lbl { font-family: monospace; font-size: 0.7rem; color: #8892a8; letter-spacing: 2px; margin-top: 4px; }
+        .kpi-cc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+        .kpi-cc-stat-box {
+            background: #141c30; border: 1px solid rgba(0,255,136,0.15); border-radius: 10px;
+            padding: 1rem 1.5rem; min-width: 140px; transition: all 0.3s;
+        }
+        .kpi-cc-stat-box:hover { border-color: #00ff88; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,255,136,0.1); }
+        .kpi-cc-stat-val { font-family: 'Montserrat', sans-serif; font-size: 1.8rem; font-weight: 700; line-height: 1; }
+        .kpi-cc-stat-name { font-size: 0.7rem; color: #8892a8; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+        .kpi-cc-stat-box.s-pass .kpi-cc-stat-val { color: #00ff88; }
+        .kpi-cc-stat-box.s-fail .kpi-cc-stat-val { color: #ff3366; }
+        .kpi-cc-stat-box.s-run .kpi-cc-stat-val { color: #00b4ff; }
+        .kpi-cc-stat-box.s-pend .kpi-cc-stat-val { color: #556077; }
+
+        /* Progress */
+        .kpi-cc-progress { margin-bottom: 2rem; }
+        .kpi-cc-pbar-outer { height: 5px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+        .kpi-cc-pbar-inner {
+            height: 100%; width: 0%; border-radius: 3px;
+            background: linear-gradient(90deg, #00ff88, #00b4ff);
+            transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+            box-shadow: 0 0 16px rgba(0,255,136,0.4);
+        }
+        .kpi-cc-pbar-info { display: flex; justify-content: space-between; margin-top: 0.6rem; font-family: monospace; font-size: 0.75rem; color: #8892a8; }
+
+        /* Controls */
+        .kpi-cc-controls { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.8rem; }
+        .kpi-cc-btn-run {
+            font-family: 'Montserrat', sans-serif; font-size: 0.95rem; font-weight: 700;
+            letter-spacing: 2px; padding: 0.8rem 2.2rem; border: none; border-radius: 10px;
+            cursor: pointer; background: linear-gradient(135deg, #00ff88, #00cc6a);
+            color: #0a0e1a; box-shadow: 0 4px 20px rgba(0,255,136,0.3); transition: all 0.3s;
+        }
+        .kpi-cc-btn-run:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(0,255,136,0.4); }
+        .kpi-cc-btn-run.running { background: linear-gradient(135deg, #00b4ff, #0088cc); box-shadow: 0 4px 20px rgba(0,180,255,0.3); pointer-events: none; }
+        .kpi-cc-filters { display: flex; gap: 0.4rem; }
+        .kpi-cc-filter {
+            font-family: monospace; font-size: 0.72rem; padding: 0.4rem 0.8rem;
+            border: 1px solid rgba(0,255,136,0.15); border-radius: 16px;
+            background: transparent; color: #8892a8; cursor: pointer; transition: all 0.3s;
+        }
+        .kpi-cc-filter:hover, .kpi-cc-filter.active { border-color: #00ff88; color: #00ff88; background: rgba(0,255,136,0.05); }
+
+        /* Test Items */
+        .kpi-cc-test-item {
+            background: #141c30; border: 1px solid rgba(0,255,136,0.12); border-radius: 12px;
+            margin-bottom: 0.6rem; overflow: hidden; transition: all 0.3s;
+        }
+        .kpi-cc-test-item.passed { border-color: rgba(0,255,136,0.25); }
+        .kpi-cc-test-item.failed { border-color: rgba(255,51,102,0.25); }
+        .kpi-cc-test-item.running { border-color: rgba(0,180,255,0.25); }
+        .kpi-cc-test-item:hover { border-color: rgba(0,255,136,0.35); transform: translateX(3px); }
+        .kpi-cc-test-header {
+            display: flex; align-items: center; padding: 0.9rem 1.2rem; cursor: pointer;
+            user-select: none; gap: 0.8rem;
+        }
+        .kpi-cc-test-idx {
+            font-family: 'Montserrat', sans-serif; font-size: 0.7rem; font-weight: 700;
+            width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            color: #556077; flex-shrink: 0;
+        }
+        .kpi-cc-test-item.passed .kpi-cc-test-idx { background: rgba(0,255,136,0.06); border-color: rgba(0,255,136,0.25); color: #00ff88; }
+        .kpi-cc-test-item.failed .kpi-cc-test-idx { background: rgba(255,51,102,0.06); border-color: rgba(255,51,102,0.25); color: #ff3366; }
+        .kpi-cc-test-item.running .kpi-cc-test-idx { background: rgba(0,180,255,0.06); border-color: rgba(0,180,255,0.25); color: #00b4ff; }
+        .kpi-cc-test-icon { font-size: 1.2rem; flex-shrink: 0; }
+        .kpi-cc-test-info { flex: 1; min-width: 0; }
+        .kpi-cc-test-name { font-weight: 600; font-size: 0.9rem; color: #e8ecf4; }
+        .kpi-cc-test-action { font-family: monospace; font-size: 0.68rem; color: #556077; }
+        .kpi-cc-test-status { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+        .kpi-cc-badge {
+            font-family: monospace; font-size: 0.68rem; font-weight: 600;
+            padding: 0.3rem 0.7rem; border-radius: 5px; letter-spacing: 1px; text-transform: uppercase;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .kpi-cc-badge.pending { background: rgba(85,96,119,0.1); border: 1px solid rgba(85,96,119,0.2); color: #556077; }
+        .kpi-cc-badge.pass { background: rgba(0,255,136,0.06); border: 1px solid rgba(0,255,136,0.25); color: #00ff88; }
+        .kpi-cc-badge.fail { background: rgba(255,51,102,0.06); border: 1px solid rgba(255,51,102,0.25); color: #ff3366; }
+        .kpi-cc-badge.running { background: rgba(0,180,255,0.06); border: 1px solid rgba(0,180,255,0.25); color: #00b4ff; }
+        .kpi-cc-timing { font-family: monospace; font-size: 0.68rem; color: #556077; min-width: 50px; text-align: right; }
+        .kpi-cc-expand-arrow { font-size: 1rem; color: #556077; transition: transform 0.3s; flex-shrink: 0; }
+        .kpi-cc-test-item.expanded .kpi-cc-expand-arrow { transform: rotate(180deg); color: #00ff88; }
+
+        /* Detail Panel */
+        .kpi-cc-test-detail { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.4,0,0.2,1); background: rgba(0,0,0,0.2); }
+        .kpi-cc-test-item.expanded .kpi-cc-test-detail { max-height: 700px; }
+        .kpi-cc-detail-inner { padding: 1rem 1.2rem 1.2rem; border-top: 1px solid rgba(255,255,255,0.05); }
+        .kpi-cc-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem; }
+        .kpi-cc-detail-box { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.8rem; }
+        .kpi-cc-detail-box h4 { font-family: monospace; font-size: 0.65rem; color: #00ff88; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.4rem; }
+        .kpi-cc-val { font-family: monospace; font-size: 0.8rem; color: #e8ecf4; word-break: break-all; }
+        .kpi-cc-url { font-size: 0.68rem; color: #00b4ff; }
+        .kpi-cc-code-block { background: #080c16; border: 1px solid rgba(0,255,136,0.1); border-radius: 8px; overflow: hidden; }
+        .kpi-cc-code-hdr {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.5rem 0.8rem; background: rgba(0,255,136,0.04); border-bottom: 1px solid rgba(0,255,136,0.08);
+        }
+        .kpi-cc-code-hdr span { font-family: monospace; font-size: 0.65rem; color: #00ff88; letter-spacing: 1px; }
+        .kpi-cc-copy-btn {
+            font-family: monospace; font-size: 0.6rem; padding: 0.2rem 0.5rem;
+            border: 1px solid rgba(0,255,136,0.2); border-radius: 4px;
+            background: transparent; color: #8892a8; cursor: pointer; transition: all 0.2s;
+        }
+        .kpi-cc-copy-btn:hover { border-color: #00ff88; color: #00ff88; }
+        .kpi-cc-code-body {
+            padding: 0.8rem; font-family: monospace; font-size: 0.72rem; line-height: 1.5;
+            color: #8892a8; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+        }
+        .kpi-cc-raw { color: #556077; max-height: 150px; }
+
+        /* ═══════════ SUMMARY PANEL ═══════════ */
+        .kpi-cc-summary {
+            margin-top: 2rem; padding-top: 2rem;
+            border-top: 2px solid rgba(0,255,136,0.15);
+            animation: kpiCCFadeUp 0.6s ease-out;
+        }
+        @keyframes kpiCCFadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .kpi-cc-sum-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+        }
+        .kpi-cc-sum-title { display: flex; align-items: center; gap: 1rem; }
+        .kpi-cc-sum-icon { font-size: 2.5rem; }
+        .kpi-cc-sum-title h2 {
+            font-family: 'Montserrat', sans-serif; font-size: 1.3rem; font-weight: 800;
+            letter-spacing: 2px; color: #e8ecf4; margin: 0;
+        }
+        .kpi-cc-sum-title p { font-family: monospace; font-size: 0.72rem; color: #556077; margin: 4px 0 0; }
+        .kpi-cc-sum-score-pill {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 0.8rem 1.5rem; border-radius: 14px; min-width: 80px;
+        }
+        .kpi-cc-sum-score-pill.green { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.25); }
+        .kpi-cc-sum-score-pill.orange { background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.25); }
+        .kpi-cc-sum-score-num { font-family: 'Montserrat', sans-serif; font-size: 1.8rem; font-weight: 800; line-height: 1; }
+        .kpi-cc-sum-score-pill.green .kpi-cc-sum-score-num { color: #00ff88; }
+        .kpi-cc-sum-score-pill.orange .kpi-cc-sum-score-num { color: #ff6b35; }
+        .kpi-cc-sum-score-lbl { font-family: monospace; font-size: 0.6rem; letter-spacing: 2px; color: #8892a8; margin-top: 2px; }
+
+        /* Health Bar */
+        .kpi-cc-sum-healthbar { margin-bottom: 2rem; }
+        .kpi-cc-sum-hb-track { height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
+        .kpi-cc-sum-hb-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+        .kpi-cc-sum-hb-labels { display: flex; justify-content: space-between; margin-top: 0.4rem; font-family: monospace; font-size: 0.65rem; color: #556077; }
+
+        /* Sections */
+        .kpi-cc-sum-section { margin-bottom: 1.5rem; }
+        .kpi-cc-sum-section-title {
+            font-family: 'Montserrat', sans-serif; font-size: 0.85rem; font-weight: 700;
+            letter-spacing: 1.5px; margin-bottom: 0.8rem; padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .kpi-cc-sum-section-title.pass-title { color: #00ff88; }
+        .kpi-cc-sum-section-title.fail-title { color: #ff3366; }
+        .kpi-cc-sum-items { display: flex; flex-direction: column; gap: 0.5rem; }
+
+        /* Items */
+        .kpi-cc-sum-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.8rem 1rem; border-radius: 10px; transition: all 0.2s;
+        }
+        .kpi-cc-sum-item.pass { background: rgba(0,255,136,0.04); border: 1px solid rgba(0,255,136,0.12); }
+        .kpi-cc-sum-item.fail { background: rgba(255,51,102,0.04); border: 1px solid rgba(255,51,102,0.12); border-radius: 10px 10px 0 0; margin-bottom: 0; }
+        .kpi-cc-sum-item:hover { transform: translateX(3px); }
+        .kpi-cc-sum-item-left { display: flex; align-items: center; gap: 0.8rem; }
+        .kpi-cc-sum-item-icon { font-size: 1.2rem; }
+        .kpi-cc-sum-item-name { font-weight: 600; font-size: 0.85rem; color: #e8ecf4; }
+        .kpi-cc-sum-item-data { font-family: monospace; font-size: 0.7rem; color: #8892a8; margin-top: 2px; }
+        .kpi-cc-sum-item-right { display: flex; align-items: center; gap: 0.8rem; }
+        .kpi-cc-sum-item-time { font-family: monospace; font-size: 0.68rem; color: #556077; }
+        .kpi-cc-sum-status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .kpi-cc-sum-status-dot.pass { background: #00ff88; box-shadow: 0 0 8px rgba(0,255,136,0.5); }
+        .kpi-cc-sum-status-dot.fail { background: #ff3366; box-shadow: 0 0 8px rgba(255,51,102,0.5); }
+
+        /* Reason Row */
+        .kpi-cc-sum-reason {
+            display: flex; align-items: flex-start; gap: 0.6rem;
+            padding: 0.7rem 1rem 0.7rem 3.2rem;
+            background: rgba(255,51,102,0.03); border: 1px solid rgba(255,51,102,0.08);
+            border-top: none; border-radius: 0 0 10px 10px; margin-bottom: 0.5rem;
+            font-family: monospace; font-size: 0.72rem; color: #ff9966; line-height: 1.4;
+        }
+        .kpi-cc-sum-reason-icon { flex-shrink: 0; }
+
+        /* Verdict */
+        .kpi-cc-sum-verdict {
+            display: flex; align-items: center; gap: 1.2rem;
+            padding: 1.2rem 1.5rem; border-radius: 14px; margin-top: 1.5rem;
+        }
+        .kpi-cc-sum-verdict.green { background: rgba(0,255,136,0.06); border: 2px solid rgba(0,255,136,0.2); }
+        .kpi-cc-sum-verdict.orange { background: rgba(255,107,53,0.06); border: 2px solid rgba(255,107,53,0.2); }
+        .kpi-cc-sum-verdict-icon { font-size: 2.5rem; flex-shrink: 0; }
+        .kpi-cc-sum-verdict-text strong {
+            font-family: 'Montserrat', sans-serif; font-size: 1rem; letter-spacing: 1px;
+            display: block; margin-bottom: 4px;
+        }
+        .kpi-cc-sum-verdict.green .kpi-cc-sum-verdict-text strong { color: #00ff88; }
+        .kpi-cc-sum-verdict.orange .kpi-cc-sum-verdict-text strong { color: #ff6b35; }
+        .kpi-cc-sum-verdict-text p { font-size: 0.8rem; color: #8892a8; margin: 0; line-height: 1.4; }
+        .kpi-cc-code-body::-webkit-scrollbar { width: 4px; }
+        .kpi-cc-code-body::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.2); border-radius: 2px; }
+
+        .kpi-cc-spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid transparent; border-top-color: #00b4ff; border-right-color: #00b4ff;
+            border-radius: 50%; animation: kpiCCSpin 0.8s linear infinite; vertical-align: middle;
+        }
+        @keyframes kpiCCSpin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .kpi-cc-container { padding: 1rem; }
+            .kpi-cc-header h1 { font-size: 1.2rem; }
+            .kpi-cc-score-hero { flex-direction: column; gap: 1rem; }
+            .kpi-cc-ring-wrap { width: 140px; height: 140px; }
+            .kpi-cc-score-num { font-size: 2.2rem; }
+            .kpi-cc-stats { grid-template-columns: 1fr 1fr; }
+            .kpi-cc-stat-box { padding: 0.6rem 0.8rem; min-width: auto; }
+            .kpi-cc-stat-val { font-size: 1.3rem; }
+            .kpi-cc-controls { flex-direction: column; }
+            .kpi-cc-detail-grid { grid-template-columns: 1fr; }
+        }
         .email-center-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); display: flex;
@@ -11304,76 +11570,335 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         
         // ═══════════════════════════════════════════════════════════════
-        // KPI DIAGNOSTIC TEST - Built-in test using current API_URL
+        // KPI COMMAND CENTER - Full Screen Diagnostic Panel
         // ═══════════════════════════════════════════════════════════════
-        async function runKPITest() {
-            const btn = document.getElementById('kpiTestBtn');
-            if (btn) { btn.innerHTML = '<span>⏳</span> Testing...'; btn.style.opacity = '0.7'; }
-            
-            const tests = [
-                ['📋 Active Clients', 'getActiveClients', d => d.count > 0 ? '✅ PASS — ' + d.count + ' clients' : '❌ FAIL — 0'],
-                ['📊 Contract Stats', 'getContractStats', d => d.data && d.data.total > 0 ? '✅ PASS — Total=' + d.data.total + ' Active=' + d.data.active : '❌ FAIL — 0'],
-                ['📜 Contracts List', 'getContracts', d => d.count > 0 ? '✅ PASS — ' + d.count + ' contracts' : '❌ FAIL — 0'],
-                ['💰 Dashboard KPIs', 'getDashboardKPIs', d => d.summary && d.summary.total_members > 0 ? '✅ PASS — Members=' + d.summary.total_members.toLocaleString() + ' Revenue=$' + d.summary.estimated_revenue.toLocaleString() : '❌ FAIL — No summary data'],
-                ['📈 KPI Summary ALL', 'getClientKPISummary&clientId=ALL', d => d.kpis && d.kpis.total_members > 0 ? '✅ PASS — Members=' + d.kpis.total_members.toLocaleString() + ' Claims=' + d.kpis.total_claims.toLocaleString() : '❌ FAIL — 0'],
-                ['📊 Master Comparison', 'getMasterComparison', d => d.data && d.data.latest_period ? '✅ PASS — Period=' + d.data.latest_period + ' Members=' + (d.data.latest_members || 0).toLocaleString() : '❌ FAIL — No data'],
-                ['🏢 CEO Dashboard', 'getCEODashboard', d => d.summary && d.summary.gross_revenue > 0 ? '✅ PASS — Revenue=$' + d.summary.gross_revenue.toLocaleString() + ' Profit=$' + d.summary.net_profit.toLocaleString() : '❌ FAIL — 0'],
-                ['🏥 CBMS Report', 'getCBMSReportData', d => d.data && d.data.length > 0 ? '✅ PASS — ' + d.data.length + ' records' : '❌ FAIL — 0'],
-                ['📁 Clients', 'getClients', d => d.count > 0 ? '✅ PASS — ' + d.count + ' clients' : '❌ FAIL — 0'],
-                ['📧 Email Templates', 'getEmailTemplates', d => d.data && d.data.length > 0 ? '✅ PASS — ' + d.data.length + ' templates' : '❌ FAIL — 0'],
-                ['📋 Offers', 'getOffers', d => d.data ? '✅ INFO — ' + (d.count || d.data.length || 0) + ' offers' : '⚠️ No offers sheet']
-            ];
-            
-            let pass = 0;
-            let total = tests.length;
-            let lines = [];
-            
-            for (const [name, action, check] of tests) {
-                try {
-                    const r = await fetch(API_URL + '?action=' + action);
-                    const d = await r.json();
-                    const result = check(d);
-                    if (result.startsWith('✅')) pass++;
-                    lines.push({ name, result, time: '' });
-                } catch (e) {
-                    lines.push({ name, result: '❌ ERROR — ' + e.message, time: '' });
-                }
-            }
-            
-            // Build results modal
-            const overlay = document.createElement('div');
-            overlay.id = 'kpiTestOverlay';
-            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:999999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);';
-            overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
-            
-            const scoreColor = pass >= 10 ? '#00ff88' : pass >= 7 ? '#ffd700' : '#ff4444';
-            const scoreEmoji = pass >= 10 ? '🏆' : pass >= 7 ? '⭐' : '⚠️';
-            
-            let html = '<div style="background:linear-gradient(135deg,#0a1628,#1e3a5f);border:2px solid ' + scoreColor + ';border-radius:20px;padding:2.5rem;max-width:700px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5);">';
-            html += '<h1 style="text-align:center;font-family:Montserrat,sans-serif;margin:0 0 0.5rem 0;font-size:1.8rem;color:' + scoreColor + ';">🚀 POLARIS KPI TEST</h1>';
-            html += '<h2 style="text-align:center;font-family:Montserrat,sans-serif;margin:0 0 1.5rem 0;font-size:2.2rem;color:' + scoreColor + ';">' + scoreEmoji + ' ' + pass + '/' + total + ' PASSED</h2>';
-            html += '<div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:1rem;">';
-            
-            lines.forEach(function(l) {
-                const isPass = l.result.startsWith('✅');
-                const isInfo = l.result.startsWith('✅ INFO');
-                const bg = isPass ? 'rgba(0,255,100,0.08)' : 'rgba(255,50,50,0.08)';
-                const border = isPass ? 'rgba(0,255,100,0.2)' : 'rgba(255,50,50,0.2)';
-                html += '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:8px;padding:0.7rem 1rem;margin:0.4rem 0;font-family:monospace;font-size:0.85rem;color:#e0e0e0;">';
-                html += '<strong>' + l.name + '</strong><br>' + l.result;
-                html += '</div>';
+        function runKPITest() {
+            document.getElementById('kpiCommandCenter').classList.remove('kpi-cc-hidden');
+            document.body.style.overflow = 'hidden';
+            kpiCC_init();
+        }
+        function closeKPICommandCenter() {
+            document.getElementById('kpiCommandCenter').classList.add('kpi-cc-hidden');
+            document.body.style.overflow = '';
+        }
+
+        const KPI_CC_TESTS = [
+            { id:'activeClients', name:'Active Clients', icon:'👥', action:'getActiveClients',
+              validate: d => { const c = d.count || d.data?.length || 0; return { pass: c > 0, summary: c + ' clients' }; },
+              code: "fetch(API_URL + '?action=getActiveClients')\\n  .then(r => r.json())\\n  .then(d => console.log('Active:', d.count));" },
+            { id:'contractStats', name:'Contract Stats', icon:'📊', action:'getContractStats',
+              validate: d => { const t = d.data?.total||d.total||0, a = d.data?.active||d.active||0; return { pass: t > 0, summary: 'Total=' + t + ' Active=' + a }; },
+              code: "fetch(API_URL + '?action=getContractStats')\\n  .then(r => r.json())\\n  .then(d => console.log('Total:', d.data.total));" },
+            { id:'contracts', name:'Contracts List', icon:'📃', action:'getContracts',
+              validate: d => { const c = d.count || d.data?.length || 0; return { pass: c > 0, summary: c + ' contracts' }; },
+              code: "fetch(API_URL + '?action=getContracts')\\n  .then(r => r.json())\\n  .then(d => console.log('Contracts:', d.count));" },
+            { id:'dashboardKPIs', name:'Dashboard KPIs', icon:'🏆', action:'getDashboardKPIs',
+              validate: d => { const m = d.summary?.total_members||d.data?.totalMembers||0, r = d.summary?.estimated_revenue||d.data?.totalRevenue||0; return { pass: m > 0 || r > 0, summary: 'Members=' + (m||0).toLocaleString() + ' Revenue=$' + (r||0).toLocaleString() }; },
+              code: "fetch(API_URL + '?action=getDashboardKPIs')\\n  .then(r => r.json())\\n  .then(d => console.log('Members:', d.summary?.total_members));" },
+            { id:'kpiSummary', name:'KPI Summary ALL', icon:'📈', action:'getClientKPISummary&clientId=ALL',
+              validate: d => { const m = d.kpis?.total_members||0, c = d.kpis?.total_claims||0; return { pass: m > 0, summary: 'Members=' + m.toLocaleString() + ' Claims=' + c.toLocaleString() }; },
+              code: "fetch(API_URL + '?action=getClientKPISummary&clientId=ALL')\\n  .then(r => r.json())\\n  .then(d => console.log(d.kpis));" },
+            { id:'masterComparison', name:'Master Comparison', icon:'📊', action:'getMasterComparison',
+              validate: d => { const p = d.data?.latest_period||'N/A', m = d.data?.latest_members||d.data?.members||0; return { pass: m > 0 || p !== 'N/A', summary: 'Period=' + p + ' Members=' + (typeof m==='number'?m.toLocaleString():m) }; },
+              code: "fetch(API_URL + '?action=getMasterComparison')\\n  .then(r => r.json())\\n  .then(d => console.log(d.data));" },
+            { id:'ceoDashboard', name:'CEO Dashboard', icon:'🏢', action:'getCEODashboard',
+              validate: d => { const r = d.summary?.gross_revenue||d.data?.revenue||0, p = d.summary?.net_profit||d.data?.profit||0; return { pass: r > 0, summary: 'Revenue=$' + (r||0).toLocaleString() + ' Profit=$' + (p||0).toLocaleString() }; },
+              code: "fetch(API_URL + '?action=getCEODashboard')\\n  .then(r => r.json())\\n  .then(d => console.log('Revenue:', d.summary?.gross_revenue));" },
+            { id:'cbmsReport', name:'CBMS Report', icon:'🏥', action:'getCBMSReportData',
+              validate: d => { const c = d.data?.length||0; return { pass: c > 0, summary: c + ' records' }; },
+              code: "fetch(API_URL + '?action=getCBMSReportData')\\n  .then(r => r.json())\\n  .then(d => console.log('Records:', d.data?.length));" },
+            { id:'clients', name:'Clients', icon:'📁', action:'getClients',
+              validate: d => { const c = d.count||d.data?.length||0; return { pass: c > 0, summary: c + ' clients' }; },
+              code: "fetch(API_URL + '?action=getClients')\\n  .then(r => r.json())\\n  .then(d => console.log('Clients:', d.count));" },
+            { id:'offers', name:'Offers', icon:'📋', action:'getOffers',
+              validate: d => { const c = d.count||d.data?.length||0; return { pass: true, summary: c + ' offers' }; },
+              code: "fetch(API_URL + '?action=getOffers')\\n  .then(r => r.json())\\n  .then(d => console.log('Offers:', d.count));" },
+            { id:'emailTemplates', name:'Email Templates', icon:'📧', action:'getEmailTemplates',
+              validate: d => { const c = d.data?.length||0; return { pass: c > 0, summary: c + ' templates' }; },
+              code: "fetch(API_URL + '?action=getEmailTemplates')\\n  .then(r => r.json())\\n  .then(d => console.log('Templates:', d.data?.length));" }
+        ];
+
+        let kpiCC_results = {}, kpiCC_startTime = null, kpiCC_timer = null, kpiCC_running = false;
+
+        function kpiCC_init() {
+            const grid = document.getElementById('kpiCC_testsGrid');
+            grid.innerHTML = KPI_CC_TESTS.map((t, i) => `
+                <div class="kpi-cc-test-item" id="kpicc-${t.id}" data-status="pending" onclick="kpiCC_toggle('${t.id}')">
+                    <div class="kpi-cc-test-header">
+                        <div class="kpi-cc-test-idx">${String(i+1).padStart(2,'0')}</div>
+                        <div class="kpi-cc-test-icon">${t.icon}</div>
+                        <div class="kpi-cc-test-info">
+                            <div class="kpi-cc-test-name">${t.name}</div>
+                            <div class="kpi-cc-test-action">action=${t.action.split('&')[0]}</div>
+                        </div>
+                        <div class="kpi-cc-test-status">
+                            <span class="kpi-cc-badge pending" id="kpicc-badge-${t.id}">PENDING</span>
+                            <span class="kpi-cc-timing" id="kpicc-time-${t.id}">—</span>
+                        </div>
+                        <div class="kpi-cc-expand-arrow">▼</div>
+                    </div>
+                    <div class="kpi-cc-test-detail">
+                        <div class="kpi-cc-detail-inner">
+                            <div class="kpi-cc-detail-grid">
+                                <div class="kpi-cc-detail-box"><h4>📡 Endpoint</h4><div class="kpi-cc-val kpi-cc-url">...${API_URL.slice(-50)}?action=${t.action.split('&')[0]}</div></div>
+                                <div class="kpi-cc-detail-box"><h4>📊 Result</h4><div class="kpi-cc-val" id="kpicc-result-${t.id}">Awaiting test...</div></div>
+                            </div>
+                            <div class="kpi-cc-code-block">
+                                <div class="kpi-cc-code-hdr"><span>💻 API CODE</span><button class="kpi-cc-copy-btn" onclick="event.stopPropagation();kpiCC_copy('code','${t.id}',this)">📋 Copy</button></div>
+                                <div class="kpi-cc-code-body">${t.code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+                            </div>
+                            <div class="kpi-cc-code-block" style="margin-top:0.8rem;">
+                                <div class="kpi-cc-code-hdr"><span>📦 RAW RESPONSE</span><button class="kpi-cc-copy-btn" onclick="event.stopPropagation();kpiCC_copy('raw','${t.id}',this)">📋 Copy</button></div>
+                                <div class="kpi-cc-code-body kpi-cc-raw" id="kpicc-raw-${t.id}">Waiting for test run...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            kpiCC_updateScore(0, 0, 0, KPI_CC_TESTS.length);
+        }
+
+        function kpiCC_toggle(id) {
+            document.getElementById('kpicc-' + id).classList.toggle('expanded');
+        }
+
+        function kpiCC_filter(filter, btn) {
+            document.querySelectorAll('.kpi-cc-filter').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.kpi-cc-test-item').forEach(item => {
+                item.style.display = (filter === 'all' || item.dataset.status === filter) ? '' : 'none';
             });
-            
+        }
+
+        async function kpiCC_runAll() {
+            if (kpiCC_running) return;
+            kpiCC_running = true;
+            const btn = document.getElementById('kpiCC_btnRun');
+            btn.classList.add('running');
+            btn.innerHTML = '<span class="kpi-cc-spinner"></span> RUNNING...';
+
+            kpiCC_results = {};
+            kpiCC_startTime = Date.now();
+            document.getElementById('kpiCC_summaryPanel').style.display = 'none';
+            kpiCC_timer = setInterval(() => {
+                const el = (Date.now() - kpiCC_startTime) / 1000;
+                document.getElementById('kpiCC_time').textContent = Math.floor(el/60).toString().padStart(2,'0') + ':' + Math.floor(el%60).toString().padStart(2,'0');
+            }, 100);
+
+            KPI_CC_TESTS.forEach(t => {
+                const el = document.getElementById('kpicc-' + t.id);
+                el.className = 'kpi-cc-test-item'; el.dataset.status = 'pending';
+                document.getElementById('kpicc-badge-' + t.id).className = 'kpi-cc-badge pending';
+                document.getElementById('kpicc-badge-' + t.id).textContent = 'PENDING';
+                document.getElementById('kpicc-time-' + t.id).textContent = '—';
+                document.getElementById('kpicc-result-' + t.id).textContent = 'Awaiting test...';
+                document.getElementById('kpicc-raw-' + t.id).textContent = 'Waiting...';
+            });
+
+            kpiCC_updateScore(0, 0, 0, KPI_CC_TESTS.length);
+            let passed = 0, failed = 0;
+
+            for (let i = 0; i < KPI_CC_TESTS.length; i++) {
+                const test = KPI_CC_TESTS[i];
+                const remaining = KPI_CC_TESTS.length - i - 1;
+                const el = document.getElementById('kpicc-' + test.id);
+                el.className = 'kpi-cc-test-item running'; el.dataset.status = 'running';
+                const badge = document.getElementById('kpicc-badge-' + test.id);
+                badge.className = 'kpi-cc-badge running';
+                badge.innerHTML = '<span class="kpi-cc-spinner" style="width:12px;height:12px;border-width:1.5px;"></span> TESTING';
+                kpiCC_updateScore(passed, failed, 1, remaining);
+                document.getElementById('kpiCC_progressText').textContent = 'Testing ' + test.name + '...';
+
+                const t0 = Date.now();
+                try {
+                    const resp = await fetch(API_URL + '?action=' + test.action);
+                    const data = await resp.json();
+                    const ms = Date.now() - t0;
+                    const result = test.validate(data);
+                    kpiCC_results[test.id] = { ...result, data, ms };
+
+                    if (result.pass) {
+                        passed++;
+                        el.className = 'kpi-cc-test-item passed'; el.dataset.status = 'passed';
+                        badge.className = 'kpi-cc-badge pass'; badge.textContent = '✅ PASS';
+                    } else {
+                        failed++;
+                        el.className = 'kpi-cc-test-item failed'; el.dataset.status = 'failed';
+                        badge.className = 'kpi-cc-badge fail'; badge.textContent = '❌ FAIL';
+                    }
+                    document.getElementById('kpicc-time-' + test.id).textContent = (ms/1000).toFixed(1) + 's';
+                    document.getElementById('kpicc-result-' + test.id).innerHTML = '<span style="color:' + (result.pass ? '#00ff88' : '#ff3366') + '">' + result.summary + '</span>';
+                    document.getElementById('kpicc-raw-' + test.id).textContent = JSON.stringify(data, null, 2).substring(0, 3000);
+                } catch (err) {
+                    failed++;
+                    el.className = 'kpi-cc-test-item failed'; el.dataset.status = 'failed';
+                    badge.className = 'kpi-cc-badge fail'; badge.textContent = '❌ ERROR';
+                    document.getElementById('kpicc-time-' + test.id).textContent = ((Date.now()-t0)/1000).toFixed(1) + 's';
+                    document.getElementById('kpicc-result-' + test.id).innerHTML = '<span style="color:#ff3366">' + err.message + '</span>';
+                    document.getElementById('kpicc-raw-' + test.id).textContent = err.stack || err.message;
+                }
+
+                kpiCC_updateScore(passed, failed, 0, remaining);
+                document.getElementById('kpiCC_progressBar').style.width = ((i+1)/KPI_CC_TESTS.length*100) + '%';
+                if (i < KPI_CC_TESTS.length - 1) await new Promise(r => setTimeout(r, 250));
+            }
+
+            clearInterval(kpiCC_timer);
+            kpiCC_running = false;
+            btn.classList.remove('running');
+            btn.innerHTML = '▶ RUN ALL TESTS';
+            const totalSec = ((Date.now() - kpiCC_startTime)/1000).toFixed(1);
+            document.getElementById('kpiCC_progressText').textContent = passed === KPI_CC_TESTS.length
+                ? '🏆 ALL ' + KPI_CC_TESTS.length + ' TESTS PASSED in ' + totalSec + 's!'
+                : 'Done: ' + passed + ' passed, ' + failed + ' failed in ' + totalSec + 's';
+
+            // Build Summary Report
+            kpiCC_buildSummary(passed, failed, totalSec);
+        }
+
+        function kpiCC_buildSummary(passed, failed, totalSec) {
+            const panel = document.getElementById('kpiCC_summaryPanel');
+            const total = KPI_CC_TESTS.length;
+            const pct = Math.round(passed / total * 100);
+            const isAllGreen = failed === 0;
+
+            // Categorize tests
+            const passedTests = [];
+            const failedTests = [];
+            KPI_CC_TESTS.forEach(t => {
+                const r = kpiCC_results[t.id];
+                if (r && r.pass) {
+                    passedTests.push({ name: t.name, icon: t.icon, summary: r.summary, ms: r.ms });
+                } else {
+                    // Analyze WHY it failed
+                    let reason = 'No data returned';
+                    if (r) {
+                        const d = r.data;
+                        if (!d || !d.success) reason = 'API returned error or success=false';
+                        else if (r.summary.includes('=0') || r.summary.includes('=$0')) reason = 'API responds but data is empty (0 values) — check Google Sheet data source';
+                        else if (r.summary.includes('N/A')) reason = 'Endpoint works but data not configured yet';
+                        else reason = 'Data returned but validation failed: ' + r.summary;
+                    } else {
+                        reason = 'Network error or timeout — check API URL and deployment';
+                    }
+                    failedTests.push({ name: t.name, icon: t.icon, summary: r ? r.summary : 'No response', ms: r ? r.ms : 0, reason });
+                }
+            });
+
+            let html = '';
+
+            // ─── HEADER ───
+            html += '<div class="kpi-cc-sum-header">';
+            html += '<div class="kpi-cc-sum-title">';
+            html += '<span class="kpi-cc-sum-icon">' + (isAllGreen ? '🏆' : '📋') + '</span>';
+            html += '<div>';
+            html += '<h2>DIAGNOSTIC SUMMARY</h2>';
+            html += '<p>' + new Date().toLocaleString('el-GR') + ' • ' + totalSec + 's total</p>';
             html += '</div>';
-            html += '<p style="text-align:center;color:#666;margin:1rem 0 0.5rem 0;font-size:0.75rem;">API: ...' + API_URL.slice(-45) + '</p>';
-            html += '<div style="text-align:center;margin-top:1rem;"><button onclick="document.getElementById(\'kpiTestOverlay\').remove()" style="background:linear-gradient(135deg,' + scoreColor + ',#1e3a5f);color:white;border:none;padding:0.7rem 2rem;border-radius:25px;font-family:Montserrat,sans-serif;font-weight:700;font-size:1rem;cursor:pointer;">✓ Close</button></div>';
             html += '</div>';
-            
-            overlay.innerHTML = html;
-            document.body.appendChild(overlay);
-            
-            // Restore button
-            if (btn) { btn.innerHTML = '<span>🧪</span> KPI Test'; btn.style.opacity = '1'; }
+            html += '<div class="kpi-cc-sum-score-pill ' + (isAllGreen ? 'green' : 'orange') + '">';
+            html += '<span class="kpi-cc-sum-score-num">' + pct + '%</span>';
+            html += '<span class="kpi-cc-sum-score-lbl">HEALTH</span>';
+            html += '</div>';
+            html += '</div>';
+
+            // ─── HEALTH BAR ───
+            html += '<div class="kpi-cc-sum-healthbar">';
+            html += '<div class="kpi-cc-sum-hb-track">';
+            html += '<div class="kpi-cc-sum-hb-fill" style="width:' + pct + '%;background:' + (isAllGreen ? 'linear-gradient(90deg,#00ff88,#00cc6a)' : 'linear-gradient(90deg,#ff6b35,#ffd700)') + '"></div>';
+            html += '</div>';
+            html += '<div class="kpi-cc-sum-hb-labels"><span>0%</span><span>' + passed + '/' + total + ' endpoints operational</span><span>100%</span></div>';
+            html += '</div>';
+
+            // ─── PASSED SECTION ───
+            if (passedTests.length > 0) {
+                html += '<div class="kpi-cc-sum-section">';
+                html += '<h3 class="kpi-cc-sum-section-title pass-title">✅ OPERATIONAL (' + passedTests.length + ')</h3>';
+                html += '<div class="kpi-cc-sum-items">';
+                passedTests.forEach(t => {
+                    html += '<div class="kpi-cc-sum-item pass">';
+                    html += '<div class="kpi-cc-sum-item-left">';
+                    html += '<span class="kpi-cc-sum-item-icon">' + t.icon + '</span>';
+                    html += '<div><div class="kpi-cc-sum-item-name">' + t.name + '</div>';
+                    html += '<div class="kpi-cc-sum-item-data">' + t.summary + '</div></div>';
+                    html += '</div>';
+                    html += '<div class="kpi-cc-sum-item-right">';
+                    html += '<span class="kpi-cc-sum-item-time">' + (t.ms/1000).toFixed(1) + 's</span>';
+                    html += '<span class="kpi-cc-sum-status-dot pass"></span>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+                html += '</div></div>';
+            }
+
+            // ─── FAILED SECTION ───
+            if (failedTests.length > 0) {
+                html += '<div class="kpi-cc-sum-section">';
+                html += '<h3 class="kpi-cc-sum-section-title fail-title">❌ NEEDS ATTENTION (' + failedTests.length + ')</h3>';
+                html += '<div class="kpi-cc-sum-items">';
+                failedTests.forEach(t => {
+                    html += '<div class="kpi-cc-sum-item fail">';
+                    html += '<div class="kpi-cc-sum-item-left">';
+                    html += '<span class="kpi-cc-sum-item-icon">' + t.icon + '</span>';
+                    html += '<div><div class="kpi-cc-sum-item-name">' + t.name + '</div>';
+                    html += '<div class="kpi-cc-sum-item-data">' + t.summary + '</div></div>';
+                    html += '</div>';
+                    html += '<div class="kpi-cc-sum-item-right">';
+                    html += '<span class="kpi-cc-sum-item-time">' + (t.ms/1000).toFixed(1) + 's</span>';
+                    html += '<span class="kpi-cc-sum-status-dot fail"></span>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<div class="kpi-cc-sum-reason">';
+                    html += '<span class="kpi-cc-sum-reason-icon">💡</span>';
+                    html += '<span>' + t.reason + '</span>';
+                    html += '</div>';
+                });
+                html += '</div></div>';
+            }
+
+            // ─── VERDICT ───
+            html += '<div class="kpi-cc-sum-verdict ' + (isAllGreen ? 'green' : 'orange') + '">';
+            if (isAllGreen) {
+                html += '<div class="kpi-cc-sum-verdict-icon">🎉</div>';
+                html += '<div class="kpi-cc-sum-verdict-text">';
+                html += '<strong>ALL SYSTEMS OPERATIONAL</strong>';
+                html += '<p>All ' + total + ' API endpoints are responding with valid data. The POLARIS system is fully functional.</p>';
+                html += '</div>';
+            } else {
+                html += '<div class="kpi-cc-sum-verdict-icon">⚠️</div>';
+                html += '<div class="kpi-cc-sum-verdict-text">';
+                html += '<strong>' + failed + ' ENDPOINT' + (failed > 1 ? 'S' : '') + ' NEED ATTENTION</strong>';
+                html += '<p>' + passed + ' out of ' + total + ' endpoints are working. Review the failed items above for specific causes and recommended fixes.</p>';
+                html += '</div>';
+            }
+            html += '</div>';
+
+            panel.innerHTML = html;
+            panel.style.display = 'block';
+
+            // Smooth scroll to summary
+            setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+        }
+
+        function kpiCC_updateScore(passed, failed, running, pending) {
+            const total = KPI_CC_TESTS.length;
+            document.getElementById('kpiCC_scoreNum').textContent = passed;
+            document.getElementById('kpiCC_scoreNum').style.color = passed === total ? '#00ff88' : (failed > 0 ? '#ff6b35' : '#00ff88');
+            const circ = 2 * Math.PI * 90;
+            document.getElementById('kpiCC_ring').style.strokeDashoffset = circ * (1 - passed / total);
+            document.getElementById('kpiCC_statPass').textContent = passed;
+            document.getElementById('kpiCC_statFail').textContent = failed;
+            document.getElementById('kpiCC_statRun').textContent = running;
+            document.getElementById('kpiCC_statPend').textContent = pending;
+        }
+
+        function kpiCC_copy(type, id, btn) {
+            let txt = '';
+            if (type === 'code') { const t = KPI_CC_TESTS.find(x => x.id === id); txt = t ? t.code.replace(/\\n/g, '\n') : ''; }
+            else { txt = document.getElementById('kpicc-raw-' + id).textContent; }
+            navigator.clipboard.writeText(txt);
+            btn.textContent = '✅ Copied!';
+            setTimeout(() => btn.textContent = '📋 Copy', 1500);
         }
         
         function handleLogout() { 
@@ -31706,6 +32231,57 @@ console.log('✅ Recipients Management (v3.27) loaded!');
                 <button id="recipientSaveBtn" onclick="saveRecipient()" style="padding:1.1rem 2.5rem;background:linear-gradient(135deg, #D4AF37, #c9a227);border:none;border-radius:12px;color:#000;font-weight:700;cursor:pointer;font-size:1.15rem;transition:all 0.3s ease;">💾 Save Recipient</button>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- KPI COMMAND CENTER OVERLAY -->
+<div class="kpi-cc-overlay kpi-cc-hidden" id="kpiCommandCenter">
+    <div class="kpi-cc-grid-bg"></div>
+    <div class="kpi-cc-glow g1"></div>
+    <div class="kpi-cc-glow g2"></div>
+    <button class="kpi-cc-close" onclick="closeKPICommandCenter()" title="Close">✕</button>
+    <div class="kpi-cc-container">
+        <div class="kpi-cc-header">
+            <h1>🚀 POLARIS KPI TEST CENTER</h1>
+            <div class="kpi-cc-sub">SYSTEM DIAGNOSTIC &amp; API VERIFICATION</div>
+        </div>
+        <div class="kpi-cc-score-hero">
+            <div class="kpi-cc-ring-wrap">
+                <svg width="180" height="180" viewBox="0 0 200 200">
+                    <defs><linearGradient id="kpiCCGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#00ff88"/><stop offset="100%" style="stop-color:#00b4ff"/></linearGradient></defs>
+                    <circle cx="100" cy="100" r="90" class="kpi-cc-ring-bg"/>
+                    <circle cx="100" cy="100" r="90" class="kpi-cc-ring-progress" id="kpiCC_ring"/>
+                </svg>
+                <div class="kpi-cc-ring-text">
+                    <div class="kpi-cc-score-num" id="kpiCC_scoreNum">0</div>
+                    <div class="kpi-cc-score-lbl">/ 11 TESTS</div>
+                </div>
+            </div>
+            <div class="kpi-cc-stats">
+                <div class="kpi-cc-stat-box s-pass"><div class="kpi-cc-stat-val" id="kpiCC_statPass">0</div><div class="kpi-cc-stat-name">✅ Passed</div></div>
+                <div class="kpi-cc-stat-box s-fail"><div class="kpi-cc-stat-val" id="kpiCC_statFail">0</div><div class="kpi-cc-stat-name">❌ Failed</div></div>
+                <div class="kpi-cc-stat-box s-run"><div class="kpi-cc-stat-val" id="kpiCC_statRun">0</div><div class="kpi-cc-stat-name">⚡ Running</div></div>
+                <div class="kpi-cc-stat-box s-pend"><div class="kpi-cc-stat-val" id="kpiCC_statPend">11</div><div class="kpi-cc-stat-name">⏳ Pending</div></div>
+            </div>
+        </div>
+        <div class="kpi-cc-progress">
+            <div class="kpi-cc-pbar-outer"><div class="kpi-cc-pbar-inner" id="kpiCC_progressBar"></div></div>
+            <div class="kpi-cc-pbar-info">
+                <span id="kpiCC_progressText">Ready to launch tests...</span>
+                <span id="kpiCC_time">00:00</span>
+            </div>
+        </div>
+        <div class="kpi-cc-controls">
+            <button class="kpi-cc-btn-run" id="kpiCC_btnRun" onclick="kpiCC_runAll()">▶ RUN ALL TESTS</button>
+            <div class="kpi-cc-filters">
+                <button class="kpi-cc-filter active" onclick="kpiCC_filter('all',this)">All</button>
+                <button class="kpi-cc-filter" onclick="kpiCC_filter('passed',this)">Passed</button>
+                <button class="kpi-cc-filter" onclick="kpiCC_filter('failed',this)">Failed</button>
+            </div>
+        </div>
+        <div id="kpiCC_testsGrid"></div>
+        <!-- SUMMARY PANEL - appears after tests run -->
+        <div id="kpiCC_summaryPanel" class="kpi-cc-summary" style="display:none;"></div>
     </div>
 </div>
 
