@@ -8843,11 +8843,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             <div class="contract-filter-group">
                                 <label>Status</label>
                                 <select id="contractFilterStatus" onchange="filterContracts()">
-                                    <option value="">All Status</option>
-                                    <option value="active">✅ Active</option>
+                                    <option value="" selected>All Status</option>
+                                    <option value="active">✅ Active Contracts</option>
                                     <option value="signed">✍️ Signed</option>
-                                    <option value="sent">📤 Sent</option>
-                                    <option value="draft">📝 Draft</option>
+                                    <option value="pending">⏳ Pending</option>
                                     <option value="expired">❌ Expired</option>
                                     <option value="No Contract">🚫 No Contract</option>
                                 </select>
@@ -19187,12 +19186,26 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const client = document.getElementById('contractFilterClient')?.value;
             const search = (document.getElementById('contractFilterSearch')?.value || '').toLowerCase();
             
+            console.log('🔍 Filter - Status:', status, '| Total records:', filtered.length);
+            
             if(status) {
                 if (status === 'No Contract') {
-                    filtered = filtered.filter(c => !c.has_contract);
+                    // Show only clients WITHOUT contracts
+                    filtered = filtered.filter(c => !c.has_contract && !c.contract_id);
+                } else if (status === 'active') {
+                    // Show only clients WITH ACTIVE contracts
+                    filtered = filtered.filter(c => {
+                        const clientStatus = String(c.status || '').toLowerCase();
+                        return c.has_contract && (clientStatus === 'active' || clientStatus === 'signed');
+                    });
                 } else {
-                    filtered = filtered.filter(c => c.status && String(c.status).toLowerCase() === status.toLowerCase());
+                    // Other status filters
+                    filtered = filtered.filter(c => {
+                        const clientStatus = String(c.status || '').toLowerCase();
+                        return clientStatus === status.toLowerCase();
+                    });
                 }
+                console.log('🔍 After status filter:', filtered.length);
             }
             if(type) filtered = filtered.filter(c => c.doc_type === type);
             if(entity) filtered = filtered.filter(c => (c.client_type || '').toLowerCase() === entity);
