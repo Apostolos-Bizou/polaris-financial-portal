@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-05 v3.37 - Members from Clients sheet (11,483), not FinancialData (8,878) -->
+<!-- VERSION: 2026-02-05 v3.38 - Fix Period Comparison, YoY, Member Movement, Plan Performance -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10951,36 +10951,63 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             }
             
             // ═══════════════════════════════════════════════════════════════════
-            // v3.36: Populate Period Comparison (latest Q vs previous Q)
+            // v3.38: Populate Period Comparison (latest Q vs previous Q) - NULL-SAFE
             // ═══════════════════════════════════════════════════════════════════
-            if (prevQ && qData[prevQ] && qData[latestQ]) {
-                const curr = qData[latestQ], prev = qData[prevQ];
-                if (document.getElementById('cmpPeriodLabel')) {
-                    document.getElementById('cmpPeriodLabel').textContent = `${latestQ} vs ${prevQ} ${selectedYear}`;
-                }
-                document.getElementById('cmpClaims').textContent = fmt(curr.claims);
-                document.getElementById('cmpClaimsPrev').textContent = fmt(prev.claims);
-                document.getElementById('cmpMembers').textContent = fmt(curr.members);
-                document.getElementById('cmpMembersPrev').textContent = fmt(prev.members);
-                document.getElementById('cmpApproved').textContent = '$' + fmt(Math.round(curr.cost));
-                document.getElementById('cmpApprovedPrev').textContent = '$' + fmt(Math.round(prev.cost));
-                document.getElementById('cmpCost').textContent = '$' + curr.costPerMember.toFixed(2);
-                document.getElementById('cmpCostPrev').textContent = '$' + prev.costPerMember.toFixed(2);
-                
-                // Calculate % changes
-                const calcChange = (c, p) => p > 0 ? ((c - p) / p * 100).toFixed(1) : '0.0';
-                const setChangeEl = (id, val) => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        const v = parseFloat(val);
-                        el.textContent = (v > 0 ? '↑ +' : v < 0 ? '↓ ' : '') + val + '%';
-                        el.style.color = v > 0 ? '#4CAF50' : v < 0 ? '#f44336' : '#b8c9b8';
+            try {
+                if (prevQ && qData[prevQ] && qData[latestQ]) {
+                    const curr = qData[latestQ], prev = qData[prevQ];
+                    // v3.37: Use Clients sheet members for comparison
+                    const realMem = getTotalMembersFromClients(document.getElementById('clientSelect')?.value || 'all');
+                    if (realMem) {
+                        curr.members = realMem;
+                        prev.members = realMem;
+                        curr.costPerMember = realMem > 0 ? curr.cost / realMem : 0;
+                        prev.costPerMember = realMem > 0 ? prev.cost / realMem : 0;
                     }
-                };
-                setChangeEl('cmpClaimsChange', calcChange(curr.claims, prev.claims));
-                setChangeEl('cmpMembersChange', calcChange(curr.members, prev.members));
-                setChangeEl('cmpApprovedChange', calcChange(curr.cost, prev.cost));
-                setChangeEl('cmpCostChange', calcChange(curr.costPerMember, prev.costPerMember));
+                    
+                    const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+                    safeSet('cmpPeriodLabel', `${latestQ} vs ${prevQ} ${selectedYear}`);
+                    safeSet('cmpClaims', fmt(curr.claims));
+                    safeSet('cmpClaimsPrev', fmt(prev.claims));
+                    safeSet('cmpMembers', fmt(curr.members));
+                    safeSet('cmpMembersPrev', fmt(prev.members));
+                    safeSet('cmpApproved', '$' + fmt(Math.round(curr.cost)));
+                    safeSet('cmpApprovedPrev', '$' + fmt(Math.round(prev.cost)));
+                    safeSet('cmpCost', '$' + curr.costPerMember.toFixed(2));
+                    safeSet('cmpCostPrev', '$' + prev.costPerMember.toFixed(2));
+                    
+                    // Calculate % changes
+                    const calcChange = (c, p) => p > 0 ? ((c - p) / p * 100).toFixed(1) : (c > 0 ? '+100.0' : '0.0');
+                    const setChangeEl = (id, val) => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            const v = parseFloat(val);
+                            el.textContent = (v > 0 ? '↑ +' : v < 0 ? '↓ ' : '') + val + '%';
+                            el.style.color = v > 0 ? '#4CAF50' : v < 0 ? '#f44336' : '#b8c9b8';
+                        }
+                    };
+                    setChangeEl('cmpClaimsChange', calcChange(curr.claims, prev.claims));
+                    setChangeEl('cmpMembersChange', calcChange(curr.members, prev.members));
+                    setChangeEl('cmpApprovedChange', calcChange(curr.cost, prev.cost));
+                    setChangeEl('cmpCostChange', calcChange(curr.costPerMember, prev.costPerMember));
+                    
+                    console.log('✅ v3.38: Period Comparison populated:', latestQ, 'vs', prevQ);
+                } else if (quarters.length === 1 && qData[latestQ]) {
+                    // Single quarter - show vs N/A
+                    const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+                    const curr = qData[latestQ];
+                    safeSet('cmpPeriodLabel', `${latestQ} ${selectedYear}`);
+                    safeSet('cmpClaims', fmt(curr.claims));
+                    safeSet('cmpClaimsPrev', 'N/A');
+                    safeSet('cmpMembers', fmt(curr.members));
+                    safeSet('cmpMembersPrev', 'N/A');
+                    safeSet('cmpApproved', '$' + fmt(Math.round(curr.cost)));
+                    safeSet('cmpApprovedPrev', 'N/A');
+                    safeSet('cmpCost', '$' + curr.costPerMember.toFixed(2));
+                    safeSet('cmpCostPrev', 'N/A');
+                }
+            } catch (e) {
+                console.error('❌ v3.38: Period Comparison error:', e);
             }
             
             // ═══════════════════════════════════════════════════════════════════
@@ -11180,7 +11207,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const mockCurrent = hasRealData ? {
                 period: `${selectedYear}-${q}`,
                 period_label: dateRange.label,
-                members: window.currentClientKPIs.kpis.total_members || 0,
+                members: window._realMembers || window.currentClientKPIs.kpis.total_members || 0,
                 claims: window.currentClientKPIs.kpis.total_claims || 0,
                 approved_usd: window.currentClientKPIs.kpis.total_cost_usd || 0,
                 cost_per_member: window.currentClientKPIs.kpis.cost_per_member || 0
@@ -11255,9 +11282,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 }
                 
                 if (principalMembers === 0 && dependentMembers === 0 && kpis.total_members > 0) {
-                    principalMembers = Math.round(kpis.total_members * 0.42);
-                    dependentMembers = kpis.total_members - principalMembers;
-                    console.log('📊 Using estimated member breakdown from total_members:', kpis.total_members);
+                    // v3.38: Use Clients sheet members for estimation
+                    const realMem = window._realMembers || kpis.total_members;
+                    principalMembers = Math.round(realMem * 0.42);
+                    dependentMembers = realMem - principalMembers;
+                    console.log('📊 v3.38: Using estimated member breakdown from real members:', realMem);
                 }
                 
                 console.log('📊 Chart data (v3.26):', { inpatientCases, outpatientCases, exGratiaCases, principalMembers, dependentMembers });
@@ -11728,7 +11757,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 document.getElementById('kpiUtilization').textContent = utilization.toFixed(1) + '%';
                 
                 if (document.getElementById('totalActive')) {
-                    document.getElementById('totalActive').textContent = aggregated.total_members.toLocaleString();
+                    document.getElementById('totalActive').textContent = displayGroupMembers.toLocaleString();
                 }
                 
                 // Update Inpatient/Outpatient
@@ -11827,6 +11856,30 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 // Store for use by other functions (charts, etc.)
                 window.currentClientKPIs = data;
                 
+                // v3.38: Build yearOverYear for single quarter mode so YoY charts populate
+                if (!data.yearOverYear && data.kpis) {
+                    const q = selectedQuarters[0] || 'Q1';
+                    const realMem = getTotalMembersFromClients(clientId);
+                    window.currentClientKPIs.yearOverYear = {
+                        data2024: { claims: 0, cost: 0, members: 0 },
+                        data2025: { 
+                            claims: data.kpis.total_claims || 0, 
+                            cost: data.kpis.total_cost_usd || 0, 
+                            members: realMem || data.kpis.total_members || 0 
+                        },
+                        quarterly: {
+                            '2024': { Q1: { claims: 0, cost: 0 }, Q2: { claims: 0, cost: 0 }, Q3: { claims: 0, cost: 0 }, Q4: { claims: 0, cost: 0 } },
+                            '2025': {
+                                Q1: q === 'Q1' ? { claims: data.kpis.total_claims || 0, cost: data.kpis.total_cost_usd || 0 } : { claims: 0, cost: 0 },
+                                Q2: q === 'Q2' ? { claims: data.kpis.total_claims || 0, cost: data.kpis.total_cost_usd || 0 } : { claims: 0, cost: 0 },
+                                Q3: q === 'Q3' ? { claims: data.kpis.total_claims || 0, cost: data.kpis.total_cost_usd || 0 } : { claims: 0, cost: 0 },
+                                Q4: q === 'Q4' ? { claims: data.kpis.total_claims || 0, cost: data.kpis.total_cost_usd || 0 } : { claims: 0, cost: 0 }
+                            }
+                        }
+                    };
+                    console.log('📊 v3.38: Built YoY data for single quarter mode:', q);
+                }
+                
                 // Update main KPIs
                 if (data.kpis) {
                     const kpis = data.kpis;
@@ -11917,6 +11970,30 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 // Refresh charts with real data
                 loadDataForSelectedQuarters();
+                
+                // v3.38: Populate Period Comparison for single quarter mode
+                try {
+                    const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+                    const q = selectedQuarters[0] || 'Q1';
+                    const kpis = data.kpis;
+                    const pcRealMembers = getTotalMembersFromClients(clientId);
+                    const displayMem = pcRealMembers || (kpis ? kpis.total_members : 0) || 0;
+                    safeSet('cmpPeriodLabel', `${q} ${selectedYear}`);
+                    safeSet('cmpClaims', fmt(kpis ? kpis.total_claims || 0 : 0));
+                    safeSet('cmpClaimsPrev', 'N/A');
+                    safeSet('cmpMembers', fmt(displayMem));
+                    safeSet('cmpMembersPrev', 'N/A');
+                    safeSet('cmpApproved', '$' + fmt(Math.round(kpis ? kpis.total_cost_usd || 0 : 0)));
+                    safeSet('cmpApprovedPrev', 'N/A');
+                    const cpm = displayMem > 0 && kpis ? (kpis.total_cost_usd / displayMem) : 0;
+                    safeSet('cmpCost', '$' + cpm.toFixed(2));
+                    safeSet('cmpCostPrev', 'N/A');
+                    // Clear change indicators
+                    ['cmpClaimsChange', 'cmpMembersChange', 'cmpApprovedChange', 'cmpCostChange'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) { el.textContent = '—'; el.style.color = '#b8c9b8'; }
+                    });
+                } catch(e) { console.error('v3.38: Period Comparison single-Q error:', e); }
                 
             } catch (error) {
                 console.error('❌ Error loading Main Dashboard KPIs:', error);
@@ -17385,7 +17462,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         
         function createYoYCharts(periods) {
-            // v3.26: Use real Year-over-Year data from API
+            // v3.38: Robust YoY with real data - show 2025 even without 2024
             const hasRealData = window.currentClientKPIs && window.currentClientKPIs.kpis;
             
             let data2024 = { claims: 0, cost: 0, members: 0 };
@@ -17401,26 +17478,57 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     quarterly2024 = yoy.quarterly['2024'] || quarterly2024;
                     quarterly2025 = yoy.quarterly['2025'] || quarterly2025;
                 }
-                console.log('📊 Using REAL YoY data (v3.26):', { data2024, data2025 });
+                console.log('📊 v3.38 YoY: data2025=', data2025, 'data2024=', data2024);
+            } else if (hasRealData) {
+                // v3.38: Fallback - build from current KPIs if no yearOverYear
+                const kpis = window.currentClientKPIs.kpis;
+                data2025 = { claims: kpis.total_claims || 0, cost: kpis.total_cost_usd || 0, members: kpis.total_members || 0 };
+                console.log('📊 v3.38 YoY fallback: using current KPIs as 2025 data:', data2025);
             }
             
-            // Update YoY stats
-            document.getElementById('yoyClaims2025').textContent = fmt(data2025.claims);
-            document.getElementById('yoyClaims2024').textContent = fmt(data2024.claims);
-            document.getElementById('yoyCost2025').textContent = '$' + fmt(Math.round(data2025.cost));
-            document.getElementById('yoyCost2024').textContent = '$' + fmt(Math.round(data2024.cost));
+            // v3.38: Use Clients sheet members for 2025
+            const realMembers = getTotalMembersFromClients(document.getElementById('clientSelect')?.value || 'all');
+            if (realMembers && data2025.members !== realMembers) {
+                data2025.members = realMembers;
+            }
             
-            const claimsChange = data2024.claims > 0 ? ((data2025.claims - data2024.claims) / data2024.claims * 100).toFixed(0) : 0;
-            const costChange = data2024.cost > 0 ? ((data2025.cost - data2024.cost) / data2024.cost * 100).toFixed(0) : 0;
-            const memberChange = data2024.members > 0 ? ((data2025.members - data2024.members) / data2024.members * 100).toFixed(0) : 0;
+            const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            
+            // Update YoY stats
+            safeSet('yoyClaims2025', fmt(data2025.claims));
+            safeSet('yoyClaims2024', data2024.claims > 0 ? fmt(data2024.claims) : 'No Data');
+            safeSet('yoyCost2025', '$' + fmt(Math.round(data2025.cost)));
+            safeSet('yoyCost2024', data2024.cost > 0 ? '$' + fmt(Math.round(data2024.cost)) : 'No Data');
+            
+            // v3.38: Show meaningful % changes - "N/A" if no 2024 data
+            const has2024 = data2024.claims > 0 || data2024.cost > 0;
+            const claimsChange = has2024 && data2024.claims > 0 ? ((data2025.claims - data2024.claims) / data2024.claims * 100).toFixed(0) : null;
+            const costChange = has2024 && data2024.cost > 0 ? ((data2025.cost - data2024.cost) / data2024.cost * 100).toFixed(0) : null;
+            const memberChange = has2024 && data2024.members > 0 ? ((data2025.members - data2024.members) / data2024.members * 100).toFixed(0) : null;
             const costPerMember2024 = data2024.members > 0 ? data2024.cost / data2024.members : 0;
             const costPerMember2025 = data2025.members > 0 ? data2025.cost / data2025.members : 0;
-            const cpmChange = costPerMember2024 > 0 ? ((costPerMember2025 - costPerMember2024) / costPerMember2024 * 100).toFixed(0) : 0;
+            const cpmChange = has2024 && costPerMember2024 > 0 ? ((costPerMember2025 - costPerMember2024) / costPerMember2024 * 100).toFixed(0) : null;
             
-            document.getElementById('yoyClaimsChange').textContent = (claimsChange > 0 ? '+' : '') + claimsChange + '%';
-            document.getElementById('yoyCostChange').textContent = (costChange > 0 ? '+' : '') + costChange + '%';
-            document.getElementById('yoyMemberChange').textContent = (memberChange > 0 ? '+' : '') + memberChange + '%';
-            document.getElementById('yoyCostPerMember').textContent = (cpmChange > 0 ? '+' : '') + cpmChange + '%';
+            const fmtChange = (val) => val !== null ? ((val > 0 ? '+' : '') + val + '%') : 'N/A';
+            safeSet('yoyClaimsChange', fmtChange(claimsChange));
+            safeSet('yoyCostChange', fmtChange(costChange));
+            safeSet('yoyMemberChange', fmtChange(memberChange));
+            safeSet('yoyCostPerMember', fmtChange(cpmChange));
+            
+            // Style the change elements
+            ['yoyClaimsChange', 'yoyCostChange', 'yoyMemberChange', 'yoyCostPerMember'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.textContent === 'N/A') {
+                        el.style.color = '#b8c9b8';
+                    } else {
+                        const v = parseFloat(el.textContent);
+                        el.style.color = v > 0 ? '#4CAF50' : v < 0 ? '#e74c3c' : '#b8c9b8';
+                    }
+                }
+            });
+            
+            console.log('✅ v3.38: YoY updated - 2025:', data2025.claims, 'claims, $' + Math.round(data2025.cost), '| 2024:', data2024.claims, 'claims');
             
             // YoY Claims Chart - v3.26: Use real quarterly data
             const ctx1 = document.getElementById('yoyClaimsChart').getContext('2d');
