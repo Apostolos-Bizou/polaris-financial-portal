@@ -8651,7 +8651,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             <div class="client-folder-details">
                                 <h2 id="clientFolderName">Client Name <span>Portfolio</span></h2>
                                 <div class="client-folder-meta">
-                                    <span>📅 Client since: <strong id="clientFolderSince">2020</strong></span>
+                                    <span>📅 Contract: <strong id="clientFolderContractStart">--</strong> - <strong id="clientFolderContractEnd">--</strong></span>
                                     <span>👥 Members: <strong id="clientFolderMembers">450</strong></span>
                                     <span>📄 Contracts: <strong id="clientFolderContracts">3</strong></span>
                                 </div>
@@ -18011,8 +18011,40 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 document.getElementById('cfStatCostPerMember').textContent = '$' + (client.cost_per_member || 0).toLocaleString();
                 
                 // Update header meta
-                document.getElementById('clientFolderSince').textContent = client.start_year || '2020';
-                document.getElementById('clientFolderMembers').textContent = (client.total_members || client.member_count || 0).toLocaleString();
+                // v3.34: Show contract start and end dates
+                let startDate = '--';
+                let endDate = '--';
+                if (client.contract_start) {
+                    const d = new Date(client.contract_start);
+                    if (!isNaN(d.getTime())) startDate = d.toLocaleDateString('el-GR');
+                }
+                if (client.contract_end) {
+                    const d = new Date(client.contract_end);
+                    if (!isNaN(d.getTime())) endDate = d.toLocaleDateString('el-GR');
+                }
+                document.getElementById('clientFolderContractStart').textContent = startDate;
+                document.getElementById('clientFolderContractEnd').textContent = endDate;
+                
+                // v3.34: Get total_members from contracts (not from client)
+                let totalMembers = client.total_members || client.member_count || 0;
+                if (totalMembers === 0) {
+                    try {
+                        // Fetch contracts for this client
+                        const contractsResp = await fetch(API_URL + '?action=getContracts');
+                        const contractsResult = await contractsResp.json();
+                        if (contractsResult.success && contractsResult.data) {
+                            const clientContracts = contractsResult.data.filter(c => 
+                                c.client_id === clientId || c.client_name === clientName
+                            );
+                            clientContracts.forEach(c => {
+                                totalMembers += parseInt(c.total_members || 0);
+                            });
+                        }
+                    } catch (e) {
+                        console.log('Could not fetch contracts for members:', e);
+                    }
+                }
+                document.getElementById('clientFolderMembers').textContent = totalMembers.toLocaleString();
                 
                 // Financial data
                 document.getElementById('cfTotalPremium').textContent = '$' + (client.total_premium || 0).toLocaleString();
