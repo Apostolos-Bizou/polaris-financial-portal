@@ -7463,6 +7463,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 </select>
             </div>
             <div class="quarter-selector-right">
+                <button class="quarter-compare-btn" id="cumulativeToggleBtn" onclick="toggleCumulativeMode()" style="background: linear-gradient(135deg, #1a4a3a, #2d6a5a); border-color: #4CAF50;">
+                    <span>📊</span> <span id="cumulativeBtnText">Single Period</span>
+                </button>
                 <button class="quarter-compare-btn" id="quarterCompareBtn" onclick="toggleQuarterCompare()">
                     <span>⚖️</span> Compare Quarters
                 </button>
@@ -10386,6 +10389,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         // Quarter selection state
         let selectedQuarters = ['Q1']; // Default: Q1 selected
         let quarterCompareMode = false;
+        let cumulativeMode = false; // v3.36: Toggle between single period and cumulative (YTD)
         let selectedYear = 2025; // Start with 2025
         
         // Quarter date ranges helper
@@ -10403,6 +10407,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         function changeYear(year) {
             selectedYear = parseInt(year);
             console.log('📅 Year changed to:', selectedYear);
+            
+            // Show loading overlay
+            showDashboardLoading(true);
+            updateDashboardLoading(10, 'Switching to ' + selectedYear + '...', '📅 Loading year data');
+            
             updateQuarterUI();
             // Reload from API with new year
             if (quarterCompareMode && selectedQuarters.length > 1) {
@@ -10785,6 +10794,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         // ═══════════════════════════════════════════════════════════════════
         
         function toggleQuarter(quarter) {
+            // Show loading overlay immediately
+            showDashboardLoading(true);
+            updateDashboardLoading(10, 'Switching to ' + quarter + '...', '📅 Loading period data');
+            
             if (quarterCompareMode) {
                 // Multi-select mode
                 const index = selectedQuarters.indexOf(quarter);
@@ -10816,6 +10829,42 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             }
         }
         
+        // ═══════════════════════════════════════════════════════════════════
+        // v3.36: CUMULATIVE MODE TOGGLE
+        // Single Period = only selected quarter data
+        // Cumulative = YTD from Q1 to selected quarter
+        // ═══════════════════════════════════════════════════════════════════
+        function toggleCumulativeMode() {
+            cumulativeMode = !cumulativeMode;
+            const btn = document.getElementById('cumulativeToggleBtn');
+            const btnText = document.getElementById('cumulativeBtnText');
+            
+            // Show loading overlay
+            showDashboardLoading(true);
+            updateDashboardLoading(10, cumulativeMode ? 'Switching to Cumulative (YTD)...' : 'Switching to Single Period...', '📊 Recalculating data');
+            
+            if (cumulativeMode) {
+                btn.style.background = 'linear-gradient(135deg, #2d6a5a, #4CAF50)';
+                btn.style.borderColor = '#6abf69';
+                btnText.textContent = '📈 Cumulative (YTD)';
+                console.log('📈 Cumulative Mode ON: Showing YTD data (Q1 to selected quarter)');
+            } else {
+                btn.style.background = 'linear-gradient(135deg, #1a4a3a, #2d6a5a)';
+                btn.style.borderColor = '#4CAF50';
+                btnText.textContent = '📊 Single Period';
+                console.log('📊 Single Period Mode: Showing only selected quarter data');
+            }
+            
+            updateQuarterUI();
+            
+            // Reload data with new mode
+            if (quarterCompareMode && selectedQuarters.length > 1) {
+                loadQuarterComparison(selectedClient);
+            } else {
+                loadMainDashboardKPIs(selectedClient);
+            }
+        }
+        
         function toggleQuarterCompare() {
             quarterCompareMode = !quarterCompareMode;
             const btn = document.getElementById('quarterCompareBtn');
@@ -10843,46 +10892,66 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         // ═══════════════════════════════════════════════════════════════════
         async function loadQuarterComparison(clientId) {
             const quarters = [...selectedQuarters].sort();
-            console.log(`📊 COMPARE MODE: Loading ${quarters.join(' vs ')} for ${clientId || 'ALL'}`);
+            console.log(`📊 COMPARE MODE: Loading ${quarters.join(' vs ')} for ${clientId || 'ALL'} | Cumulative: ${cumulativeMode}`);
+            
+            // Show loading overlay with ship animation
+            showDashboardLoading(true);
+            updateDashboardLoading(15, 'Loading Quarter Comparison...', '📊 Fetching ' + quarters.join(' vs ') + ' data');
             
             // Show loading indicator
             const badge = document.getElementById('selectedQuartersBadge');
             if (badge) badge.textContent = '⏳ Loading...';
             
             try {
-                // Load data for each selected quarter in parallel
+                // Load data for each selected quarter
+                // In cumulative mode: each quarter shows YTD (Q1 to that quarter)
+                // In single mode: each quarter shows only that quarter's data
                 const promises = quarters.map(q => {
-                    const dateRange = getQuarterDateRange(q, selectedYear);
+                    let startDate, endDate;
+                    
+                    if (cumulativeMode) {
+                        // Cumulative: Q1 to this quarter
+                        const q1Range = getQuarterDateRange('Q1', selectedYear);
+                        const qRange = getQuarterDateRange(q, selectedYear);
+                        startDate = q1Range.start; // Always 01/01
+                        endDate = qRange.end;
+                    } else {
+                        // Single: only this quarter
+                        const qRange = getQuarterDateRange(q, selectedYear);
+                        startDate = qRange.start;
+                        endDate = qRange.end;
+                    }
+                    
                     const params = new URLSearchParams({ action: 'getClientKPISummary' });
                     if (clientId && clientId !== 'all') {
                         params.append('clientId', clientId);
                     } else {
                         params.append('clientId', 'ALL');
                     }
-                    params.append('startDate', dateRange.start);
-                    params.append('endDate', dateRange.end);
+                    params.append('startDate', startDate);
+                    params.append('endDate', endDate);
                     params.append('quarter', q);
                     params.append('year', selectedYear.toString());
                     
                     return fetch(`${API_URL}?${params.toString()}`)
                         .then(r => r.json())
-                        .then(data => ({ quarter: q, data, dateRange }))
-                        .catch(e => ({ quarter: q, data: null, dateRange, error: e }));
+                        .then(data => ({ quarter: q, data, startDate, endDate }))
+                        .catch(e => ({ quarter: q, data: null, error: e }));
                 });
                 
-                // v3.36: Also load FULL YEAR aggregate (no period filter) for cumulative KPIs
+                // Also load aggregate for the KPI cards at the bottom
                 const aggregateParams = new URLSearchParams({ action: 'getClientKPISummary' });
                 if (clientId && clientId !== 'all') {
                     aggregateParams.append('clientId', clientId);
                 } else {
                     aggregateParams.append('clientId', 'ALL');
                 }
-                // Build date range covering ALL selected quarters
-                const firstQ = quarters[0];
+                
+                // Aggregate always covers Q1 to latest selected quarter
                 const lastQ = quarters[quarters.length - 1];
-                const firstRange = getQuarterDateRange(firstQ, selectedYear);
+                const q1Range = getQuarterDateRange('Q1', selectedYear);
                 const lastRange = getQuarterDateRange(lastQ, selectedYear);
-                aggregateParams.append('startDate', firstRange.start);
+                aggregateParams.append('startDate', q1Range.start);
                 aggregateParams.append('endDate', lastRange.end);
                 aggregateParams.append('year', selectedYear.toString());
                 
@@ -10895,8 +10964,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     aggregatePromise
                 ]);
                 
+                updateDashboardLoading(70, 'Building comparison...', '📊 Processing ' + quarters.length + ' quarters');
+                
                 console.log('📊 Compare results:', results);
-                console.log('📊 Aggregate data:', aggregateData);
+                console.log('📊 Aggregate data (Q1 to ' + lastQ + '):', aggregateData);
                 
                 // Update badge
                 if (badge) badge.textContent = quarters.join(' vs ') + ` ${selectedYear}`;
@@ -10904,9 +10975,14 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 // Build comparison display - pass aggregate data too
                 showQuarterComparisonResults(results, quarters, aggregateData);
                 
+                // Hide loading overlay
+                updateDashboardLoading(100, '✅ Comparison loaded!', 'Ready');
+                setTimeout(() => showDashboardLoading(false), 400);
+                
             } catch (error) {
                 console.error('Compare mode error:', error);
                 if (badge) badge.textContent = quarters.join(' vs ') + ` ${selectedYear}`;
+                showDashboardLoading(false);
             }
         }
         
@@ -11259,9 +11335,19 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             // Update badge with date range
             const badge = document.getElementById('selectedQuartersBadge');
             if (selectedQuarters.length === 1) {
-                const range = getQuarterDateRange(selectedQuarters[0]);
-                badge.textContent = range.label;
-                badge.title = `${selectedQuarters[0]} ${selectedYear}`;
+                const q = selectedQuarters[0];
+                if (cumulativeMode && q !== 'Q1') {
+                    // Cumulative: show Q1 to selected quarter range
+                    const q1Range = getQuarterDateRange('Q1', selectedYear);
+                    const qRange = getQuarterDateRange(q, selectedYear);
+                    badge.textContent = `${q1Range.start.split('-').reverse().join('/')} - ${qRange.end.split('-').reverse().join('/')}`;
+                    badge.title = `Cumulative: Q1→${q} ${selectedYear}`;
+                } else {
+                    // Single period: show just that quarter's range
+                    const range = getQuarterDateRange(q);
+                    badge.textContent = range.label;
+                    badge.title = `${q} ${selectedYear}`;
+                }
             } else {
                 const labels = selectedQuarters.sort().map(q => q);
                 badge.textContent = labels.join(' vs ') + ` ${selectedYear}`;
@@ -11270,6 +11356,21 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             // Update year selector to match
             const yearSelect = document.getElementById('yearSelector');
             if (yearSelect) yearSelect.value = selectedYear.toString();
+            
+            // Update cumulative button visual state
+            const cumBtn = document.getElementById('cumulativeToggleBtn');
+            const cumText = document.getElementById('cumulativeBtnText');
+            if (cumBtn && cumText) {
+                if (cumulativeMode) {
+                    cumBtn.style.background = 'linear-gradient(135deg, #2d6a5a, #4CAF50)';
+                    cumBtn.style.borderColor = '#6abf69';
+                    cumText.textContent = '📈 Cumulative (YTD)';
+                } else {
+                    cumBtn.style.background = 'linear-gradient(135deg, #1a4a3a, #2d6a5a)';
+                    cumBtn.style.borderColor = '#4CAF50';
+                    cumText.textContent = '📊 Single Period';
+                }
+            }
         }
         
         function loadDataForSelectedQuarters() {
@@ -11704,6 +11805,12 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const selector = document.getElementById('clientSelector');
             selectedClient = selector.value;
             
+            // Show loading overlay
+            const clientName = selectedClient === 'all' ? 'All Clients' : 
+                (clientsList.find(c => c.id === selectedClient)?.name || selectedClient);
+            showDashboardLoading(true);
+            updateDashboardLoading(10, 'Loading ' + clientName.substring(0, 30) + '...', '📋 Switching client view');
+            
             // Handle GROUP selection
             if (selectedClient.startsWith('GROUP:')) {
                 const parentId = selectedClient.replace('GROUP:', '');
@@ -11936,9 +12043,18 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         // v3.36: DASHBOARD REFRESH WITH SHIP LOADING ANIMATION
         // ═══════════════════════════════════════════════════════════════════
         
+        let loadingRefCount = 0; // Track nested loading calls
+        
         function showDashboardLoading(show) {
             const overlay = document.getElementById('dashboardLoadingOverlay');
-            if (overlay) overlay.style.display = show ? 'flex' : 'none';
+            if (show) {
+                loadingRefCount++;
+                if (overlay) overlay.style.display = 'flex';
+            } else {
+                loadingRefCount = Math.max(0, loadingRefCount - 1);
+                // Only hide if no other function is still loading
+                if (loadingRefCount === 0 && overlay) overlay.style.display = 'none';
+            }
         }
         
         function updateDashboardLoading(pct, label, step) {
@@ -12001,14 +12117,36 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
 
         async function loadMainDashboardKPIs(clientId) {
+            // Show loading overlay with ship animation
+            showDashboardLoading(true);
+            const q = selectedQuarters[0] || 'Q1';
+            updateDashboardLoading(15, 'Loading ' + (cumulativeMode ? 'Q1→' + q : q) + ' Data...', '📊 Fetching KPIs');
+            
             try {
                 // ═══════════════════════════════════════════════════════════════
-                // v3.35: Pass quarter date range to API for filtering
+                // v3.36: Check cumulativeMode for date range
+                // Single Period = only selected quarter
+                // Cumulative = Q1 to selected quarter (YTD)
                 // ═══════════════════════════════════════════════════════════════
                 const q = selectedQuarters[0] || 'Q1';
-                const dateRange = getQuarterDateRange(q, selectedYear);
+                const selectedRange = getQuarterDateRange(q, selectedYear);
                 
-                console.log(`📊 Loading KPIs for: ${clientId || 'ALL'} | ${q} ${selectedYear} (${dateRange.start} → ${dateRange.end})`);
+                let startDate, endDate, rangeLabel;
+                
+                if (cumulativeMode) {
+                    // Cumulative: from start of Q1 to end of selected quarter
+                    const q1Range = getQuarterDateRange('Q1', selectedYear);
+                    startDate = q1Range.start; // Always 01/01
+                    endDate = selectedRange.end; // e.g. 30/06 for Q2
+                    rangeLabel = `01/01/${selectedYear} - ${selectedRange.end.split('-').reverse().join('/')}`;
+                    console.log(`📈 CUMULATIVE KPIs: ${clientId || 'ALL'} | Q1→${q} ${selectedYear} (${startDate} → ${endDate})`);
+                } else {
+                    // Single Period: only the selected quarter
+                    startDate = selectedRange.start;
+                    endDate = selectedRange.end;
+                    rangeLabel = selectedRange.label;
+                    console.log(`📊 SINGLE PERIOD KPIs: ${clientId || 'ALL'} | ${q} ${selectedYear} (${startDate} → ${endDate})`);
+                }
                 
                 // Build API URL with clientId AND date range
                 const params = new URLSearchParams({ action: 'getClientKPISummary' });
@@ -12019,8 +12157,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 }
                 
                 // Add date filter parameters
-                params.append('startDate', dateRange.start);
-                params.append('endDate', dateRange.end);
+                params.append('startDate', startDate);
+                params.append('endDate', endDate);
                 params.append('quarter', q);
                 params.append('year', selectedYear.toString());
                 
@@ -12028,21 +12166,25 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 window.currentDateFilter = {
                     quarter: q,
                     year: selectedYear,
-                    startDate: dateRange.start,
-                    endDate: dateRange.end,
-                    label: dateRange.label
+                    startDate: startDate,
+                    endDate: endDate,
+                    label: rangeLabel,
+                    isCumulative: cumulativeMode
                 };
                 
                 const response = await fetch(`${API_URL}?${params.toString()}`);
+                updateDashboardLoading(50, 'Processing data...', '📈 Parsing API response');
                 const data = await response.json();
                 
                 if (data.error) {
                     console.warn('❌ KPIs API error:', data.error);
                     window.currentClientKPIs = null;
                     loadDataForSelectedQuarters(); // Refresh with zeros
+                    showDashboardLoading(false);
                     return;
                 }
                 
+                updateDashboardLoading(75, 'Updating dashboard...', '📊 Rendering KPIs');
                 console.log('✅ KPIs loaded:', data);
                 
                 // Store for use by other functions (charts, etc.)
@@ -12187,10 +12329,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     });
                 } catch(e) { console.error('v3.38: Period Comparison single-Q error:', e); }
                 
+                // Hide loading overlay - data loaded successfully
+                updateDashboardLoading(100, '✅ Data loaded!', 'Ready');
+                setTimeout(() => showDashboardLoading(false), 400);
+                
             } catch (error) {
                 console.error('❌ Error loading Main Dashboard KPIs:', error);
                 window.currentClientKPIs = null;
                 loadDataForSelectedQuarters(); // Refresh with zeros
+                showDashboardLoading(false); // Hide on error too
             }
         }
         
