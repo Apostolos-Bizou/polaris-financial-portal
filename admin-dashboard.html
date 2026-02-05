@@ -17671,26 +17671,37 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 let totalMembers = 0;
                 
                 try {
-                    const [clientsResp, contractsResp] = await Promise.all([
+                    const [clientsResp, contractsResp, contractsListResp] = await Promise.all([
                         fetch(API_URL + '?action=getActiveClients'),
-                        fetch(API_URL + '?action=getContractStats')
+                        fetch(API_URL + '?action=getContractStats'),
+                        fetch(API_URL + '?action=getContracts')
                     ]);
                     
                     const clientsData = await clientsResp.json();
                     const contractsData = await contractsResp.json();
+                    const contractsList = await contractsListResp.json();
                     
-                    // v3.34: Get total members from ACTIVE CLIENTS (not contracts)
+                    activeClientCount = clientsData.data?.length || 0;
+                    activeContractCount = contractsData.active || 0;
+                    
+                    // v3.34: First try to get members from Active Clients
                     if (clientsData.success && clientsData.data) {
-                        activeClientCount = clientsData.data.length || 0;
                         clientsData.data.forEach(client => {
-                            // Sum total_members from all active clients
                             const members = parseInt(client.total_members || client.members || client.member_count || 0);
                             totalMembers += members;
-                            console.log('📊 Client:', client.client_name, 'Members:', members);
                         });
                     }
                     
-                    activeContractCount = contractsData.active || 0;
+                    // v3.34: If no members from clients, get from Contracts
+                    if (totalMembers === 0 && contractsList.success && contractsList.data) {
+                        contractsList.data.forEach(contract => {
+                            const status = (contract.status || '').toLowerCase();
+                            if (status === 'active' || status === 'signed') {
+                                const members = parseInt(contract.total_members || contract.member_count || 0);
+                                totalMembers += members;
+                            }
+                        });
+                    }
                     
                     console.log('📊 Dashboard stats - Active clients:', activeClientCount, 'Contracts:', activeContractCount, 'Members:', totalMembers);
                 } catch (e) { console.log('Stats fetch error:', e); }
