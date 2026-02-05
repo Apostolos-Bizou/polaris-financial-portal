@@ -7469,6 +7469,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 <button class="quarter-compare-btn" id="quarterCompareBtn" onclick="toggleQuarterCompare()">
                     <span>⚖️</span> Compare Quarters
                 </button>
+                <button class="quarter-compare-btn" onclick="runAPIDiagnostic()" style="background: linear-gradient(135deg, #8B0000, #CC0000); border-color: #FF4444;">
+                    <span>🔍</span> API Diagnostic
+                </button>
                 <span class="selected-quarters-badge" id="selectedQuartersBadge">Q1 2025</span>
             </div>
         </div>
@@ -12078,6 +12081,100 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (stepEl && step) stepEl.textContent = step;
         }
         
+        // ═══════════════════════════════════════════════════════════════
+        // v4.2 DIAGNOSTIC: Test what API returns for each quarter
+        // ═══════════════════════════════════════════════════════════════
+        async function runAPIDiagnostic() {
+            const overlay = document.createElement('div');
+            overlay.id = 'diagnosticOverlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;';
+            
+            const box = document.createElement('div');
+            box.style.cssText = 'background:#1a2332;color:#e0e0e0;padding:30px;border-radius:12px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto;font-family:monospace;font-size:13px;border:2px solid #d4af37;';
+            box.innerHTML = '<h2 style="color:#d4af37;margin-top:0;">🔍 API Diagnostic - Testing Each Quarter...</h2><div id="diagResults">⏳ Loading Q1...</div>';
+            overlay.appendChild(box);
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '✕ Close';
+            closeBtn.style.cssText = 'position:absolute;top:20px;right:20px;background:#CC0000;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:16px;z-index:100000;';
+            closeBtn.onclick = () => overlay.remove();
+            overlay.appendChild(closeBtn);
+            
+            document.body.appendChild(overlay);
+            
+            const resultsDiv = document.getElementById('diagResults');
+            const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+            const year = selectedYear || 2025;
+            const clientId = selectedClient || 'ALL';
+            let html = '';
+            let totalM = 0, totalC = 0, totalCost = 0;
+            
+            for (const q of quarters) {
+                resultsDiv.innerHTML = html + `<p style="color:#d4af37;">⏳ Loading ${q}...</p>`;
+                
+                const range = getQuarterDateRange(q, year);
+                const params = new URLSearchParams({ 
+                    action: 'getClientKPISummary',
+                    clientId: clientId === 'all' ? 'ALL' : clientId,
+                    startDate: range.start,
+                    endDate: range.end,
+                    quarter: q,
+                    year: year.toString()
+                });
+                
+                try {
+                    const resp = await fetch(`${API_URL}?${params.toString()}`);
+                    const data = await resp.json();
+                    const k = data.kpis || {};
+                    const m = k.total_members || 0;
+                    const c = k.total_claims || 0;
+                    const cost = k.total_cost_usd || 0;
+                    totalM += m;
+                    totalC += c;
+                    totalCost += cost;
+                    
+                    html += `<div style="margin:10px 0;padding:10px;background:#0d1520;border-radius:8px;border-left:4px solid ${m > 0 ? '#4CAF50' : '#FF4444'};">`;
+                    html += `<strong style="color:#d4af37;font-size:15px;">${q}-${year}</strong>`;
+                    html += `<br>👥 Members: <strong>${m.toLocaleString()}</strong>`;
+                    html += `<br>📋 Claims: <strong>${c.toLocaleString()}</strong>`;
+                    html += `<br>💵 Cost USD: <strong>$${cost.toLocaleString()}</strong>`;
+                    html += `<br><span style="color:#888;">API params: startDate=${range.start}, endDate=${range.end}, quarter=${q}</span>`;
+                    if (data.error) html += `<br><span style="color:#FF4444;">⚠️ ERROR: ${data.error}</span>`;
+                    html += `</div>`;
+                } catch(e) {
+                    html += `<div style="margin:10px 0;padding:10px;background:#3a0000;border-radius:8px;border-left:4px solid #FF4444;">`;
+                    html += `<strong style="color:#FF4444;">${q}-${year} - FETCH ERROR</strong><br>${e.message}`;
+                    html += `</div>`;
+                }
+            }
+            
+            // Show totals
+            html += `<div style="margin:15px 0;padding:15px;background:#1a3320;border-radius:8px;border:2px solid #4CAF50;">`;
+            html += `<strong style="color:#4CAF50;font-size:16px;">📊 SUM (Q1+Q2+Q3+Q4):</strong>`;
+            html += `<br>👥 Members: <strong style="font-size:18px;">${totalM.toLocaleString()}</strong> <span style="color:#888;">(expected: 11,483)</span>`;
+            html += `<br>📋 Claims: <strong style="font-size:18px;">${totalC.toLocaleString()}</strong> <span style="color:#888;">(expected: 1,685)</span>`;
+            html += `<br>💵 Cost: <strong style="font-size:18px;">$${totalCost.toLocaleString()}</strong> <span style="color:#888;">(expected: $120,610)</span>`;
+            html += `</div>`;
+            
+            // Also test getDashboardKPIs for comparison
+            html += `<div style="margin:15px 0;padding:10px;background:#1a2040;border-radius:8px;border-left:4px solid #6666FF;">`;
+            html += `<strong style="color:#6666FF;">📡 getDashboardKPIs (Full Year):</strong>`;
+            try {
+                const resp2 = await fetch(`${API_URL}?action=getDashboardKPIs`);
+                const d2 = await resp2.json();
+                html += `<br>👥 Members: <strong>${(d2.members || d2.data?.total_members || 0).toLocaleString()}</strong>`;
+                html += `<br>📋 Claims: <strong>${(d2.claims || d2.data?.total_claims || 0).toLocaleString()}</strong>`;
+                html += `<br>💵 Revenue: <strong>$${(d2.approved || d2.data?.total_revenue || 0).toLocaleString()}</strong>`;
+            } catch(e) {
+                html += `<br><span style="color:#FF4444;">Error: ${e.message}</span>`;
+            }
+            html += `</div>`;
+            
+            html += `<p style="color:#d4af37;margin-top:15px;">Client: ${clientId} | Year: ${year}</p>`;
+            
+            resultsDiv.innerHTML = html;
+        }
+        
         async function refreshDashboardData() {
             const btn = document.getElementById('dashRefreshBtn');
             const icon = document.getElementById('refreshIcon');
@@ -12171,6 +12268,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     const results = await Promise.all(promises);
                     updateDashboardLoading(60, 'Summing cumulative data...', `📈 Aggregating ${quartersToLoad.join(' + ')}`);
                     
+                    // ═══ v4.2 DEBUG: Show per-quarter API responses in alert ═══
+                    let debugMsg = '📈 CUMULATIVE DEBUG\n══════════════════\n\nPer-Quarter API Responses:\n';
+                    results.forEach(r => {
+                        const k = r.data?.kpis;
+                        debugMsg += `\n${r.quarter}: Members=${(k?.total_members || 0).toLocaleString()}, Claims=${(k?.total_claims || 0).toLocaleString()}, Cost=$${(k?.total_cost_usd || 0).toLocaleString()}`;
+                        if (r.data?.error) debugMsg += ` ⚠️ ERROR: ${r.data.error}`;
+                        if (!r.data) debugMsg += ` ⚠️ NO DATA`;
+                    });
+                    
                     // Sum all quarter results
                     const cumKpis = { total_members: 0, total_claims: 0, total_cost_usd: 0, new_enrollments: 0, cancellations: 0 };
                     const cumClaimTypes = { cases: { inpatient: 0, outpatient: 0, exgratia: 0 }, costs: { inpatient: 0, outpatient: 0, exgratia: 0 } };
@@ -12219,6 +12325,14 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             });
                         }
                     });
+                    
+                    // ═══ v4.2 DEBUG: Add totals and show alert ═══
+                    debugMsg += '\n\n══════════════════\n📊 CUMULATIVE TOTALS:';
+                    debugMsg += `\nMembers: ${cumKpis.total_members.toLocaleString()}`;
+                    debugMsg += `\nClaims: ${cumKpis.total_claims.toLocaleString()}`;
+                    debugMsg += `\nCost: $${cumKpis.total_cost_usd.toLocaleString()}`;
+                    debugMsg += '\n══════════════════';
+                    alert(debugMsg);
                     
                     // Build combined data object (same structure as single-quarter response)
                     data = {
