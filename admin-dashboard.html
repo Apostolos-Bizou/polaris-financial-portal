@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-06 v3.44 - Email Center: Fixed client lookup using cachedClientsData -->
+<!-- VERSION: 2026-02-06 v3.45 - Cyprus Financial: Top Clients table now filters by selected group -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12041,6 +12041,46 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     console.log(`💰 CEO Financial updated for group ${groupName}:`, groupCurrent);
                 } catch(e) {
                     console.error('CEO Financial update error:', e);
+                }
+                
+                // v3.44: Update Top Clients table with ONLY clients from this group
+                try {
+                    const allClientsData = window.cachedClientsData || [];
+                    const groupTopClients = [];
+                    
+                    // Build top clients data from API results for each client in group
+                    clientIds.forEach((clientId, idx) => {
+                        const apiData = results[idx];
+                        const clientInfo = allClientsData.find(c => c.client_id === clientId);
+                        
+                        if (apiData && !apiData.error && clientInfo) {
+                            const members = apiData.kpis?.total_members || clientInfo.total_members || 0;
+                            const claimsCost = apiData.kpis?.total_cost_usd || 0;
+                            // Estimated revenue: Admin fee ($12/member/year) + Claims markup (35%)
+                            const estimatedRevenue = (members * 12) + (claimsCost * 1.35);
+                            
+                            groupTopClients.push({
+                                client_id: clientId,
+                                client_name: clientInfo.client_name || clientId,
+                                members: members,
+                                claims_cost: claimsCost,
+                                estimated_revenue: estimatedRevenue
+                            });
+                        }
+                    });
+                    
+                    // Sort by revenue descending and take top 5
+                    groupTopClients.sort((a, b) => (b.estimated_revenue || 0) - (a.estimated_revenue || 0));
+                    const top5 = groupTopClients.slice(0, 5);
+                    
+                    console.log(`🏆 Top clients for group ${groupName}:`, top5);
+                    
+                    // Update the table
+                    if (typeof updateTopClientsTableV324 === 'function') {
+                        updateTopClientsTableV324(top5);
+                    }
+                } catch(e) {
+                    console.error('Top Clients table update error:', e);
                 }
                 
                 // Hide loading overlay
