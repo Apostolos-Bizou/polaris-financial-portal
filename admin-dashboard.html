@@ -11656,32 +11656,54 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         function getTotalMembersFromClients(clientId) {
             try {
                 if (!clientsList || clientsList.length <= 1) {
-                    console.warn('⚠️ v3.37: clientsList not loaded, cannot get real members');
-                    return null; // Fallback to FinancialData
+                    console.warn('⚠️ v3.38: clientsList not loaded, cannot get real members');
+                    return null;
                 }
                 
+                // v3.38: DEBUG - show what fields are available in first client
+                if (!window._clientFieldsLogged) {
+                    const firstClient = clientsList.find(c => c.id !== 'all');
+                    if (firstClient && firstClient.data) {
+                        console.log('🔍 v3.38 DEBUG: First client data fields:', Object.keys(firstClient.data));
+                        console.log('🔍 v3.38 DEBUG: First client full data:', JSON.stringify(firstClient.data).substring(0, 500));
+                    }
+                    window._clientFieldsLogged = true;
+                }
+                
+                // v3.38: Check ALL possible field names for member count
+                const getMemberCount = (data) => {
+                    if (!data) return 0;
+                    const val = data.total_members || data.members || data.total_active_members 
+                        || data.active_members || data.member_count || data.totalMembers 
+                        || data.activeMembers || data.memberCount || data.no_of_members
+                        || data.total_seafarers || data.seafarers || data.headcount || 0;
+                    return parseInt(val) || 0;
+                };
+                
                 if (!clientId || clientId === 'all' || clientId === 'ALL') {
-                    // Sum total_members from ALL clients
                     let total = 0;
+                    let clientsWithMembers = 0;
                     clientsList.forEach(c => {
-                        if (c.id === 'all') return; // Skip the "All" option
-                        const members = parseInt(c.data?.total_members || c.data?.members || 0);
-                        total += members;
+                        if (c.id === 'all') return;
+                        const members = getMemberCount(c.data);
+                        if (members > 0) {
+                            total += members;
+                            clientsWithMembers++;
+                        }
                     });
-                    console.log(`📊 v3.37: Real members from Clients sheet (ALL): ${total.toLocaleString()}`);
+                    console.log(`📊 v3.38: Clients sheet members (ALL): ${total.toLocaleString()} from ${clientsWithMembers}/${clientsList.length - 1} clients`);
                     return total > 0 ? total : null;
                 } else {
-                    // Find specific client
                     const client = clientsList.find(c => c.id === clientId);
                     if (client && client.data) {
-                        const members = parseInt(client.data.total_members || client.data.members || 0);
-                        console.log(`📊 v3.37: Real members from Clients sheet (${clientId}): ${members.toLocaleString()}`);
+                        const members = getMemberCount(client.data);
+                        console.log(`📊 v3.38: Clients sheet members (${clientId}): ${members.toLocaleString()}`);
                         return members > 0 ? members : null;
                     }
                     return null;
                 }
             } catch (e) {
-                console.warn('⚠️ v3.37: Error getting members from Clients:', e);
+                console.warn('⚠️ v3.38: Error getting members from Clients:', e);
                 return null;
             }
         }
