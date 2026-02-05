@@ -10851,18 +10851,46 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 };
             });
             
-            // Also update main KPI cards with the FIRST selected quarter
-            const first = qData[quarters[0]];
-            if (first) {
-                document.getElementById('kpiMembers').textContent = first.members.toLocaleString();
-                document.getElementById('kpiClaims').textContent = first.claims.toLocaleString();
-                document.getElementById('kpiApproved').textContent = '$' + first.cost.toLocaleString();
-                document.getElementById('kpiCost').textContent = '$' + first.costPerMember.toFixed(2);
-                document.getElementById('kpiUtilization').textContent = first.utilization.toFixed(1) + '%';
+            // v3.35 FIX: In compare mode, show LATEST quarter in main cards (not first)
+            const latestQ = quarters[quarters.length - 1]; // Last sorted = latest (e.g. Q4)
+            const latest = qData[latestQ];
+            if (latest) {
+                document.getElementById('kpiMembers').textContent = latest.members.toLocaleString();
+                document.getElementById('kpiClaims').textContent = latest.claims.toLocaleString();
+                document.getElementById('kpiApproved').textContent = '$' + latest.cost.toLocaleString();
+                document.getElementById('kpiCost').textContent = '$' + latest.costPerMember.toFixed(2);
+                document.getElementById('kpiUtilization').textContent = latest.utilization.toFixed(1) + '%';
             }
             
-            // Store first quarter data for charts
-            window.currentClientKPIs = results[0]?.data || null;
+            // v3.35 FIX: Also update Inpatient/Outpatient/MemberTypes from latest quarter
+            const latestResult = results.find(r => r.quarter === latestQ);
+            if (latestResult && latestResult.data) {
+                const ct = latestResult.data.claimTypes || {};
+                const mt = latestResult.data.memberTypes || {};
+                if (document.getElementById('inpatientCases')) {
+                    document.getElementById('inpatientCases').textContent = ((ct.cases && ct.cases.inpatient) || 0).toLocaleString();
+                    document.getElementById('outpatientCases').textContent = ((ct.cases && ct.cases.outpatient) || 0).toLocaleString();
+                    document.getElementById('exGratiaCases').textContent = ((ct.cases && ct.cases.exgratia) || 0).toLocaleString();
+                }
+                if (document.getElementById('inpatientCost')) {
+                    document.getElementById('inpatientCost').textContent = '$' + ((ct.costs && ct.costs.inpatient) || 0).toLocaleString();
+                    document.getElementById('outpatientCost').textContent = '$' + ((ct.costs && ct.costs.outpatient) || 0).toLocaleString();
+                    document.getElementById('exGratiaCost').textContent = '$' + ((ct.costs && ct.costs.exgratia) || 0).toLocaleString();
+                }
+                if (document.getElementById('principalCount')) {
+                    document.getElementById('principalCount').textContent = ((mt.members && mt.members.principal) || 0).toLocaleString();
+                    document.getElementById('dependentCount').textContent = ((mt.members && mt.members.dependent) || 0).toLocaleString();
+                }
+                if (document.getElementById('newEnrollments') && latest) {
+                    document.getElementById('newEnrollments').textContent = '+' + (latest.enrollments || 0);
+                    document.getElementById('cancellations').textContent = '-' + (latest.cancellations || 0);
+                    const net = (latest.enrollments || 0) - (latest.cancellations || 0);
+                    document.getElementById('netChange').textContent = (net >= 0 ? '+' : '') + net;
+                }
+            }
+            
+            // Store latest quarter data for charts
+            window.currentClientKPIs = latestResult?.data || results[results.length - 1]?.data || null;
             loadDataForSelectedQuarters();
             
             // Build comparison overlay panel
