@@ -12128,63 +12128,141 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 
         async function loadMainDashboardKPIs(clientId) {
             // v4.1: Removed internal showDashboardLoading(true) - callers handle it
-            // This prevents refCount double-increment that kept the ship stuck
             const q = selectedQuarters[0] || 'Q1';
             updateDashboardLoading(15, 'Loading ' + (cumulativeMode ? 'Q1→' + q : q) + ' Data...', '📊 Fetching KPIs');
             
             try {
                 // ═══════════════════════════════════════════════════════════════
-                // v3.36: Check cumulativeMode for date range
-                // Single Period = only selected quarter
-                // Cumulative = Q1 to selected quarter (YTD)
+                // v4.2: CUMULATIVE MODE - Multi-call approach
+                // Makes separate API calls per quarter and sums client-side
+                // This guarantees correct results regardless of backend behavior
                 // ═══════════════════════════════════════════════════════════════
                 const q = selectedQuarters[0] || 'Q1';
                 const selectedRange = getQuarterDateRange(q, selectedYear);
+                const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+                const qIndex = allQuarters.indexOf(q);
                 
-                let startDate, endDate, rangeLabel;
+                let data;
+                let rangeLabel;
                 
-                if (cumulativeMode) {
-                    // Cumulative: from start of Q1 to end of selected quarter
+                if (cumulativeMode && q !== 'Q1') {
+                    // ═══ CUMULATIVE: Call API for each quarter Q1..Qn, then sum ═══
+                    const quartersToLoad = allQuarters.slice(0, qIndex + 1); // e.g. Q3 → [Q1, Q2, Q3]
+                    console.log(`📈 CUMULATIVE: Loading ${quartersToLoad.join(' + ')} for ${clientId || 'ALL'}`);
+                    
+                    const promises = quartersToLoad.map((qi, idx) => {
+                        const range = getQuarterDateRange(qi, selectedYear);
+                        const params = new URLSearchParams({ action: 'getClientKPISummary' });
+                        params.append('clientId', (clientId && clientId !== 'all') ? clientId : 'ALL');
+                        params.append('startDate', range.start);
+                        params.append('endDate', range.end);
+                        params.append('quarter', qi);
+                        params.append('year', selectedYear.toString());
+                        
+                        updateDashboardLoading(15 + Math.round(idx * 40 / quartersToLoad.length), 
+                            `Loading ${qi}...`, `📊 Fetching ${qi} data (${idx+1}/${quartersToLoad.length})`);
+                        
+                        return fetch(`${API_URL}?${params.toString()}`)
+                            .then(r => r.json())
+                            .then(d => ({ quarter: qi, data: d }))
+                            .catch(e => ({ quarter: qi, data: null, error: e }));
+                    });
+                    
+                    const results = await Promise.all(promises);
+                    updateDashboardLoading(60, 'Summing cumulative data...', `📈 Aggregating ${quartersToLoad.join(' + ')}`);
+                    
+                    // Sum all quarter results
+                    const cumKpis = { total_members: 0, total_claims: 0, total_cost_usd: 0, new_enrollments: 0, cancellations: 0 };
+                    const cumClaimTypes = { cases: { inpatient: 0, outpatient: 0, exgratia: 0 }, costs: { inpatient: 0, outpatient: 0, exgratia: 0 } };
+                    const cumMemberTypes = { members: { principal: 0, dependent: 0 } };
+                    let cumPlanBreakdown = null;
+                    
+                    results.forEach(r => {
+                        if (!r.data || r.data.error) {
+                            console.warn(`⚠️ ${r.quarter} returned error or null`);
+                            return;
+                        }
+                        const k = r.data.kpis;
+                        if (k) {
+                            cumKpis.total_members += (k.total_members || 0);
+                            cumKpis.total_claims += (k.total_claims || 0);
+                            cumKpis.total_cost_usd += (k.total_cost_usd || 0);
+                            cumKpis.new_enrollments += (k.new_enrollments || k.enrollments || 0);
+                            cumKpis.cancellations += (k.cancellations || 0);
+                        }
+                        const ct = r.data.claimTypes;
+                        if (ct) {
+                            if (ct.cases) {
+                                cumClaimTypes.cases.inpatient += (ct.cases.inpatient || 0);
+                                cumClaimTypes.cases.outpatient += (ct.cases.outpatient || 0);
+                                cumClaimTypes.cases.exgratia += (ct.cases.exgratia || 0);
+                            }
+                            if (ct.costs) {
+                                cumClaimTypes.costs.inpatient += (ct.costs.inpatient || 0);
+                                cumClaimTypes.costs.outpatient += (ct.costs.outpatient || 0);
+                                cumClaimTypes.costs.exgratia += (ct.costs.exgratia || 0);
+                            }
+                        }
+                        const mt = r.data.memberTypes;
+                        if (mt && mt.members) {
+                            cumMemberTypes.members.principal += (mt.members.principal || 0);
+                            cumMemberTypes.members.dependent += (mt.members.dependent || 0);
+                        }
+                        // Plan breakdown: sum across quarters
+                        if (r.data.planBreakdown) {
+                            if (!cumPlanBreakdown) cumPlanBreakdown = {};
+                            ['gold', 'platinum', 'silver'].forEach(plan => {
+                                if (r.data.planBreakdown[plan]) {
+                                    if (!cumPlanBreakdown[plan]) cumPlanBreakdown[plan] = { members: 0 };
+                                    cumPlanBreakdown[plan].members += (r.data.planBreakdown[plan].members || 0);
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Build combined data object (same structure as single-quarter response)
+                    data = {
+                        kpis: cumKpis,
+                        claimTypes: cumClaimTypes,
+                        memberTypes: cumMemberTypes,
+                        planBreakdown: cumPlanBreakdown,
+                        _cumulative: true,
+                        _quartersLoaded: results.filter(r => r.data && !r.data.error).map(r => r.quarter)
+                    };
+                    
                     const q1Range = getQuarterDateRange('Q1', selectedYear);
-                    startDate = q1Range.start; // Always 01/01
-                    endDate = selectedRange.end; // e.g. 30/06 for Q2
                     rangeLabel = `01/01/${selectedYear} - ${selectedRange.end.split('-').reverse().join('/')}`;
-                    console.log(`📈 CUMULATIVE KPIs: ${clientId || 'ALL'} | Q1→${q} ${selectedYear} (${startDate} → ${endDate})`);
+                    console.log(`✅ CUMULATIVE result (${data._quartersLoaded.join('+')}):`, {
+                        members: cumKpis.total_members,
+                        claims: cumKpis.total_claims,
+                        cost: cumKpis.total_cost_usd
+                    });
+                    
                 } else {
-                    // Single Period: only the selected quarter
-                    startDate = selectedRange.start;
-                    endDate = selectedRange.end;
+                    // ═══ SINGLE PERIOD: One API call for selected quarter ═══
+                    const params = new URLSearchParams({ action: 'getClientKPISummary' });
+                    params.append('clientId', (clientId && clientId !== 'all') ? clientId : 'ALL');
+                    params.append('startDate', selectedRange.start);
+                    params.append('endDate', selectedRange.end);
+                    params.append('quarter', q);
+                    params.append('year', selectedYear.toString());
                     rangeLabel = selectedRange.label;
-                    console.log(`📊 SINGLE PERIOD KPIs: ${clientId || 'ALL'} | ${q} ${selectedYear} (${startDate} → ${endDate})`);
+                    
+                    console.log(`📊 SINGLE PERIOD: ${clientId || 'ALL'} | ${q} ${selectedYear}`);
+                    const response = await fetch(`${API_URL}?${params.toString()}`);
+                    updateDashboardLoading(50, 'Processing data...', '📈 Parsing API response');
+                    data = await response.json();
                 }
                 
-                // Build API URL with clientId AND date range
-                const params = new URLSearchParams({ action: 'getClientKPISummary' });
-                if (clientId && clientId !== 'all') {
-                    params.append('clientId', clientId);
-                } else {
-                    params.append('clientId', 'ALL');
-                }
-                
-                // Add date filter parameters
-                params.append('startDate', startDate);
-                params.append('endDate', endDate);
-                params.append('quarter', q);
-                params.append('year', selectedYear.toString());
-                
-                // Store current date filter for other functions
+                // Store current date filter
                 window.currentDateFilter = {
                     quarter: q,
                     year: selectedYear,
-                    startDate: startDate,
-                    endDate: endDate,
+                    startDate: cumulativeMode ? getQuarterDateRange('Q1', selectedYear).start : selectedRange.start,
+                    endDate: selectedRange.end,
                     label: rangeLabel,
                     isCumulative: cumulativeMode
                 };
-                
-                const response = await fetch(`${API_URL}?${params.toString()}`);
-                updateDashboardLoading(50, 'Processing data...', '📈 Parsing API response');
-                const data = await response.json();
                 
                 if (data.error) {
                     console.warn('❌ KPIs API error:', data.error);
@@ -12322,7 +12400,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     const kpis = data.kpis;
                     const pcRealMembers = getTotalMembersFromClients(clientId);
                     const displayMem = pcRealMembers || (kpis ? kpis.total_members : 0) || 0;
-                    safeSet('cmpPeriodLabel', `${q} ${selectedYear}`);
+                    safeSet('cmpPeriodLabel', cumulativeMode && q !== 'Q1' ? `Q1→${q} ${selectedYear} (YTD)` : `${q} ${selectedYear}`);
                     safeSet('cmpClaims', fmt(kpis ? kpis.total_claims || 0 : 0));
                     safeSet('cmpClaimsPrev', 'N/A');
                     safeSet('cmpMembers', fmt(displayMem));
