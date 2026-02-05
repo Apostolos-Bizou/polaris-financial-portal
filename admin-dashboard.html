@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-06 v3.42 - Cyprus Financial: Now filters by selected client group -->
+<!-- VERSION: 2026-02-06 v3.44 - Email Center: Fixed client lookup using cachedClientsData -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -13291,7 +13291,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             
             // Get client data for placeholders
             const clientId = document.getElementById('emailClient').value;
-            const client = dashboardData?.clients?.find(c => c.client_id === clientId);
+            const allClients = window.cachedClientsData || [];
+            const client = allClients.find(c => c.client_id === clientId);
+            
+            console.log('📧 updatePreview - clientId:', clientId, 'client found:', !!client, client?.client_name);
             
             let preview = selectedTemplate.body_html || getDefaultTemplateBody(selectedTemplate.template_id);
             let subject = selectedTemplate.subject || '';
@@ -13360,40 +13363,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 return;
             }
             
-            if (!clientId) {
-                // Use local preview if no client selected
-                updatePreview();
-                return;
-            }
-            
-            previewBox.innerHTML = '<p style="color: #999; text-align: center;">Loading preview...</p>';
-            
-            try {
-                const response = await fetch(`${API_URL}?action=previewEmail&templateId=${templateId}&clientId=${clientId}`);
-                const data = await response.json();
-                
-                if (data.success && data.preview) {
-                    // Update subject field
-                    document.getElementById('emailSubject').value = data.preview.subject || '';
-                    
-                    // Show preview body using iframe for proper HTML rendering
-                    previewBox.innerHTML = '';
-                    const iframe = document.createElement('iframe');
-                    iframe.style.cssText = 'width:100%;height:450px;border:none;background:#fff;border-radius:8px;';
-                    previewBox.appendChild(iframe);
-                    
-                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    iframeDoc.open();
-                    iframeDoc.write(data.preview.body);
-                    iframeDoc.close();
-                } else {
-                    previewBox.innerHTML = `<div class="email-status error">❌ ${data.error || 'Template not found'}</div>`;
-                }
-            } catch (err) {
-                console.error('Preview error:', err);
-                // Fallback to local preview
-                updatePreview();
-            }
+            // v3.42: Always use local updatePreview() which has all placeholder replacements
+            // (portal_url, username, password, client_name, contact_name, etc.)
+            updatePreview();
         }
         
         function updateSendButton() {
