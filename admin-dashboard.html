@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-05 v3.38 - Fix Period Comparison, YoY, Member Movement, Plan Performance -->
+<!-- VERSION: 2026-02-05 v4.5 - Email Center: Real username/password from Users sheet, correct Portal URL -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12989,6 +12989,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         let emailTemplates = [];
         let clientContacts = [];
+        let clientUserCredentials = null; // Store user credentials for selected client
         let selectedTemplate = null;
         let selectedContacts = [];
         
@@ -13087,6 +13088,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             
             if (!clientId) {
                 container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">Select a client to see available contacts</p>';
+                clientUserCredentials = null;
                 updateSendButton();
                 return;
             }
@@ -13094,12 +13096,33 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">Loading contacts...</p>';
             
             try {
+                // Load contacts
                 const response = await fetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
                 const data = await response.json();
+                
+                // Also load user credentials for this client
+                try {
+                    const usersResponse = await fetch(`${API_URL}?action=getUsers`);
+                    const users = await usersResponse.json();
+                    if (Array.isArray(users)) {
+                        // Find user with matching client_id
+                        clientUserCredentials = users.find(u => u.client_id === clientId) || null;
+                        console.log('📋 User credentials for client:', clientUserCredentials);
+                    }
+                } catch (e) {
+                    console.warn('Could not load user credentials:', e);
+                    clientUserCredentials = null;
+                }
                 
                 if (data.success && data.data && data.data.length > 0) {
                     clientContacts = data.data;
                     renderContacts();
+                    // Auto-select first contact (primary) and update preview
+                    const firstCheckbox = document.getElementById('contact_0');
+                    if (firstCheckbox) {
+                        firstCheckbox.checked = true;
+                        updateSelectedContacts();
+                    }
                 } else {
                     // Fallback - show message to add email manually
                     clientContacts = [];
@@ -13109,10 +13132,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 console.error('Error loading contacts:', err);
                 // Fallback - allow manual email entry
                 clientContacts = [];
+                clientUserCredentials = null;
                 container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">Could not load contacts. Use "Additional Email" below.</p>';
             }
             
             updateSendButton();
+            // Update preview with loaded contact data
+            if (selectedTemplate) {
+                updatePreview();
+            }
         }
         
         function renderContacts() {
@@ -13144,6 +13172,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 }
             });
             updateSendButton();
+            // Update preview with selected contact data
+            if (selectedTemplate) {
+                updatePreview();
+            }
         }
         
         function selectAllRecipients() {
@@ -13216,7 +13248,25 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             
             if (template) {
                 selectedTemplate = template;
-                document.getElementById('emailSubject').value = template.subject;
+                // Set subject with placeholder replacement
+                let subject = template.subject || '';
+                const clientId = document.getElementById('emailClient').value;
+                const client = dashboardData?.clients?.find(c => c.client_id === clientId);
+                if (client) {
+                    subject = subject.replace(/\{\{client_name\}\}/gi, client.client_name || '');
+                }
+                // Get contact name from selected contacts or clientContacts
+                let contactName = 'Valued Customer';
+                if (selectedContacts && selectedContacts.length > 0) {
+                    contactName = selectedContacts[0].name || selectedContacts[0].contact_name || contactName;
+                } else if (clientContacts && clientContacts.length > 0) {
+                    contactName = clientContacts[0].name || clientContacts[0].contact_name || contactName;
+                } else if (client) {
+                    contactName = client.contact_name || client.contact_person || contactName;
+                }
+                subject = subject.replace(/\{\{contact_name\}\}/gi, contactName);
+                subject = subject.replace(/\{\{year\}\}/gi, new Date().getFullYear().toString());
+                document.getElementById('emailSubject').value = subject;
                 updatePreview();
             } else {
                 selectedTemplate = null;
@@ -13239,26 +13289,129 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const clientId = document.getElementById('emailClient').value;
             const client = dashboardData?.clients?.find(c => c.client_id === clientId);
             
+            // Get contact data - use first selected contact, or first available contact, or client data
+            let contactName = 'Valued Customer';
+            let contactEmail = '';
+            let contactPhone = '';
+            let contactMobile = '';
+            let contactCapacity = '';
+            
+            if (selectedContacts && selectedContacts.length > 0) {
+                // Use first selected contact
+                const contact = selectedContacts[0];
+                contactName = contact.name || contact.contact_name || contactName;
+                contactEmail = contact.email || '';
+                contactPhone = contact.phone || '';
+                contactMobile = contact.mobile || '';
+                contactCapacity = contact.capacity || contact.role || '';
+            } else if (clientContacts && clientContacts.length > 0) {
+                // Use first available contact (primary)
+                const contact = clientContacts[0];
+                contactName = contact.name || contact.contact_name || contactName;
+                contactEmail = contact.email || '';
+                contactPhone = contact.phone || '';
+                contactMobile = contact.mobile || '';
+                contactCapacity = contact.capacity || contact.role || '';
+            } else if (client) {
+                // Fallback to client record
+                contactName = client.contact_name || client.contact_person || contactName;
+                contactEmail = client.contact_email || client.email || '';
+                contactPhone = client.phone || '';
+                contactMobile = client.mobile || '';
+                contactCapacity = client.contact_capacity || '';
+            }
+            
+            // Extract first name from contact name
+            const contactFirstName = contactName.split(' ')[0];
+            
             let preview = selectedTemplate.body_html || getDefaultTemplateBody(selectedTemplate.template_id);
             
-            // Replace placeholders
+            // === COMPREHENSIVE PLACEHOLDER REPLACEMENT ===
+            // Date/Time placeholders
+            const now = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            preview = preview.replace(/\{\{current_date\}\}/gi, now.toLocaleDateString('en-US', dateOptions));
+            preview = preview.replace(/\{\{date\}\}/gi, now.toLocaleDateString('en-US', dateOptions));
+            preview = preview.replace(/\{\{effective_date\}\}/gi, now.toLocaleDateString('en-US', dateOptions));
+            preview = preview.replace(/\{\{day\}\}/gi, now.getDate().toString());
+            preview = preview.replace(/\{\{month\}\}/gi, now.toLocaleDateString('en-US', { month: 'long' }));
+            preview = preview.replace(/\{\{year\}\}/gi, now.getFullYear().toString());
+            
+            // Contact placeholders
+            preview = preview.replace(/\{\{contact_name\}\}/gi, contactName);
+            preview = preview.replace(/\{\{contact_person\}\}/gi, contactName);
+            preview = preview.replace(/\{\{contact_full_name\}\}/gi, contactName);
+            preview = preview.replace(/\{\{contact_firstname\}\}/gi, contactFirstName);
+            preview = preview.replace(/\{\{contact_lastname\}\}/gi, contactName.split(' ').slice(1).join(' ') || '');
+            preview = preview.replace(/\{\{email\}\}/gi, contactEmail);
+            preview = preview.replace(/\{\{phone\}\}/gi, contactPhone);
+            preview = preview.replace(/\{\{mobile\}\}/gi, contactMobile);
+            preview = preview.replace(/\{\{fax\}\}/gi, client?.fax || '');
+            preview = preview.replace(/\{\{contact_capacity\}\}/gi, contactCapacity);
+            
+            // Client placeholders
             if (client) {
-                preview = preview.replace(/\{\{client_name\}\}/g, client.client_name || '');
-                preview = preview.replace(/\{\{contact_name\}\}/g, client.contact_name || 'Valued Customer');
+                preview = preview.replace(/\{\{client_name\}\}/gi, client.client_name || '');
+                preview = preview.replace(/\{\{client_short\}\}/gi, client.client_short || client.client_name?.substring(0, 20) || '');
+                preview = preview.replace(/\{\{company_name\}\}/gi, client.client_name || '');
+                preview = preview.replace(/\{\{country\}\}/gi, client.country || 'Philippines');
+                preview = preview.replace(/\{\{tin_number\}\}/gi, client.tin_number || client.tin || '');
+                preview = preview.replace(/\{\{vat_number\}\}/gi, client.vat_number || client.vat || '');
+                preview = preview.replace(/\{\{registered_address\}\}/gi, client.registered_address || client.address || '');
+                preview = preview.replace(/\{\{operating_address\}\}/gi, client.operating_address || client.address || '');
+                preview = preview.replace(/\{\{client_type\}\}/gi, client.client_type || 'Direct');
+                
+                // Signatory placeholders
+                preview = preview.replace(/\{\{authorized_signatory_name\}\}/gi, client.signatory_name || client.authorized_signatory || contactName);
+                preview = preview.replace(/\{\{authorized_signatory_title\}\}/gi, client.signatory_title || 'Authorized Representative');
+            } else {
+                preview = preview.replace(/\{\{client_name\}\}/gi, '[Select a client]');
+                preview = preview.replace(/\{\{client_short\}\}/gi, '');
+                preview = preview.replace(/\{\{company_name\}\}/gi, '');
             }
-            preview = preview.replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
-            preview = preview.replace(/\{\{year\}\}/g, new Date().getFullYear());
-            preview = preview.replace(/\{\{portal_url\}\}/g, 'https://polaris-portal.com');
+            
+            // Portal/System placeholders - Use REAL credentials from Users sheet
+            const portalUrl = 'https://apostolos-bizou.github.io/polaris-financial-portal/';
+            preview = preview.replace(/\{\{portal_url\}\}/gi, portalUrl);
+            
+            // Username and Password from Users sheet (clientUserCredentials)
+            if (clientUserCredentials) {
+                preview = preview.replace(/\{\{username\}\}/gi, clientUserCredentials.username || '');
+                preview = preview.replace(/\{\{password\}\}/gi, clientUserCredentials.password || '');
+            } else {
+                // Fallback - show placeholder warning
+                preview = preview.replace(/\{\{username\}\}/gi, '<span style="color: orange; background: #fff3cd; padding: 0 4px; border-radius: 3px;" title="No user account found for this client">[No user account]</span>');
+                preview = preview.replace(/\{\{password\}\}/gi, '<span style="color: orange; background: #fff3cd; padding: 0 4px; border-radius: 3px;" title="No user account found for this client">[No user account]</span>');
+            }
+            
+            // Sender placeholders
+            preview = preview.replace(/\{\{sender_name\}\}/gi, currentUser?.full_name || 'Polaris Financial Services');
+            preview = preview.replace(/\{\{sender_title\}\}/gi, currentUser?.title || 'Business Development');
+            preview = preview.replace(/\{\{sender_email\}\}/gi, currentUser?.email || 'info@polarisfinancial.com');
+            preview = preview.replace(/\{\{polaris_phone\}\}/gi, '+30 2271 029 380');
+            preview = preview.replace(/\{\{polaris_address\}\}/gi, 'Thessaloniki, Greece');
+            preview = preview.replace(/\{\{employee_name\}\}/gi, currentUser?.full_name || 'Polaris Team');
             
             // Meeting template specific placeholders
             if (selectedTemplate.template_id === 'meeting_01') {
-                preview = preview.replace(/\{\{greeting\}\}/g, getGreetingText());
-                preview = preview.replace(/\{\{attendees_text\}\}/g, buildAttendeesText() || '[Select team members above]');
-                preview = preview.replace(/\{\{signatures\}\}/g, buildSignaturesHTML() || '[Select team members above]');
+                preview = preview.replace(/\{\{greeting\}\}/gi, getGreetingText());
+                preview = preview.replace(/\{\{attendees_text\}\}/gi, buildAttendeesText() || '[Select team members above]');
+                preview = preview.replace(/\{\{signatures\}\}/gi, buildSignaturesHTML() || '[Select team members above]');
             }
+            
+            // Clean up any remaining unmatched placeholders (show in red for visibility)
+            preview = preview.replace(/\{\{([^}]+)\}\}/g, '<span style="color: red; background: #ffe0e0; padding: 0 4px; border-radius: 3px;" title="Missing placeholder: $1">{{$1}}</span>');
             
             // Show preview
             previewBox.innerHTML = preview || '<p>Template preview not available</p>';
+            
+            // Also update subject line with placeholders replaced
+            let subject = selectedTemplate.subject || '';
+            subject = subject.replace(/\{\{client_name\}\}/gi, client?.client_name || '');
+            subject = subject.replace(/\{\{contact_name\}\}/gi, contactName);
+            subject = subject.replace(/\{\{year\}\}/gi, new Date().getFullYear().toString());
+            subject = subject.replace(/\{\{date\}\}/gi, new Date().toLocaleDateString('en-US', dateOptions));
+            document.getElementById('emailSubject').value = subject;
         }
         
         function getDefaultTemplateBody(templateId) {
@@ -14562,26 +14715,61 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             updateSendDocsEmailCount();
         }
         
-        function replacePlaceholders(text, clientName, contactName, contactFirstName) {
+        function replacePlaceholders(text, clientName, contactName, contactFirstName, clientData = {}) {
             const portalUrl = 'https://apostolos-bizou.github.io/polaris-financial-portal/';
+            const now = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            
             return text
-                .replace(/\{\{client_name\}\}/gi, clientName)
-                .replace(/\{\{contact_name\}\}/gi, contactFirstName || contactName)
-                .replace(/\{\{contact_full_name\}\}/gi, contactName)
-                .replace(/\{\{date\}\}/gi, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
-                .replace(/\{\{year\}\}/gi, new Date().getFullYear().toString())
-                .replace(/\{\{company_name\}\}/gi, clientName)
+                // Client placeholders
+                .replace(/\{\{client_name\}\}/gi, clientName || '')
+                .replace(/\{\{client_short\}\}/gi, clientData.client_short || clientName?.substring(0, 20) || '')
+                .replace(/\{\{company_name\}\}/gi, clientName || '')
+                .replace(/\{\{country\}\}/gi, clientData.country || 'Philippines')
+                .replace(/\{\{tin_number\}\}/gi, clientData.tin_number || clientData.tin || '')
+                .replace(/\{\{vat_number\}\}/gi, clientData.vat_number || clientData.vat || '')
+                .replace(/\{\{registered_address\}\}/gi, clientData.registered_address || clientData.address || '')
+                .replace(/\{\{operating_address\}\}/gi, clientData.operating_address || clientData.address || '')
+                
+                // Contact placeholders
+                .replace(/\{\{contact_name\}\}/gi, contactFirstName || contactName || 'Valued Customer')
+                .replace(/\{\{contact_person\}\}/gi, contactName || '')
+                .replace(/\{\{contact_full_name\}\}/gi, contactName || '')
+                .replace(/\{\{contact_firstname\}\}/gi, contactFirstName || '')
+                .replace(/\{\{contact_lastname\}\}/gi, (contactName || '').split(' ').slice(1).join(' ') || '')
+                .replace(/\{\{email\}\}/gi, clientData.contact_email || clientData.email || '')
+                .replace(/\{\{phone\}\}/gi, clientData.phone || '')
+                .replace(/\{\{mobile\}\}/gi, clientData.mobile || '')
+                .replace(/\{\{fax\}\}/gi, clientData.fax || '')
+                .replace(/\{\{contact_capacity\}\}/gi, clientData.contact_capacity || '')
+                
+                // Date placeholders
+                .replace(/\{\{current_date\}\}/gi, now.toLocaleDateString('en-US', dateOptions))
+                .replace(/\{\{date\}\}/gi, now.toLocaleDateString('en-US', dateOptions))
+                .replace(/\{\{effective_date\}\}/gi, now.toLocaleDateString('en-US', dateOptions))
+                .replace(/\{\{day\}\}/gi, now.getDate().toString())
+                .replace(/\{\{month\}\}/gi, now.toLocaleDateString('en-US', { month: 'long' }))
+                .replace(/\{\{year\}\}/gi, now.getFullYear().toString())
+                
+                // Portal/Auth placeholders
                 .replace(/\{\{PORTAL_URL\}\}/gi, portalUrl)
                 .replace(/\{\{portal_url\}\}/gi, portalUrl)
                 .replace(/\{\{USERNAME\}\}/gi, (contactFirstName || contactName || 'user').toLowerCase().replace(/\s+/g, '.'))
                 .replace(/\{\{username\}\}/gi, (contactFirstName || contactName || 'user').toLowerCase().replace(/\s+/g, '.'))
-                .replace(/\{\{PASSWORD\}\}/gi, 'Will be sent separately for security')
-                .replace(/\{\{password\}\}/gi, 'Will be sent separately for security')
+                .replace(/\{\{PASSWORD\}\}/gi, '[Will be sent separately]')
+                .replace(/\{\{password\}\}/gi, '[Will be sent separately]')
+                
+                // Sender placeholders
                 .replace(/\{\{sender_name\}\}/gi, currentUser?.full_name || 'Polaris Financial Services')
                 .replace(/\{\{sender_title\}\}/gi, currentUser?.title || 'Business Development')
                 .replace(/\{\{sender_email\}\}/gi, currentUser?.email || 'info@polarisfinancial.com')
-                .replace(/\{\{polaris_phone\}\}/gi, '+30 210 XXX XXXX')
-                .replace(/\{\{polaris_address\}\}/gi, 'Thessaloniki, Greece');
+                .replace(/\{\{polaris_phone\}\}/gi, '+30 2271 029 380')
+                .replace(/\{\{polaris_address\}\}/gi, 'Thessaloniki, Greece')
+                .replace(/\{\{employee_name\}\}/gi, currentUser?.full_name || 'Polaris Team')
+                
+                // Signatory placeholders
+                .replace(/\{\{authorized_signatory_name\}\}/gi, clientData.signatory_name || contactName || '')
+                .replace(/\{\{authorized_signatory_title\}\}/gi, clientData.signatory_title || 'Authorized Representative');
         }
         
         function formatEmailDocsText(command) {
