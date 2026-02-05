@@ -10870,14 +10870,39 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         .catch(e => ({ quarter: q, data: null, dateRange, error: e }));
                 });
                 
-                const results = await Promise.all(promises);
+                // v3.36: Also load FULL YEAR aggregate (no period filter) for cumulative KPIs
+                const aggregateParams = new URLSearchParams({ action: 'getClientKPISummary' });
+                if (clientId && clientId !== 'all') {
+                    aggregateParams.append('clientId', clientId);
+                } else {
+                    aggregateParams.append('clientId', 'ALL');
+                }
+                // Build date range covering ALL selected quarters
+                const firstQ = quarters[0];
+                const lastQ = quarters[quarters.length - 1];
+                const firstRange = getQuarterDateRange(firstQ, selectedYear);
+                const lastRange = getQuarterDateRange(lastQ, selectedYear);
+                aggregateParams.append('startDate', firstRange.start);
+                aggregateParams.append('endDate', lastRange.end);
+                aggregateParams.append('year', selectedYear.toString());
+                
+                const aggregatePromise = fetch(`${API_URL}?${aggregateParams.toString()}`)
+                    .then(r => r.json())
+                    .catch(e => null);
+                
+                const [results, aggregateData] = await Promise.all([
+                    Promise.all(promises),
+                    aggregatePromise
+                ]);
+                
                 console.log('📊 Compare results:', results);
+                console.log('📊 Aggregate data:', aggregateData);
                 
                 // Update badge
                 if (badge) badge.textContent = quarters.join(' vs ') + ` ${selectedYear}`;
                 
-                // Build comparison display
-                showQuarterComparisonResults(results, quarters);
+                // Build comparison display - pass aggregate data too
+                showQuarterComparisonResults(results, quarters, aggregateData);
                 
             } catch (error) {
                 console.error('Compare mode error:', error);
@@ -10885,7 +10910,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             }
         }
         
-        function showQuarterComparisonResults(results, quarters) {
+        function showQuarterComparisonResults(results, quarters, aggregateData) {
             // Remove old overlay if present
             let overlay = document.getElementById('quarterCompareOverlay');
             if (overlay) overlay.remove();
@@ -10907,8 +10932,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             });
             
             // ═══════════════════════════════════════════════════════════════════
-            // v3.36 FIX: AGGREGATE data across ALL selected quarters
-            // Members = latest snapshot, Claims/Cost/Enrollments = SUM
+            // v3.36 FIX: Use AGGREGATE API data for cumulative KPIs
+            // The aggregate call covers the full date range of all selected quarters
             // ═══════════════════════════════════════════════════════════════════
             const sortedQ = [...quarters].sort();
             const latestQ = sortedQ[sortedQ.length - 1];
@@ -10916,37 +10941,59 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const latestResult = results.find(r => r.quarter === latestQ);
             const prevResult = prevQ ? results.find(r => r.quarter === prevQ) : null;
             
-            // Aggregate totals across all selected quarters
-            let aggClaims = 0, aggCost = 0, aggEnrollments = 0, aggCancellations = 0;
+            // Use aggregate data for cumulative KPIs (covers all selected quarters)
+            const aggKpis = aggregateData && aggregateData.kpis ? aggregateData.kpis : null;
+            
+            let aggMembers, aggClaims, aggCost, aggEnrollments, aggCancellations;
             let aggInCases = 0, aggOutCases = 0, aggExCases = 0;
             let aggInCost = 0, aggOutCost = 0, aggExCost = 0;
             
-            results.forEach(r => {
-                if (!r.data || !r.data.kpis) return;
-                const k = r.data.kpis;
-                aggClaims += (k.total_claims || 0);
-                aggCost += (k.total_cost_usd || 0);
-                aggEnrollments += (k.new_enrollments || k.enrollments || 0);
-                aggCancellations += (k.cancellations || 0);
+            if (aggKpis) {
+                // Use the aggregate API response (cumulative across all selected quarters)
+                aggMembers = aggKpis.total_members || 0;
+                aggClaims = aggKpis.total_claims || 0;
+                aggCost = aggKpis.total_cost_usd || 0;
+                aggEnrollments = aggKpis.new_enrollments || aggKpis.enrollments || 0;
+                aggCancellations = aggKpis.cancellations || 0;
                 
-                // Aggregate claim types
-                const ct = r.data.claimTypes || {};
-                aggInCases += (ct.cases && ct.cases.inpatient) || 0;
-                aggOutCases += (ct.cases && ct.cases.outpatient) || 0;
-                aggExCases += (ct.cases && ct.cases.exgratia) || 0;
-                aggInCost += (ct.costs && ct.costs.inpatient) || 0;
-                aggOutCost += (ct.costs && ct.costs.outpatient) || 0;
-                aggExCost += (ct.costs && ct.costs.exgratia) || 0;
-            });
+                // Claim types from aggregate
+                const aggCT = aggregateData.claimTypes || {};
+                aggInCases = (aggCT.cases && aggCT.cases.inpatient) || 0;
+                aggOutCases = (aggCT.cases && aggCT.cases.outpatient) || 0;
+                aggExCases = (aggCT.cases && aggCT.cases.exgratia) || 0;
+                aggInCost = (aggCT.costs && aggCT.costs.inpatient) || 0;
+                aggOutCost = (aggCT.costs && aggCT.costs.outpatient) || 0;
+                aggExCost = (aggCT.costs && aggCT.costs.exgratia) || 0;
+                
+                console.log('📊 v3.36: Using AGGREGATE data for cumulative KPIs:', {
+                    members: aggMembers, claims: aggClaims, cost: aggCost,
+                    quarters: sortedQ.join('+'), dateRange: aggregateData.filter || 'full range'
+                });
+            } else {
+                // Fallback: SUM individual quarter data
+                aggMembers = 0; aggClaims = 0; aggCost = 0; aggEnrollments = 0; aggCancellations = 0;
+                results.forEach(r => {
+                    if (!r.data || !r.data.kpis) return;
+                    const k = r.data.kpis;
+                    aggMembers += (k.total_members || 0);
+                    aggClaims += (k.total_claims || 0);
+                    aggCost += (k.total_cost_usd || 0);
+                    aggEnrollments += (k.new_enrollments || k.enrollments || 0);
+                    aggCancellations += (k.cancellations || 0);
+                    
+                    const ct = r.data.claimTypes || {};
+                    aggInCases += (ct.cases && ct.cases.inpatient) || 0;
+                    aggOutCases += (ct.cases && ct.cases.outpatient) || 0;
+                    aggExCases += (ct.cases && ct.cases.exgratia) || 0;
+                    aggInCost += (ct.costs && ct.costs.inpatient) || 0;
+                    aggOutCost += (ct.costs && ct.costs.outpatient) || 0;
+                    aggExCost += (ct.costs && ct.costs.exgratia) || 0;
+                });
+                console.log('📊 v3.36: Using SUMMED quarter data (no aggregate available)');
+            }
             
-            // Members = latest quarter snapshot (not sum!)
-            // v3.37: Use Clients sheet members (11,483) instead of FinancialData (8,878)
-            const clientId = document.getElementById('clientSelect')?.value || 'all';
-            const realMembers = getTotalMembersFromClients(clientId);
-            const aggMembers = realMembers || qData[latestQ]?.members || 0;
             const aggCostPerMember = aggMembers > 0 ? aggCost / aggMembers : 0;
             const aggUtil = aggMembers > 0 ? (aggClaims / aggMembers * 100) : 0;
-            if (realMembers) console.log(`📊 v3.37 Compare: Using Clients sheet members = ${realMembers} (instead of FinancialData ${qData[latestQ]?.members})`);
             
             // Determine if single or multi quarter for display
             const isMultiQ = quarters.length > 1;
