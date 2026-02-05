@@ -11839,7 +11839,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 return;
             }
             
-            const clientName = clientsList.find(c => c.id === selectedClient)?.name || 'All Clients';
+            // clientName already declared above for loading message
             
             document.getElementById('clientFilterBadge').textContent = clientName.replace('🏢 ', '').replace('🏛️ ', '').replace('   └─ ', '');
             
