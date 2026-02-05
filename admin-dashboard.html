@@ -26693,12 +26693,40 @@ function highlightOfferPrograms(offer) {
     // Parse offer items to get programs
     let programs = [];
     try {
-        if (offer.items) {
+        // v3.33: Check comparison_data first (for Comparison Quotes, even after conversion)
+        if (offer.comparison_data) {
+            let compData = offer.comparison_data;
+            if (typeof compData === 'string') {
+                // Check if it's a JSON array (starts with '[')
+                if (compData.startsWith('[')) {
+                    compData = JSON.parse(compData);
+                } else {
+                    console.log('comparison_data is folder ID, not plans array');
+                    compData = null;
+                }
+            }
+            if (Array.isArray(compData)) {
+                compData.forEach(opt => {
+                    const planName = (opt.planName || opt.plan_name || opt.plan || '').toLowerCase().trim();
+                    if (planName && !programs.includes(planName)) {
+                        programs.push(planName);
+                    }
+                    // Also add dental if hasDental is true
+                    if (opt.hasDental && !programs.includes('dental')) {
+                        programs.push('dental');
+                    }
+                });
+                console.log('Programs from comparison_data:', programs);
+            }
+        }
+        
+        // Fallback to items if no programs found from comparison_data
+        if (programs.length === 0 && offer.items) {
             const items = typeof offer.items === 'string' ? JSON.parse(offer.items) : offer.items;
             programs = items.map(item => (item.plan_name || item.program || '').toLowerCase().trim()).filter(Boolean);
         }
     } catch (e) {
-        console.log('Could not parse offer items:', e);
+        console.log('Could not parse offer data:', e);
     }
     
     console.log('Offer programs to highlight:', programs);
