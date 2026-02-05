@@ -10349,7 +10349,12 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             selectedYear = parseInt(year);
             console.log('📅 Year changed to:', selectedYear);
             updateQuarterUI();
-            loadDataForSelectedQuarters();
+            // Reload from API with new year
+            if (quarterCompareMode && selectedQuarters.length > 1) {
+                loadQuarterComparison(selectedClient);
+            } else {
+                loadMainDashboardKPIs(selectedClient);
+            }
         }
         
         // Get current quarter based on today's date (for reference)
@@ -10472,7 +10477,17 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (!clientId) return null;
             
             try {
-                const response = await fetch(`${API_URL}?action=getClientKPISummary&clientId=${encodeURIComponent(clientId)}`);
+                const q = selectedQuarters[0] || 'Q1';
+                const dateRange = getQuarterDateRange(q, selectedYear);
+                const analyticsParams = new URLSearchParams({ 
+                    action: 'getClientKPISummary', 
+                    clientId: clientId,
+                    startDate: dateRange.start,
+                    endDate: dateRange.end,
+                    quarter: q,
+                    year: selectedYear.toString()
+                });
+                const response = await fetch(`${API_URL}?${analyticsParams.toString()}`);
                 const data = await response.json();
                 
                 if (data.error) {
@@ -10733,7 +10748,17 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             }
             
             updateQuarterUI();
-            loadDataForSelectedQuarters();
+            
+            // ═══════════════════════════════════════════════════════════════
+            // RELOAD FROM API with new quarter filter
+            // ═══════════════════════════════════════════════════════════════
+            if (quarterCompareMode && selectedQuarters.length > 1) {
+                // Compare mode: load multiple quarters
+                loadQuarterComparison(selectedClient);
+            } else {
+                // Single quarter: reload API with date range
+                loadMainDashboardKPIs(selectedClient);
+            }
         }
         
         function toggleQuarterCompare() {
@@ -10748,9 +10773,182 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 btn.innerHTML = '<span>⚖️</span> Compare Quarters';
                 // Reset to single selection (keep first)
                 selectedQuarters = [selectedQuarters[0]];
+                // Hide comparison overlay if present
+                const overlay = document.getElementById('quarterCompareOverlay');
+                if (overlay) overlay.remove();
+                // Reload single quarter
+                loadMainDashboardKPIs(selectedClient);
             }
             
             updateQuarterUI();
+        }
+        
+        // ═══════════════════════════════════════════════════════════════════
+        // QUARTER COMPARISON: Load multiple quarters and show side-by-side
+        // ═══════════════════════════════════════════════════════════════════
+        async function loadQuarterComparison(clientId) {
+            const quarters = [...selectedQuarters].sort();
+            console.log(`📊 COMPARE MODE: Loading ${quarters.join(' vs ')} for ${clientId || 'ALL'}`);
+            
+            // Show loading indicator
+            const badge = document.getElementById('selectedQuartersBadge');
+            if (badge) badge.textContent = '⏳ Loading...';
+            
+            try {
+                // Load data for each selected quarter in parallel
+                const promises = quarters.map(q => {
+                    const dateRange = getQuarterDateRange(q, selectedYear);
+                    const params = new URLSearchParams({ action: 'getClientKPISummary' });
+                    if (clientId && clientId !== 'all') {
+                        params.append('clientId', clientId);
+                    } else {
+                        params.append('clientId', 'ALL');
+                    }
+                    params.append('startDate', dateRange.start);
+                    params.append('endDate', dateRange.end);
+                    params.append('quarter', q);
+                    params.append('year', selectedYear.toString());
+                    
+                    return fetch(`${API_URL}?${params.toString()}`)
+                        .then(r => r.json())
+                        .then(data => ({ quarter: q, data, dateRange }))
+                        .catch(e => ({ quarter: q, data: null, dateRange, error: e }));
+                });
+                
+                const results = await Promise.all(promises);
+                console.log('📊 Compare results:', results);
+                
+                // Update badge
+                if (badge) badge.textContent = quarters.join(' vs ') + ` ${selectedYear}`;
+                
+                // Build comparison display
+                showQuarterComparisonResults(results, quarters);
+                
+            } catch (error) {
+                console.error('Compare mode error:', error);
+                if (badge) badge.textContent = quarters.join(' vs ') + ` ${selectedYear}`;
+            }
+        }
+        
+        function showQuarterComparisonResults(results, quarters) {
+            // Remove old overlay if present
+            let overlay = document.getElementById('quarterCompareOverlay');
+            if (overlay) overlay.remove();
+            
+            // Parse data from each quarter
+            const qData = {};
+            results.forEach(r => {
+                const kpis = r.data && r.data.kpis ? r.data.kpis : { total_members: 0, total_claims: 0, total_cost_usd: 0 };
+                const costPerMember = kpis.total_members > 0 ? kpis.total_cost_usd / kpis.total_members : 0;
+                qData[r.quarter] = {
+                    members: kpis.total_members || 0,
+                    claims: kpis.total_claims || 0,
+                    cost: kpis.total_cost_usd || 0,
+                    costPerMember: costPerMember,
+                    utilization: kpis.total_members > 0 ? (kpis.total_claims / kpis.total_members * 100) : 0,
+                    enrollments: kpis.new_enrollments || kpis.enrollments || 0,
+                    cancellations: kpis.cancellations || 0
+                };
+            });
+            
+            // Also update main KPI cards with the FIRST selected quarter
+            const first = qData[quarters[0]];
+            if (first) {
+                document.getElementById('kpiMembers').textContent = first.members.toLocaleString();
+                document.getElementById('kpiClaims').textContent = first.claims.toLocaleString();
+                document.getElementById('kpiApproved').textContent = '$' + first.cost.toLocaleString();
+                document.getElementById('kpiCost').textContent = '$' + first.costPerMember.toFixed(2);
+                document.getElementById('kpiUtilization').textContent = first.utilization.toFixed(1) + '%';
+            }
+            
+            // Store first quarter data for charts
+            window.currentClientKPIs = results[0]?.data || null;
+            loadDataForSelectedQuarters();
+            
+            // Build comparison overlay panel
+            const colors = { Q1: '#4CAF50', Q2: '#2196F3', Q3: '#FF9800', Q4: '#E91E63' };
+            const metrics = [
+                { key: 'members', label: '👥 Members', format: v => v.toLocaleString() },
+                { key: 'claims', label: '🏥 Claims', format: v => v.toLocaleString() },
+                { key: 'cost', label: '💰 Total Cost', format: v => '$' + v.toLocaleString() },
+                { key: 'costPerMember', label: '💲 Cost/Member', format: v => '$' + v.toFixed(2) },
+                { key: 'utilization', label: '📊 Utilization', format: v => v.toFixed(1) + '%' },
+                { key: 'enrollments', label: '📈 New Enrollments', format: v => '+' + v.toLocaleString() },
+                { key: 'cancellations', label: '📉 Cancellations', format: v => '-' + v.toLocaleString() }
+            ];
+            
+            // Find max for each metric (for bar widths)
+            const maxVals = {};
+            metrics.forEach(m => {
+                maxVals[m.key] = Math.max(...quarters.map(q => Math.abs(qData[q]?.[m.key] || 0)), 1);
+            });
+            
+            let html = `
+            <div id="quarterCompareOverlay" style="
+                background: linear-gradient(135deg, #0a1628, #132238);
+                border: 1px solid rgba(100,180,255,0.15);
+                border-radius: 16px;
+                padding: 1.5rem;
+                margin: 0 0 2rem 0;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            ">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+                    <h3 style="color:#fff; font-family:Montserrat,sans-serif; margin:0; font-size:1.1rem;">
+                        ⚖️ Quarter Comparison: ${quarters.join(' vs ')} ${selectedYear}
+                    </h3>
+                    <button onclick="document.getElementById('quarterCompareOverlay').remove()" style="
+                        background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+                        color:#fff; border-radius:8px; padding:0.4rem 1rem; cursor:pointer; font-size:0.85rem;
+                    ">✕ Close</button>
+                </div>
+                
+                <div style="display:grid; gap:1rem;">`;
+            
+            metrics.forEach(metric => {
+                html += `<div style="background:rgba(255,255,255,0.03); border-radius:10px; padding:1rem;">
+                    <div style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:0.6rem; font-weight:600;">${metric.label}</div>
+                    <div style="display:grid; gap:0.4rem;">`;
+                
+                quarters.forEach(q => {
+                    const val = qData[q]?.[metric.key] || 0;
+                    const pct = (Math.abs(val) / maxVals[metric.key] * 100).toFixed(0);
+                    const color = colors[q] || '#888';
+                    
+                    html += `<div style="display:grid; grid-template-columns:45px 1fr 100px; align-items:center; gap:0.5rem;">
+                        <span style="color:${color}; font-weight:700; font-size:0.9rem;">${q}</span>
+                        <div style="background:rgba(255,255,255,0.05); border-radius:6px; height:28px; overflow:hidden;">
+                            <div style="background:${color}; height:100%; width:${pct}%; border-radius:6px; transition:width 0.8s ease; min-width:2px;"></div>
+                        </div>
+                        <span style="color:#fff; font-weight:600; font-size:0.9rem; text-align:right;">${metric.format(val)}</span>
+                    </div>`;
+                });
+                
+                // Show % change between first and last quarter
+                if (quarters.length >= 2) {
+                    const firstVal = qData[quarters[0]]?.[metric.key] || 0;
+                    const lastVal = qData[quarters[quarters.length - 1]]?.[metric.key] || 0;
+                    if (firstVal > 0) {
+                        const change = ((lastVal - firstVal) / firstVal * 100).toFixed(1);
+                        const changeColor = parseFloat(change) >= 0 ? '#4CAF50' : '#f44336';
+                        const arrow = parseFloat(change) >= 0 ? '↑' : '↓';
+                        html += `<div style="text-align:right; margin-top:0.3rem;">
+                            <span style="color:${changeColor}; font-size:0.8rem; font-weight:600;">
+                                ${arrow} ${Math.abs(parseFloat(change))}% ${quarters[0]}→${quarters[quarters.length-1]}
+                            </span>
+                        </div>`;
+                    }
+                }
+                
+                html += `</div></div>`;
+            });
+            
+            html += `</div></div>`;
+            
+            // Insert after quarter selector bar
+            const quarterBar = document.querySelector('.quarter-selector-bar');
+            if (quarterBar) {
+                quarterBar.insertAdjacentHTML('afterend', html);
+            }
         }
         
         function updateQuarterUI() {
@@ -11253,9 +11451,16 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             try {
                 console.log(`📊 Loading GROUP KPIs for ${groupName}: ${clientIds.length} entities`);
                 
-                // Make parallel API calls for all clients in the group
+                // Make parallel API calls for all clients in the group (with date filter)
+                const q = selectedQuarters[0] || 'Q1';
+                const dateRange = getQuarterDateRange(q, selectedYear);
+                
                 const promises = clientIds.map(id => {
                     const params = new URLSearchParams({ action: 'getClientKPISummary', clientId: id });
+                    params.append('startDate', dateRange.start);
+                    params.append('endDate', dateRange.end);
+                    params.append('quarter', q);
+                    params.append('year', selectedYear.toString());
                     return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
                 });
                 
@@ -11352,15 +11557,36 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         async function loadMainDashboardKPIs(clientId) {
             try {
-                console.log('📊 Loading Main Dashboard KPIs for:', clientId || 'ALL');
+                // ═══════════════════════════════════════════════════════════════
+                // v3.35: Pass quarter date range to API for filtering
+                // ═══════════════════════════════════════════════════════════════
+                const q = selectedQuarters[0] || 'Q1';
+                const dateRange = getQuarterDateRange(q, selectedYear);
                 
-                // Build API URL with clientId
+                console.log(`📊 Loading KPIs for: ${clientId || 'ALL'} | ${q} ${selectedYear} (${dateRange.start} → ${dateRange.end})`);
+                
+                // Build API URL with clientId AND date range
                 const params = new URLSearchParams({ action: 'getClientKPISummary' });
                 if (clientId && clientId !== 'all') {
                     params.append('clientId', clientId);
                 } else {
                     params.append('clientId', 'ALL');
                 }
+                
+                // Add date filter parameters
+                params.append('startDate', dateRange.start);
+                params.append('endDate', dateRange.end);
+                params.append('quarter', q);
+                params.append('year', selectedYear.toString());
+                
+                // Store current date filter for other functions
+                window.currentDateFilter = {
+                    quarter: q,
+                    year: selectedYear,
+                    startDate: dateRange.start,
+                    endDate: dateRange.end,
+                    label: dateRange.label
+                };
                 
                 const response = await fetch(`${API_URL}?${params.toString()}`);
                 const data = await response.json();
