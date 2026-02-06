@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-06 v3.46 - Quarter Comparison: Fixed GROUP selection (aggregates data from all group entities) -->
+<!-- VERSION: 2026-02-05 v3.38 - Fix Period Comparison, YoY, Member Movement, Plan Performance -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -52,7 +52,7 @@
         }
         
         /* ═══════════════════════════════════════════════════════════════════════════
-           IMPRESSIVE WELCOME LOADING SCREEN
+           VISION NEXT2ME WELCOME SCREEN
            ═══════════════════════════════════════════════════════════════════════════ */
         .welcome-loading-screen {
             position: fixed;
@@ -65,6 +65,7 @@
             justify-content: center;
             z-index: 100000;
             overflow: hidden;
+            cursor: pointer;
         }
         .welcome-loading-screen.hidden {
             opacity: 0;
@@ -88,221 +89,306 @@
             animation: twinkle 2s infinite;
         }
         @keyframes twinkle {
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
             0%, 100% { opacity: 0.3; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.2); }
         }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
-        /* Animated Compass/North Star */
-        .polaris-star {
-            position: absolute;
-            top: 15%;
-            width: 120px;
-            height: 120px;
-            animation: pulseStar 2s ease-in-out infinite, rotateStar 20s linear infinite;
+        /* Main Horizontal Layout */
+        .main-content-intro {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            z-index: 10;
+            padding: 0 2rem;
+            margin-top: -30px;
         }
-        .polaris-star::before {
-            content: '✦';
-            font-size: 100px;
+        
+        /* LEFT - Welcome Polaris Team */
+        .left-section-intro {
+            flex: 1;
+            text-align: center;
+            padding-right: 2rem;
+            animation: fadeInLeft 1s ease forwards;
+            opacity: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* Golden Pulsing Star above POLARIS */
+        .polaris-star-intro {
+            font-size: 50px;
             color: var(--polaris-gold);
-            text-shadow: 0 0 30px var(--polaris-gold), 0 0 60px var(--polaris-gold), 0 0 90px rgba(212,175,55,0.5);
-            filter: drop-shadow(0 0 20px var(--polaris-gold));
+            text-shadow: 0 0 20px var(--polaris-gold), 0 0 40px var(--polaris-gold), 0 0 60px rgba(212,175,55,0.5);
+            filter: drop-shadow(0 0 15px var(--polaris-gold));
+            animation: pulseStar 2s ease-in-out infinite;
+            display: block;
+            text-align: center;
+            margin-bottom: 0.3rem;
         }
         @keyframes pulseStar {
             0%, 100% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.1); filter: brightness(1.3); }
-        }
-        @keyframes rotateStar {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            50% { transform: scale(1.15); filter: brightness(1.4); }
         }
         
-        /* 3D Welcome Text */
-        .welcome-content {
-            text-align: center;
-            z-index: 10;
-            perspective: 1000px;
-        }
-        
-        .welcome-title {
+        .welcome-text-intro {
             font-family: 'Montserrat', sans-serif;
             font-size: 1.5rem;
             font-weight: 300;
-            color: rgba(255,255,255,0.7);
+            color: rgba(255,255,255,0.6);
             letter-spacing: 8px;
             text-transform: uppercase;
-            margin-bottom: 1rem;
-            animation: fadeInDown 1s ease forwards;
-            opacity: 0;
+            line-height: 1.6;
+            text-align: center;
         }
         
-        .welcome-main-text {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 4.5rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #ffffff 0%, #d4af37 50%, #ffffff 100%);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: none;
-            animation: fadeInUp 1s 0.3s ease forwards, shimmer 3s linear infinite;
-            opacity: 0;
-            transform-style: preserve-3d;
-            letter-spacing: 2px;
-        }
-        
-        .welcome-polaris {
+        .welcome-text-intro .polaris-word-intro {
             display: block;
-            font-size: 6rem;
+            font-size: 5rem;
             font-weight: 900;
             background: linear-gradient(135deg, #d4af37 0%, #f5d76e 30%, #d4af37 50%, #f5d76e 70%, #d4af37 100%);
             background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: fadeIn3D 1.2s 0.5s ease forwards, shimmer 2s linear infinite;
-            opacity: 0;
-            text-shadow: 0 10px 30px rgba(212,175,55,0.3);
-            filter: drop-shadow(0 5px 15px rgba(212,175,55,0.4));
+            animation: shimmer 2s linear infinite;
+            letter-spacing: 6px;
+            filter: drop-shadow(0 5px 20px rgba(212,175,55,0.5));
         }
         
-        .welcome-team {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 2.5rem;
+        .welcome-text-intro .team-word-intro {
+            display: block;
+            font-size: 2rem;
             font-weight: 300;
             color: white;
             letter-spacing: 15px;
-            text-transform: uppercase;
-            margin-top: 0.5rem;
-            animation: fadeInUp 1s 0.7s ease forwards;
-            opacity: 0;
         }
         
-        .welcome-tagline {
-            font-size: 1.2rem;
+        .welcome-tagline-intro {
+            font-size: 1rem;
             color: var(--polaris-gold);
-            margin-top: 2rem;
             font-weight: 500;
             letter-spacing: 3px;
+            margin-top: 1rem;
             animation: fadeInUp 1s 1s ease forwards;
             opacity: 0;
         }
         
-        /* Sailing Ship Loading */
-        .welcome-ship-container {
-            margin-top: 3rem;
-            width: 80%;
-            max-width: 800px;
-            position: relative;
-            animation: fadeInUp 1s 1.2s ease forwards;
+        /* CENTER - "to" + Ship */
+        .center-section-intro {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeInUp 1s 0.3s ease forwards;
             opacity: 0;
+            margin-left: 80px;
+            margin-right: -40px;
         }
-        .welcome-ship-track {
+        
+        .to-text-intro {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2rem;
+            font-weight: 300;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 1rem;
+        }
+        
+        /* Ship Container - ANIMATED MOVING */
+        .ship-container-intro {
+            width: 350px;
+            position: relative;
+        }
+        .ship-track-intro {
             position: relative;
             height: 50px;
-            display: flex;
-            align-items: center;
             overflow: visible;
         }
-        .welcome-ship {
+        .ship-intro {
             position: absolute;
             left: -10%;
-            animation: sailShipSlow 20s linear infinite, shipBob 2s ease-in-out infinite;
+            animation: sailToVision 8s linear infinite, shipBob 2s ease-in-out infinite;
             filter: drop-shadow(0 8px 20px rgba(212,175,55,0.6));
-            z-index: 10;
         }
-        .welcome-ship svg {
-            width: 70px;
-            height: 45px;
-        }
-        .welcome-ship-wake {
+        .ship-intro svg { width: 70px; height: 45px; }
+        .ship-wake-intro {
             position: absolute;
-            left: -10%;
-            bottom: 5px;
+            left: -20%;
+            bottom: 8px;
             height: 3px;
+            width: 60px;
             background: linear-gradient(90deg, transparent, rgba(212,175,55,0.4), rgba(212,175,55,0.1));
             border-radius: 3px;
-            animation: wakeTrailSlow 20s linear infinite;
-            width: 20%;
+            animation: wakeToVision 8s linear infinite;
         }
-        .welcome-ship-sea {
+        .ship-sea-intro {
             position: relative;
             width: 100%;
             height: 30px;
-            overflow: visible;
         }
-        .welcome-ship-sea svg {
-            width: 100%;
-            height: 100%;
-        }
-        .ship-wave {
-            animation: waveMove 3s linear infinite;
-        }
-        .ship-wave.wave2 {
-            animation: waveMove 4s linear infinite reverse;
-        }
+        .ship-sea-intro svg { width: 100%; height: 100%; }
+        .ship-wave { animation: waveMove 3s linear infinite; }
+        .ship-wave.wave2 { animation: waveMove 4s linear infinite reverse; }
         
-        @keyframes sailShipSlow {
-            0% { left: -12%; }
-            100% { left: 100%; }
+        @keyframes sailToVision {
+            0% { left: -10%; }
+            100% { left: 90%; }
+        }
+        @keyframes wakeToVision {
+            0% { left: -20%; opacity: 0; }
+            5% { opacity: 0.8; }
+            95% { opacity: 0.8; }
+            100% { left: 80%; opacity: 0; }
         }
         @keyframes shipBob {
             0%, 100% { transform: translateY(0) rotate(-1deg); }
             50% { transform: translateY(-4px) rotate(1deg); }
-        }
-        @keyframes wakeTrailSlow {
-            0% { left: -30%; opacity: 0; }
-            3% { opacity: 0.8; }
-            97% { opacity: 0.8; }
-            100% { left: 80%; opacity: 0; }
         }
         @keyframes waveMove {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50px); }
         }
         
-        /* Old loading bar - hidden */
-        .welcome-loader {
-            display: none;
-        }
-        .welcome-loader-bar {
-            display: none;
-        }
-        
-        .welcome-loading-text {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            color: rgba(255,255,255,0.5);
-            animation: fadeInUp 1s 1.4s ease forwards;
+        /* RIGHT - Logo with Vision */
+        .right-section-intro {
+            flex: 1;
+            padding-left: 80px;
+            animation: fadeInRight 1s 0.6s ease forwards;
             opacity: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding-top: 20px;
         }
         
-        /* Fullscreen Button on Welcome */
-        .welcome-fullscreen-btn {
-            margin-top: 2rem;
-            padding: 1rem 2.5rem;
-            background: linear-gradient(135deg, var(--polaris-gold), #f5d76e);
-            color: var(--polaris-navy);
-            border: none;
-            border-radius: 50px;
+        .logo-box-intro {
+            width: 160px;
+            height: 160px;
+            background: linear-gradient(135deg, #00a0d2 0%, #00c4e8 50%, #00a0d2 100%);
+            border-radius: 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(0, 160, 210, 0.5), 0 0 60px rgba(0, 160, 210, 0.3);
+            animation: pulseLogoGlow 2s ease-in-out infinite;
+        }
+        
+        .vision-text-intro {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+        }
+        
+        .next2me-text-intro {
+            display: flex;
+            align-items: baseline;
+        }
+        .next2me-text-intro .next {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 300;
+            color: white;
+        }
+        .next2me-text-intro .two {
             font-family: 'Montserrat', sans-serif;
             font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            position: relative;
+            top: -8px;
+        }
+        .next2me-text-intro .me {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.5rem;
             font-weight: 700;
-            cursor: pointer;
-            animation: fadeInUp 1s 2s ease forwards, pulseGlow 2s ease-in-out infinite;
+            color: white;
+        }
+        
+        @keyframes pulseLogoGlow {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 30px rgba(0, 160, 210, 0.5), 0 0 60px rgba(0, 160, 210, 0.3);
+            }
+            50% { 
+                transform: scale(1.03);
+                box-shadow: 0 0 40px rgba(0, 160, 210, 0.6), 0 0 80px rgba(0, 160, 210, 0.4);
+            }
+        }
+        
+        /* Bottom Section */
+        .bottom-section-intro {
+            position: absolute;
+            bottom: 10%;
+            text-align: center;
+            z-index: 10;
+        }
+        
+        .click-hint-intro {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.4);
+            margin-top: 1rem;
+            animation: fadeInUp 1s 2s ease forwards, pulseHint 2s ease-in-out infinite;
             opacity: 0;
-            transition: all 0.3s;
-            box-shadow: 0 10px 40px rgba(212,175,55,0.4);
         }
-        .welcome-fullscreen-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 15px 50px rgba(212,175,55,0.6);
+        @keyframes pulseHint {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.7; }
         }
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 10px 40px rgba(212,175,55,0.4); }
-            50% { box-shadow: 0 10px 60px rgba(212,175,55,0.7); }
+        
+        /* Waves at Bottom */
+        .welcome-waves {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .welcome-waves svg { width: 100%; height: 100%; }
+        
+        /* Animations */
+        @keyframes fadeInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn3D {
+            from { opacity: 0; transform: translateZ(-100px) rotateX(20deg); }
+            to { opacity: 1; transform: translateZ(0) rotateX(0); }
+        }
+        @keyframes shimmer {
+            to { background-position: 200% center; }
+        }
+        
+        /* Responsive for intro */
+        @media (max-width: 1000px) {
+            .main-content-intro {
+                flex-direction: column;
+                gap: 2rem;
+            }
+            .left-section-intro { text-align: center; padding-right: 0; }
+            .center-section-intro { margin-left: 0; margin-right: 0; }
+            .right-section-intro { padding-left: 0; padding-top: 0; justify-content: center; }
+            .welcome-text-intro .polaris-word-intro { font-size: 3rem; }
         }
         
         /* Fullscreen Toggle Button */
@@ -7083,85 +7169,84 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     <!-- ═══════════════════════════════════════════════════════════════════════════
          IMPRESSIVE WELCOME LOADING SCREEN
          ═══════════════════════════════════════════════════════════════════════════ -->
-    <div class="welcome-loading-screen" id="welcomeLoadingScreen">
+    <div class="welcome-loading-screen" id="welcomeLoadingScreen" onclick="enterDashboard()">
         <!-- Animated Stars Background -->
         <div class="stars-container" id="starsContainer"></div>
         
         <!-- Floating Particles -->
         <div class="particles-container" id="particlesContainer"></div>
         
-        <!-- Polaris North Star -->
-        <div class="polaris-star-welcome">✦</div>
-        
-        <!-- Main Welcome Content -->
-        <div class="welcome-content">
-            <div class="welcome-title">WELCOME TO THE NEW</div>
-            <div class="welcome-main-text">
-                <span class="welcome-polaris">POLARIS</span>
+        <!-- Main Horizontal Layout -->
+        <div class="main-content-intro">
+            <!-- LEFT - Welcome Polaris Team -->
+            <div class="left-section-intro">
+                <div class="polaris-star-intro">✦</div>
+                <div class="welcome-text-intro">
+                    <span>WELCOME</span>
+                    <span class="polaris-word-intro">POLARIS</span>
+                    <span class="team-word-intro">TEAM</span>
+                </div>
+                <div class="welcome-tagline-intro">Fast • Fair • Flexible</div>
             </div>
-            <div class="welcome-team">TEAM</div>
-            <div class="welcome-tagline">Fast • Fair • Flexible</div>
             
-            <!-- Loading Progress - Sailing Ship -->
-            <div class="welcome-ship-container">
-                <div class="welcome-ship-track">
-                    <div class="welcome-ship-wake"></div>
-                    <div class="welcome-ship" id="welcomeShip">
-                        <svg width="70" height="45" viewBox="0 0 70 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Ship Hull - Bow (front/pointy) on RIGHT -->
-                            <path d="M2 32 L8 38 L52 38 L68 32 L52 32 L48 25 L12 25 L8 32 Z" fill="#1e3a5f" stroke="#d4af37" stroke-width="1.5"/>
-                            <!-- Bow Point -->
-                            <path d="M52 38 L68 32 L52 32" fill="#2d5a87" stroke="#d4af37" stroke-width="1"/>
-                            <!-- Ship Deck -->
-                            <rect x="15" y="18" width="30" height="7" rx="1" fill="#2d5a87" stroke="#d4af37" stroke-width="1"/>
-                            <!-- Bridge/Cabin - positioned toward the back (left) -->
-                            <rect x="12" y="8" width="18" height="10" rx="1" fill="#1e3a5f" stroke="#d4af37" stroke-width="1"/>
-                            <!-- Windows -->
-                            <rect x="14" y="10" width="4" height="4" rx="0.5" fill="#f5d76e"/>
-                            <rect x="20" y="10" width="4" height="4" rx="0.5" fill="#f5d76e"/>
-                            <rect x="26" y="10" width="4" height="4" rx="0.5" fill="#f5d76e"/>
-                            <!-- Funnel with smoke - at the back -->
-                            <rect x="17" y="2" width="6" height="6" fill="#c0392b"/>
-                            <rect x="16" y="0" width="8" height="3" fill="#922b21"/>
-                            <!-- Smoke puffs going back/left -->
-                            <circle cx="15" cy="0" r="2.5" fill="rgba(255,255,255,0.4)">
-                                <animate attributeName="cx" values="15;8;2" dur="2s" repeatCount="indefinite"/>
-                                <animate attributeName="opacity" values="0.5;0.3;0" dur="2s" repeatCount="indefinite"/>
-                            </circle>
-                            <circle cx="12" cy="-2" r="2" fill="rgba(255,255,255,0.3)">
-                                <animate attributeName="cx" values="12;5;-2" dur="2.5s" repeatCount="indefinite"/>
-                                <animate attributeName="opacity" values="0.4;0.2;0" dur="2.5s" repeatCount="indefinite"/>
-                            </circle>
-                            <!-- Mast -->
-                            <rect x="38" y="5" width="2" height="13" fill="#d4af37"/>
-                            <!-- Flag pointing LEFT (backwards/trailing) -->
-                            <path d="M38 5 L28 8 L38 11" fill="#c0392b"/>
+            <!-- CENTER - "to" + Ship -->
+            <div class="center-section-intro">
+                <div class="to-text-intro">to</div>
+                <div class="ship-container-intro">
+                    <div class="ship-track-intro">
+                        <div class="ship-wake-intro"></div>
+                        <div class="ship-intro" id="welcomeShip">
+                            <svg width="70" height="45" viewBox="0 0 70 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M2 32 L8 38 L52 38 L68 32 L52 32 L48 25 L12 25 L8 32 Z" fill="#1e3a5f" stroke="#d4af37" stroke-width="1.5"/>
+                                <path d="M52 38 L68 32 L52 32" fill="#2d5a87" stroke="#d4af37" stroke-width="1"/>
+                                <rect x="15" y="18" width="30" height="7" rx="1" fill="#2d5a87" stroke="#d4af37" stroke-width="1"/>
+                                <rect x="12" y="8" width="18" height="10" rx="1" fill="#1e3a5f" stroke="#d4af37" stroke-width="1"/>
+                                <rect x="14" y="10" width="4" height="4" rx="0.5" fill="#f5d76e"/>
+                                <rect x="20" y="10" width="4" height="4" rx="0.5" fill="#f5d76e"/>
+                                <rect x="26" y="10" width="4" height="4" rx="0.5" fill="#f5d76e"/>
+                                <rect x="17" y="2" width="6" height="6" fill="#c0392b"/>
+                                <rect x="16" y="0" width="8" height="3" fill="#922b21"/>
+                                <circle cx="15" cy="0" r="2.5" fill="rgba(255,255,255,0.4)">
+                                    <animate attributeName="cx" values="15;8;2" dur="2s" repeatCount="indefinite"/>
+                                    <animate attributeName="opacity" values="0.5;0.3;0" dur="2s" repeatCount="indefinite"/>
+                                </circle>
+                                <rect x="38" y="5" width="2" height="13" fill="#d4af37"/>
+                                <path d="M38 5 L28 8 L38 11" fill="#c0392b"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ship-sea-intro">
+                        <svg viewBox="0 0 300 30" preserveAspectRatio="none">
+                            <path class="ship-wave" d="M0,15 Q20,5 40,15 T80,15 T120,15 T160,15 T200,15 T240,15 T280,15 T320,15" stroke="rgba(212,175,55,0.4)" stroke-width="2" fill="none"/>
+                            <path class="ship-wave wave2" d="M0,20 Q20,10 40,20 T80,20 T120,20 T160,20 T200,20 T240,20 T280,20 T320,20" stroke="rgba(212,175,55,0.2)" stroke-width="1.5" fill="none"/>
                         </svg>
                     </div>
                 </div>
-                <div class="welcome-ship-sea">
-                    <svg viewBox="0 0 400 30" preserveAspectRatio="none">
-                        <path class="ship-wave" d="M0,15 Q25,5 50,15 T100,15 T150,15 T200,15 T250,15 T300,15 T350,15 T400,15" stroke="rgba(212,175,55,0.4)" stroke-width="2" fill="none"/>
-                        <path class="ship-wave wave2" d="M0,20 Q25,10 50,20 T100,20 T150,20 T200,20 T250,20 T300,20 T350,20 T400,20" stroke="rgba(212,175,55,0.2)" stroke-width="1.5" fill="none"/>
-                    </svg>
+            </div>
+            
+            <!-- RIGHT - Logo with Vision Next2Me -->
+            <div class="right-section-intro">
+                <div class="logo-box-intro">
+                    <div class="vision-text-intro">Vision</div>
+                    <div class="next2me-text-intro">
+                        <span class="next">Next</span>
+                        <span class="two">2</span>
+                        <span class="me">Me</span>
+                    </div>
                 </div>
             </div>
-            <div class="welcome-loading-text" id="welcomeLoadingText">Initializing system...</div>
-            
-            <!-- Enter Fullscreen Button -->
-            <button class="welcome-fullscreen-btn" id="welcomeFullscreenBtn" onclick="enterFullscreenAndContinue()">
-                ⛶ Click to Enter Full Screen
-            </button>
+        </div>
+        
+        <!-- Bottom - Click hint -->
+        <div class="bottom-section-intro">
+            <div class="click-hint-intro">Click anywhere to enter</div>
         </div>
         
         <!-- Animated Waves at Bottom -->
         <div class="welcome-waves">
             <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
-                <path fill="rgba(212,175,55,0.1)" d="M0,192L48,176C96,160,192,128,288,133.3C384,139,480,181,576,186.7C672,192,768,160,864,165.3C960,171,1056,213,1152,218.7C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
-                    <animate attributeName="d" dur="10s" repeatCount="indefinite" values="M0,192L48,176C96,160,192,128,288,133.3C384,139,480,181,576,186.7C672,192,768,160,864,165.3C960,171,1056,213,1152,218.7C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z;M0,160L48,181.3C96,203,192,245,288,250.7C384,256,480,224,576,213.3C672,203,768,213,864,202.7C960,192,1056,160,1152,165.3C1248,171,1344,213,1392,234.7L1440,256L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z;M0,192L48,176C96,160,192,128,288,133.3C384,139,480,181,576,186.7C672,192,768,160,864,165.3C960,171,1056,213,1152,218.7C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"/>
-                </path>
-                <path fill="rgba(212,175,55,0.05)" d="M0,256L48,240C96,224,192,192,288,181.3C384,171,480,181,576,197.3C672,213,768,235,864,229.3C960,224,1056,192,1152,181.3C1248,171,1344,181,1392,186.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
-                    <animate attributeName="d" dur="8s" repeatCount="indefinite" values="M0,256L48,240C96,224,192,192,288,181.3C384,171,480,181,576,197.3C672,213,768,235,864,229.3C960,224,1056,192,1152,181.3C1248,171,1344,181,1392,186.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z;M0,224L48,213.3C96,203,192,181,288,186.7C384,192,480,224,576,234.7C672,245,768,235,864,213.3C960,192,1056,160,1152,165.3C1248,171,1344,213,1392,234.7L1440,256L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z;M0,256L48,240C96,224,192,192,288,181.3C384,171,480,181,576,197.3C672,213,768,235,864,229.3C960,224,1056,192,1152,181.3C1248,171,1344,181,1392,186.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"/>
+                <path fill="rgba(212,175,55,0.1)" d="M0,192L48,176C96,160,192,128,288,133.3C384,139,480,181,576,186.7C672,192,768,160,864,165.3C960,171,1056,213,1152,218.7C1248,224,1344,192,1392,176L1440,160L1440,320L0,320Z">
+                    <animate attributeName="d" dur="10s" repeatCount="indefinite" values="M0,192L48,176C96,160,192,128,288,133.3C384,139,480,181,576,186.7C672,192,768,160,864,165.3C960,171,1056,213,1152,218.7C1248,224,1344,192,1392,176L1440,160L1440,320L0,320Z; M0,160L48,181.3C96,203,192,245,288,240C384,235,480,181,576,170.7C672,160,768,192,864,197.3C960,203,1056,181,1152,165.3C1248,149,1344,139,1392,133.3L1440,128L1440,320L0,320Z; M0,192L48,176C96,160,192,128,288,133.3C384,139,480,181,576,186.7C672,192,768,160,864,165.3C960,171,1056,213,1152,218.7C1248,224,1344,192,1392,176L1440,160L1440,320L0,320Z"/>
                 </path>
             </svg>
         </div>
@@ -10352,7 +10437,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay, [id$="Modal"], [id$="Center"]').forEach(m => { if (m.style.display !== 'none' && m.style.display !== '') m.style.display = 'none'; }); } });
         window.addEventListener('offline', () => alert('⚠️ No internet connection! Some features may not work.')); window.addEventListener('online', () => alert('✅ Connection restored!'));
         document.addEventListener('click', e => { const btn = e.target.closest('button'); if (btn && !btn.dataset.noGuard) { if (btn.dataset.busy) { e.stopImmediatePropagation(); e.preventDefault(); return; } btn.dataset.busy = '1'; setTimeout(() => delete btn.dataset.busy, 2000); } }, true);
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwS68p4nlIO0sxMW1dCgStW9clPvRuTyeCelcnHEVceTSNogP6EmMrMeyA7DhpR2y2i/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxOOCdRP23NzTywKXiS-VKzsknzhLYt2s1FUxQ-JAYNDdzeyM9-FNVsNYTcFGI4OefV/exec";
         const API_URL = SCRIPT_URL;
         const EMAIL_TEMPLATES_FOLDER_ID = '1cj4aLgolPRwJvjRrkiNAUhQ7ZD_HRfE2';
         
@@ -10905,132 +10990,61 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (badge) badge.textContent = '⏳ Loading...';
             
             try {
-                // v3.45: Handle GROUP selection - collect all client IDs in group
-                let clientIdsToQuery = [];
-                let isGroupMode = false;
-                
-                if (clientId && clientId.startsWith('GROUP:')) {
-                    isGroupMode = true;
-                    const parentId = clientId.replace('GROUP:', '');
-                    const allClients = window.cachedClientsData || [];
-                    
-                    // Parent + all subsidiaries
-                    clientIdsToQuery.push(parentId);
-                    allClients.forEach(c => {
-                        if (c.parent_client_id === parentId) {
-                            clientIdsToQuery.push(c.client_id);
-                        }
-                    });
-                    console.log(`📊 GROUP mode: ${clientIdsToQuery.length} clients in group`);
-                } else if (clientId && clientId !== 'all') {
-                    clientIdsToQuery = [clientId];
-                }
-                
                 // Load data for each selected quarter
-                const promises = quarters.map(async (q) => {
+                // In cumulative mode: each quarter shows YTD (Q1 to that quarter)
+                // In single mode: each quarter shows only that quarter's data
+                const promises = quarters.map(q => {
                     let startDate, endDate;
                     
                     if (cumulativeMode) {
+                        // Cumulative: Q1 to this quarter
                         const q1Range = getQuarterDateRange('Q1', selectedYear);
                         const qRange = getQuarterDateRange(q, selectedYear);
-                        startDate = q1Range.start;
+                        startDate = q1Range.start; // Always 01/01
                         endDate = qRange.end;
                     } else {
+                        // Single: only this quarter
                         const qRange = getQuarterDateRange(q, selectedYear);
                         startDate = qRange.start;
                         endDate = qRange.end;
                     }
                     
-                    if (isGroupMode && clientIdsToQuery.length > 0) {
-                        // GROUP: Load each client and aggregate
-                        const clientPromises = clientIdsToQuery.map(cId => {
-                            const params = new URLSearchParams({ 
-                                action: 'getClientKPISummary',
-                                clientId: cId,
-                                startDate: startDate,
-                                endDate: endDate,
-                                quarter: q,
-                                year: selectedYear.toString()
-                            });
-                            return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
-                        });
-                        
-                        const clientResults = await Promise.all(clientPromises);
-                        
-                        // Aggregate results
-                        const aggregated = { total_members: 0, total_claims: 0, total_cost_usd: 0 };
-                        clientResults.forEach(r => {
-                            if (r && r.kpis) {
-                                aggregated.total_members += (r.kpis.total_members || 0);
-                                aggregated.total_claims += (r.kpis.total_claims || 0);
-                                aggregated.total_cost_usd += (r.kpis.total_cost_usd || 0);
-                            }
-                        });
-                        
-                        return { quarter: q, data: { kpis: aggregated }, startDate, endDate };
+                    const params = new URLSearchParams({ action: 'getClientKPISummary' });
+                    if (clientId && clientId !== 'all') {
+                        params.append('clientId', clientId);
                     } else {
-                        // Single client or ALL
-                        const params = new URLSearchParams({ action: 'getClientKPISummary' });
-                        if (clientIdsToQuery.length === 1) {
-                            params.append('clientId', clientIdsToQuery[0]);
-                        } else {
-                            params.append('clientId', 'ALL');
-                        }
-                        params.append('startDate', startDate);
-                        params.append('endDate', endDate);
-                        params.append('quarter', q);
-                        params.append('year', selectedYear.toString());
-                        
-                        const data = await fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
-                        return { quarter: q, data, startDate, endDate };
+                        params.append('clientId', 'ALL');
                     }
+                    params.append('startDate', startDate);
+                    params.append('endDate', endDate);
+                    params.append('quarter', q);
+                    params.append('year', selectedYear.toString());
+                    
+                    return fetch(`${API_URL}?${params.toString()}`)
+                        .then(r => r.json())
+                        .then(data => ({ quarter: q, data, startDate, endDate }))
+                        .catch(e => ({ quarter: q, data: null, error: e }));
                 });
                 
                 // Also load aggregate for the KPI cards at the bottom
+                const aggregateParams = new URLSearchParams({ action: 'getClientKPISummary' });
+                if (clientId && clientId !== 'all') {
+                    aggregateParams.append('clientId', clientId);
+                } else {
+                    aggregateParams.append('clientId', 'ALL');
+                }
+                
+                // Aggregate always covers Q1 to latest selected quarter
                 const lastQ = quarters[quarters.length - 1];
                 const q1Range = getQuarterDateRange('Q1', selectedYear);
                 const lastRange = getQuarterDateRange(lastQ, selectedYear);
+                aggregateParams.append('startDate', q1Range.start);
+                aggregateParams.append('endDate', lastRange.end);
+                aggregateParams.append('year', selectedYear.toString());
                 
-                let aggregatePromise;
-                if (isGroupMode && clientIdsToQuery.length > 0) {
-                    // GROUP: aggregate across all clients
-                    const clientAggPromises = clientIdsToQuery.map(cId => {
-                        const params = new URLSearchParams({ 
-                            action: 'getClientKPISummary',
-                            clientId: cId,
-                            startDate: q1Range.start,
-                            endDate: lastRange.end,
-                            year: selectedYear.toString()
-                        });
-                        return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
-                    });
-                    
-                    aggregatePromise = Promise.all(clientAggPromises).then(results => {
-                        const agg = { kpis: { total_members: 0, total_claims: 0, total_cost_usd: 0 }};
-                        results.forEach(r => {
-                            if (r && r.kpis) {
-                                agg.kpis.total_members += (r.kpis.total_members || 0);
-                                agg.kpis.total_claims += (r.kpis.total_claims || 0);
-                                agg.kpis.total_cost_usd += (r.kpis.total_cost_usd || 0);
-                            }
-                        });
-                        return agg;
-                    });
-                } else {
-                    const aggregateParams = new URLSearchParams({ action: 'getClientKPISummary' });
-                    if (clientIdsToQuery.length === 1) {
-                        aggregateParams.append('clientId', clientIdsToQuery[0]);
-                    } else {
-                        aggregateParams.append('clientId', 'ALL');
-                    }
-                    aggregateParams.append('startDate', q1Range.start);
-                    aggregateParams.append('endDate', lastRange.end);
-                    aggregateParams.append('year', selectedYear.toString());
-                    
-                    aggregatePromise = fetch(`${API_URL}?${aggregateParams.toString()}`)
-                        .then(r => r.json())
-                        .catch(e => null);
-                }
+                const aggregatePromise = fetch(`${API_URL}?${aggregateParams.toString()}`)
+                    .then(r => r.json())
+                    .catch(e => null);
                 
                 const [results, aggregateData] = await Promise.all([
                     Promise.all(promises),
@@ -11907,7 +11921,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 console.log(`🏢 GROUP selected: ${groupName} (${activeGroupIds.length} active entities)`, activeGroupIds);
                 
-                // Load aggregated KPIs for the group (also updates CEO Financial)
+                // Load aggregated KPIs for the group
                 loadGroupKPIs(activeGroupIds, groupName);
                 return;
             }
@@ -12100,62 +12114,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 // Refresh charts
                 loadDataForSelectedQuarters();
-                
-                // v3.41: Update CEO Financial Dashboard with group data
-                try {
-                    const groupCurrent = {
-                        members: displayGroupMembers,
-                        claims: aggregated.total_claims,
-                        approved_usd: aggregated.total_cost_usd
-                    };
-                    updateCEOFinancialDashboard(groupCurrent, []);
-                    console.log(`💰 CEO Financial updated for group ${groupName}:`, groupCurrent);
-                } catch(e) {
-                    console.error('CEO Financial update error:', e);
-                }
-                
-                // v3.44: Update Top Clients table with ONLY clients from this group
-                try {
-                    const allClientsData = window.cachedClientsData || [];
-                    const groupTopClients = [];
-                    
-                    // Build top clients data from API results for each client in group
-                    clientIds.forEach((clientId, idx) => {
-                        const apiData = results[idx];
-                        const clientInfo = allClientsData.find(c => c.client_id === clientId);
-                        
-                        if (apiData && !apiData.error && clientInfo) {
-                            const members = apiData.kpis?.total_members || clientInfo.total_members || 0;
-                            const claimsCost = apiData.kpis?.total_cost_usd || 0;
-                            // Estimated revenue: Admin fee ($12/member/year) + Claims markup (35%)
-                            const estimatedRevenue = (members * 12) + (claimsCost * 1.35);
-                            
-                            groupTopClients.push({
-                                client_id: clientId,
-                                client_name: clientInfo.client_name || clientId,
-                                members: members,
-                                claims_cost: claimsCost,
-                                estimated_revenue: estimatedRevenue
-                            });
-                        }
-                    });
-                    
-                    // Sort by revenue descending and take top 5
-                    groupTopClients.sort((a, b) => (b.estimated_revenue || 0) - (a.estimated_revenue || 0));
-                    const top5 = groupTopClients.slice(0, 5);
-                    
-                    console.log(`🏆 Top clients for group ${groupName}:`, top5);
-                    
-                    // Update the table
-                    if (typeof updateTopClientsTableV324 === 'function') {
-                        updateTopClientsTableV324(top5);
-                    }
-                } catch(e) {
-                    console.error('Top Clients table update error:', e);
-                }
-                
-                // Hide loading overlay
-                showDashboardLoading(false);
                 
                 console.log(`✅ GROUP KPIs aggregated for ${groupName}:`, aggregated);
                 
@@ -13228,13 +13186,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const clientId = document.getElementById('emailClient').value;
             const container = document.getElementById('emailRecipients');
             
-            // Reset user credentials
-            window.clientUserCredentials = null;
-            
             if (!clientId) {
                 container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">Select a client to see available contacts</p>';
                 updateSendButton();
-                updatePreview(); // Refresh preview
                 return;
             }
             
@@ -13252,22 +13206,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     clientContacts = [];
                     container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">No contacts found. Use "Additional Email" below to add recipients.</p>';
                 }
-                
-                // Load user credentials for this client from Users sheet
-                try {
-                    const usersResponse = await fetch(`${API_URL}?action=getUsers`);
-                    const users = await usersResponse.json();
-                    if (Array.isArray(users)) {
-                        window.clientUserCredentials = users.find(u => u.client_id === clientId) || null;
-                        console.log('📋 User credentials for client:', window.clientUserCredentials);
-                    }
-                } catch (userErr) {
-                    console.log('Could not load user credentials:', userErr);
-                }
-                
-                // Update preview with new client data and credentials
-                updatePreview();
-                
             } catch (err) {
                 console.error('Error loading contacts:', err);
                 // Fallback - allow manual email entry
@@ -13379,7 +13317,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             
             if (template) {
                 selectedTemplate = template;
-                // Set subject - will be updated with placeholders in updatePreview()
                 document.getElementById('emailSubject').value = template.subject;
                 updatePreview();
             } else {
@@ -13393,7 +13330,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         function updatePreview() {
             const previewBox = document.getElementById('emailPreviewBox');
-            const subjectInput = document.getElementById('emailSubject');
             
             if (!selectedTemplate) {
                 previewBox.innerHTML = '<p style="color: #999; text-align: center;">Select a template to see preview</p>';
@@ -13402,49 +13338,25 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             
             // Get client data for placeholders
             const clientId = document.getElementById('emailClient').value;
-            const allClients = window.cachedClientsData || [];
-            const client = allClients.find(c => c.client_id === clientId);
-            
-            console.log('📧 updatePreview - clientId:', clientId, 'client found:', !!client, client?.client_name);
+            const client = dashboardData?.clients?.find(c => c.client_id === clientId);
             
             let preview = selectedTemplate.body_html || getDefaultTemplateBody(selectedTemplate.template_id);
-            let subject = selectedTemplate.subject || '';
             
-            // Replace placeholders in both body and subject
+            // Replace placeholders
             if (client) {
-                preview = preview.replace(/\{\{client_name\}\}/gi, client.client_name || '');
-                preview = preview.replace(/\{\{contact_name\}\}/gi, client.contact_name || 'Valued Customer');
-                subject = subject.replace(/\{\{client_name\}\}/gi, client.client_name || '');
-                subject = subject.replace(/\{\{contact_name\}\}/gi, client.contact_name || 'Valued Customer');
+                preview = preview.replace(/\{\{client_name\}\}/g, client.client_name || '');
+                preview = preview.replace(/\{\{contact_name\}\}/g, client.contact_name || 'Valued Customer');
             }
-            preview = preview.replace(/\{\{current_date\}\}/gi, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
-            preview = preview.replace(/\{\{year\}\}/gi, new Date().getFullYear());
-            subject = subject.replace(/\{\{current_date\}\}/gi, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
-            subject = subject.replace(/\{\{year\}\}/gi, new Date().getFullYear());
-            
-            // Portal URL - CORRECT URL
-            const portalUrl = 'https://apostolos-bizou.github.io/polaris-financial-portal/';
-            preview = preview.replace(/\{\{portal_url\}\}/gi, portalUrl);
-            
-            // Username and Password from clientUserCredentials (loaded when client selected)
-            if (window.clientUserCredentials) {
-                preview = preview.replace(/\{\{username\}\}/gi, window.clientUserCredentials.username || '[No username]');
-                preview = preview.replace(/\{\{password\}\}/gi, window.clientUserCredentials.password || '[No password]');
-            } else {
-                // Fallback - show warning if no user account exists
-                preview = preview.replace(/\{\{username\}\}/gi, '<span style="color: orange; background: #fff3cd; padding: 0 4px; border-radius: 3px;" title="No user account found for this client">[No user account]</span>');
-                preview = preview.replace(/\{\{password\}\}/gi, '<span style="color: orange; background: #fff3cd; padding: 0 4px; border-radius: 3px;" title="No user account found for this client">[No user account]</span>');
-            }
+            preview = preview.replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
+            preview = preview.replace(/\{\{year\}\}/g, new Date().getFullYear());
+            preview = preview.replace(/\{\{portal_url\}\}/g, 'https://polaris-portal.com');
             
             // Meeting template specific placeholders
             if (selectedTemplate.template_id === 'meeting_01') {
-                preview = preview.replace(/\{\{greeting\}\}/gi, getGreetingText());
-                preview = preview.replace(/\{\{attendees_text\}\}/gi, buildAttendeesText() || '[Select team members above]');
-                preview = preview.replace(/\{\{signatures\}\}/gi, buildSignaturesHTML() || '[Select team members above]');
+                preview = preview.replace(/\{\{greeting\}\}/g, getGreetingText());
+                preview = preview.replace(/\{\{attendees_text\}\}/g, buildAttendeesText() || '[Select team members above]');
+                preview = preview.replace(/\{\{signatures\}\}/g, buildSignaturesHTML() || '[Select team members above]');
             }
-            
-            // Update subject field with replaced placeholders
-            subjectInput.value = subject;
             
             // Show preview
             previewBox.innerHTML = preview || '<p>Template preview not available</p>';
@@ -13474,9 +13386,40 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 return;
             }
             
-            // v3.42: Always use local updatePreview() which has all placeholder replacements
-            // (portal_url, username, password, client_name, contact_name, etc.)
-            updatePreview();
+            if (!clientId) {
+                // Use local preview if no client selected
+                updatePreview();
+                return;
+            }
+            
+            previewBox.innerHTML = '<p style="color: #999; text-align: center;">Loading preview...</p>';
+            
+            try {
+                const response = await fetch(`${API_URL}?action=previewEmail&templateId=${templateId}&clientId=${clientId}`);
+                const data = await response.json();
+                
+                if (data.success && data.preview) {
+                    // Update subject field
+                    document.getElementById('emailSubject').value = data.preview.subject || '';
+                    
+                    // Show preview body using iframe for proper HTML rendering
+                    previewBox.innerHTML = '';
+                    const iframe = document.createElement('iframe');
+                    iframe.style.cssText = 'width:100%;height:450px;border:none;background:#fff;border-radius:8px;';
+                    previewBox.appendChild(iframe);
+                    
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    iframeDoc.open();
+                    iframeDoc.write(data.preview.body);
+                    iframeDoc.close();
+                } else {
+                    previewBox.innerHTML = `<div class="email-status error">❌ ${data.error || 'Template not found'}</div>`;
+                }
+            } catch (err) {
+                console.error('Preview error:', err);
+                // Fallback to local preview
+                updatePreview();
+            }
         }
         
         function updateSendButton() {
@@ -13496,13 +13439,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             btn.innerHTML = '📤 Sending...';
             statusDiv.innerHTML = '';
             
-            // Get the actual HTML body from the preview (with all placeholders replaced)
-            const previewBox = document.getElementById('emailPreviewBox');
-            const htmlBody = previewBox.innerHTML;
-            
-            // Encode body as base64 to avoid URL encoding issues
-            const encodedBody = btoa(unescape(encodeURIComponent(htmlBody)));
-            
             const emailData = {
                 template_id: document.getElementById('emailTemplate').value,
                 client_id: document.getElementById('emailClient').value,
@@ -13512,16 +13448,14 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             };
             
             try {
-                // Use GET request with body parameter
+                // Use GET request with URL parameters to avoid CORS issues
                 const params = new URLSearchParams({
                     action: 'sendEmail',
                     templateId: emailData.template_id,
                     clientId: emailData.client_id,
                     subject: emailData.subject,
                     recipients: emailData.recipients,
-                    sent_by: emailData.sent_by,
-                    body: encodedBody,
-                    bodyEncoding: 'base64'
+                    sent_by: emailData.sent_by
                 });
                 
                 // Add meeting specific data if meeting_01 template
@@ -19023,7 +18957,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             }
         }
         
-        // Show Welcome Loading Screen
+        // Show Welcome Loading Screen - STAYS until user clicks
         function showWelcomeScreen() {
             const welcomeScreen = document.getElementById('welcomeLoadingScreen');
             const loginModal = document.getElementById('loginModal');
@@ -19032,30 +18966,12 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (welcomeScreen) welcomeScreen.classList.remove('hidden');
             
             initWelcomeScreen();
-            
-            // Update loading text
-            const loadingTexts = [
-                'Initializing system...',
-                'Loading client data...',
-                'Preparing healthcare plans...',
-                'Connecting to services...',
-                'Almost ready...'
-            ];
-            
-            let textIndex = 0;
-            const loadingTextEl = document.getElementById('welcomeLoadingText');
-            const textInterval = setInterval(() => {
-                textIndex++;
-                if (textIndex < loadingTexts.length && loadingTextEl) {
-                    loadingTextEl.textContent = loadingTexts[textIndex];
-                }
-            }, 500);
-            
-            // Transition to Main Dashboard after loading
-            setTimeout(() => {
-                clearInterval(textInterval);
-                transitionToMainDashboard();
-            }, 500);
+            // Screen stays visible until user clicks anywhere
+        }
+        
+        // Enter Dashboard - triggered by clicking anywhere on intro screen
+        function enterDashboard() {
+            transitionToMainDashboard();
         }
         
         // Initialize Dashboard Stars Background
