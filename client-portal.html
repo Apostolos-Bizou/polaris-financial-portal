@@ -664,7 +664,7 @@
     
     <main class="main-content" id="mainContent" style="display:none">
         <div class="page-header">
-            <h1 class="page-title">📊 Financial Analytics Dashboard</h1>
+            <h1 class="page-title">📊 Healthcare Analytics Dashboard</h1>
             <p class="page-subtitle">
                 Real-time insights into your health plan performance
                 <span class="period-badge" id="periodBadge">Q3 2025</span>
@@ -684,18 +684,6 @@
                     <div class="kpi-label">Total Claims</div>
                     <div class="kpi-value" id="kpiClaims">-</div>
                     <div class="kpi-trend" id="kpiClaimsTrend">-</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon">💵</div>
-                    <div class="kpi-label">Approved Amount</div>
-                    <div class="kpi-value" id="kpiApproved">-</div>
-                    <div class="kpi-trend" id="kpiApprovedTrend">-</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon">📈</div>
-                    <div class="kpi-label">Cost per Member</div>
-                    <div class="kpi-value" id="kpiCost">-</div>
-                    <div class="kpi-trend" id="kpiCostTrend">-</div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-icon">🎯</div>
@@ -733,29 +721,6 @@
                         </div>
                     </div>
                     <div class="chart-container short"><canvas id="inOutPieChart"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3 class="chart-title">💰 Cost Comparison</h3>
-                    </div>
-                    <div class="stats-mini-grid" style="margin-bottom:1rem; grid-template-columns: repeat(3, 1fr);">
-                        <div class="stat-mini" style="border-left:4px solid #e74c3c">
-                            <div class="stat-mini-icon">💵</div>
-                            <div class="stat-mini-value" id="inpatientCost">-</div>
-                            <div class="stat-mini-label">Inpatient Cost</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #3498db">
-                            <div class="stat-mini-icon">💵</div>
-                            <div class="stat-mini-value" id="outpatientCost">-</div>
-                            <div class="stat-mini-label">Outpatient Cost</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #D4AF37">
-                            <div class="stat-mini-icon">💵</div>
-                            <div class="stat-mini-value" id="exGratiaCost">-</div>
-                            <div class="stat-mini-label">Ex Gratia Cost</div>
-                        </div>
-                    </div>
-                    <div class="chart-container short"><canvas id="inOutCostChart"></canvas></div>
                 </div>
                 <div class="chart-card wide">
                     <div class="chart-header">
@@ -862,18 +827,6 @@
                         <h3 class="chart-title">🏥 Category Distribution</h3>
                         <span class="chart-badge">Current Period</span>
                     </div>
-                    <div class="chart-container"><canvas id="categoryPieChart"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3 class="chart-title">💰 Cost by Category</h3>
-                    </div>
-                    <div class="chart-container"><canvas id="categoryCostChart"></canvas></div>
-                </div>
-                <div class="chart-card wide">
-                    <div class="chart-header">
-                        <h3 class="chart-title">📈 Category Trend</h3>
-                    </div>
                     <div class="stats-mini-grid" style="margin-bottom:1rem; grid-template-columns: repeat(6, 1fr);">
                         <div class="stat-mini" style="border-left:4px solid #4CAF50; padding:0.75rem;">
                             <div style="font-size:1.4rem;font-weight:700;color:#4CAF50" id="catMedical">-</div>
@@ -900,6 +853,12 @@
                             <div style="font-size:0.85rem;color:var(--text-muted)">Other</div>
                         </div>
                     </div>
+                    <div class="chart-container"><canvas id="categoryPieChart"></canvas></div>
+                </div>
+                <div class="chart-card wide">
+                    <div class="chart-header">
+                        <h3 class="chart-title">📈 Category Trend</h3>
+                    </div>
                     <div class="chart-container"><canvas id="categoryTrendChart"></canvas></div>
                 </div>
             </div>
@@ -925,43 +884,19 @@
                     </div>
                     <div class="chart-container"><canvas id="yoyClaimsChart"></canvas></div>
                 </div>
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3 class="chart-title">💰 Annual Cost Comparison</h3>
-                    </div>
-                    <div class="stats-mini-grid" style="margin-bottom:1rem;">
-                        <div class="stat-mini" style="border-left:4px solid #4CAF50;">
-                            <div style="font-size:0.9rem;color:var(--text-muted)">2025 YTD</div>
-                            <div style="font-size:1.6rem;font-weight:700;color:#4CAF50" id="yoyCost2025">-</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #7a8f7a;">
-                            <div style="font-size:0.9rem;color:var(--text-muted)">2024</div>
-                            <div style="font-size:1.6rem;font-weight:700;color:#7a8f7a" id="yoyCost2024">-</div>
-                        </div>
-                    </div>
-                    <div class="chart-container"><canvas id="yoyCostChart"></canvas></div>
-                </div>
                 <div class="chart-card wide">
                     <div class="chart-header">
                         <h3 class="chart-title">📈 Monthly YoY Trend</h3>
                         <span class="chart-badge">2025 vs 2024</span>
                     </div>
-                    <div class="yoy-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem;">
+                    <div class="yoy-summary" style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1rem;">
                         <div style="text-align:center;padding:1rem;background:rgba(76,175,80,0.1);border-radius:10px;">
                             <div style="font-size:0.95rem;color:var(--text-muted)">Claims Change</div>
                             <div style="font-size:1.8rem;font-weight:700;color:#4CAF50" id="yoyClaimsChange">+12%</div>
                         </div>
-                        <div style="text-align:center;padding:1rem;background:rgba(231,76,60,0.1);border-radius:10px;">
-                            <div style="font-size:0.95rem;color:var(--text-muted)">Cost Change</div>
-                            <div style="font-size:1.8rem;font-weight:700;color:#e74c3c" id="yoyCostChange">+8%</div>
-                        </div>
                         <div style="text-align:center;padding:1rem;background:rgba(52,152,219,0.1);border-radius:10px;">
                             <div style="font-size:0.95rem;color:var(--text-muted)">Member Growth</div>
                             <div style="font-size:1.8rem;font-weight:700;color:#3498db" id="yoyMemberChange">+15%</div>
-                        </div>
-                        <div style="text-align:center;padding:1rem;background:rgba(212,175,55,0.1);border-radius:10px;">
-                            <div style="font-size:0.95rem;color:var(--text-muted)">Cost/Member</div>
-                            <div style="font-size:1.8rem;font-weight:700;color:#D4AF37" id="yoyCostPerMember">-5%</div>
                         </div>
                     </div>
                     <div class="chart-container"><canvas id="yoyTrendChart"></canvas></div>
@@ -973,18 +908,12 @@
         <section class="section">
             <h2 class="section-title">🏥 Top Hospitals & Providers</h2>
             <div class="chart-grid">
-                <div class="chart-card">
+                <div class="chart-card wide">
                     <div class="chart-header">
                         <h3 class="chart-title">🏆 Top 10 by Claims</h3>
                         <span class="chart-badge">Current Period</span>
                     </div>
                     <div class="chart-container tall"><canvas id="topHospitalsChart"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3 class="chart-title">💰 Top 10 by Cost</h3>
-                    </div>
-                    <div class="chart-container tall"><canvas id="topHospitalsCostChart"></canvas></div>
                 </div>
                 <div class="chart-card wide">
                     <div class="chart-header">
@@ -997,8 +926,6 @@
                                     <th>Rank</th>
                                     <th>Hospital/Provider</th>
                                     <th>Claims</th>
-                                    <th>Total Cost</th>
-                                    <th>Avg Cost</th>
                                     <th>% of Total</th>
                                 </tr>
                             </thead>
@@ -1021,15 +948,9 @@
                     </div>
                     <div class="chart-container"><canvas id="geoRegionChart"></canvas></div>
                 </div>
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3 class="chart-title">💰 Cost by Region</h3>
-                    </div>
-                    <div class="chart-container"><canvas id="geoCostChart"></canvas></div>
-                </div>
                 <div class="chart-card wide">
                     <div class="chart-header">
-                        <h3 class="chart-title">🏙️ Top Cities</h3>
+                        <h3 class="chart-title">🏙️ Top Cities by Claims</h3>
                     </div>
                     <div class="stats-mini-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom:1rem;">
                         <div class="stat-mini" style="border-left:4px solid #4CAF50;">
@@ -1058,43 +979,6 @@
             </div>
         </section>
 
-        <!-- FEES BREAKDOWN Section -->
-        <section class="section">
-            <h2 class="section-title">💳 Fees & Charges Breakdown</h2>
-            <div class="stats-mini-grid">
-                <div class="stat-mini">
-                    <div class="stat-mini-icon">📋</div>
-                    <div class="stat-mini-value" id="auditFee">15%</div>
-                    <div class="stat-mini-label">Audit Fee</div>
-                </div>
-                <div class="stat-mini">
-                    <div class="stat-mini-icon">📝</div>
-                    <div class="stat-mini-value" id="registrationFee">$24</div>
-                    <div class="stat-mini-label">Registration Fee (Annual)</div>
-                </div>
-                <div class="stat-mini">
-                    <div class="stat-mini-icon">📅</div>
-                    <div class="stat-mini-value" id="monthlyFee">$9</div>
-                    <div class="stat-mini-label">Monthly Fee (Annual)</div>
-                </div>
-                <div class="stat-mini">
-                    <div class="stat-mini-icon">🦷</div>
-                    <div class="stat-mini-value" id="dentalFee" style="font-size:1.8rem">Yes</div>
-                    <div class="stat-mini-label">Dental Coverage</div>
-                    <div style="font-size:0.9rem;color:var(--text-muted);margin-top:0.25rem">(via CBMS)</div>
-                </div>
-            </div>
-            <div class="chart-grid" style="margin-top:1.5rem">
-                <div class="chart-card wide">
-                    <div class="chart-header">
-                        <h3 class="chart-title">📊 Annualized Cost Breakdown</h3>
-                        <span class="chart-badge">Per Member</span>
-                    </div>
-                    <div class="chart-container"><canvas id="costBreakdownChart"></canvas></div>
-                </div>
-            </div>
-        </section>
-
         <section class="section">
             <div class="comparison-banner">
                 <div class="comparison-header">
@@ -1118,53 +1002,6 @@
                         </div>
                         <span class="cmp-change" id="cmpMembersChange">-</span>
                     </div>
-                    <div class="cmp-card">
-                        <div class="cmp-label">Approved (USD)</div>
-                        <div class="cmp-values">
-                            <span class="cmp-current" id="cmpApproved">-</span>
-                            <span class="cmp-previous" id="cmpApprovedPrev">-</span>
-                        </div>
-                        <span class="cmp-change" id="cmpApprovedChange">-</span>
-                    </div>
-                    <div class="cmp-card">
-                        <div class="cmp-label">Cost per Member</div>
-                        <div class="cmp-values">
-                            <span class="cmp-current" id="cmpCost">-</span>
-                            <span class="cmp-previous" id="cmpCostPrev">-</span>
-                        </div>
-                        <span class="cmp-change" id="cmpCostChange">-</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <section class="section">
-            <h2 class="section-title">💰 Financial Analytics</h2>
-            <div class="chart-grid">
-                <div class="chart-card wide">
-                    <div class="chart-header">
-                        <h3 class="chart-title">📈 Cost per Member Trend</h3>
-                        <span class="chart-badge">Historical</span>
-                    </div>
-                    <div class="chart-container tall"><canvas id="costTrendChart"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3 class="chart-title">💵 Approved Amounts</h3>
-                    </div>
-                    <div class="chart-container"><canvas id="approvedChart"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3 class="chart-title">🎯 Cost vs Target</h3>
-                        <span class="chart-badge">Gauge</span>
-                    </div>
-                    <div class="gauge-container">
-                        <canvas id="gaugeChart" width="200" height="200"></canvas>
-                        <div class="gauge-value" id="gaugeValue">$0</div>
-                        <div class="gauge-label">Cost per Member</div>
-                        <div class="gauge-target">Target: <span>$50.00</span></div>
-                    </div>
                 </div>
             </div>
         </section>
@@ -1181,8 +1018,8 @@
                     <div class="chart-container"><canvas id="claims1000Chart"></canvas></div>
                 </div>
                 <div class="chart-card">
-                    <div class="chart-header"><h3 class="chart-title">💊 Avg Claim Value</h3></div>
-                    <div class="chart-container"><canvas id="avgClaimChart"></canvas></div>
+                    <div class="chart-header"><h3 class="chart-title">📈 Claims Trend</h3></div>
+                    <div class="chart-container"><canvas id="claimsTrendChart"></canvas></div>
                 </div>
             </div>
         </section>
@@ -1212,16 +1049,12 @@
                 </div>
             </div>
             <div class="chart-grid">
-                <div class="chart-card">
+                <div class="chart-card wide">
                     <div class="chart-header">
-                        <h3 class="chart-title">📊 Member Distribution</h3>
-                        <span class="chart-badge">3D Pie</span>
+                        <h3 class="chart-title">📊 Member Distribution by Plan</h3>
+                        <span class="chart-badge">Current Period</span>
                     </div>
                     <div class="chart-container"><canvas id="planPieChart"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <div class="chart-header"><h3 class="chart-title">💰 Cost by Plan</h3></div>
-                    <div class="chart-container"><canvas id="planCostChart"></canvas></div>
                 </div>
             </div>
         </section>
@@ -1250,13 +1083,6 @@
                             </div>
                             <div class="progress-bar"><div class="progress-fill" id="claimsRatioBar" style="width:30%"></div></div>
                         </div>
-                        <div class="progress-item">
-                            <div class="progress-header">
-                                <span class="progress-label">Cost Efficiency</span>
-                                <span class="progress-value" id="effValue">75%</span>
-                            </div>
-                            <div class="progress-bar"><div class="progress-fill" id="effBar" style="width:75%"></div></div>
-                        </div>
                     </div>
                 </div>
                 <div class="chart-card">
@@ -1275,8 +1101,7 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>#</th><th>Period</th><th>Members</th><th>Claims</th>
-                            <th>PHP</th><th>USD</th><th>Cost/Member</th><th>Util %</th>
+                            <th>#</th><th>Period</th><th>Members</th><th>Claims</th><th>Util %</th>
                         </tr>
                     </thead>
                     <tbody id="historyTable"></tbody>
@@ -3772,8 +3597,6 @@
             
             document.getElementById('kpiMembers').textContent = fmt(c.members);
             document.getElementById('kpiClaims').textContent = fmt(c.claims);
-            document.getElementById('kpiApproved').textContent = '$' + fmt(c.approved_usd);
-            document.getElementById('kpiCost').textContent = '$' + c.cost_per_member.toFixed(2);
             const util = c.members > 0 ? (c.claims / c.members * 100) : 0;
             document.getElementById('kpiUtilization').textContent = util.toFixed(1) + '%';
             document.getElementById('totalActive').textContent = fmt(c.members);
@@ -3781,8 +3604,6 @@
             if (ch) {
                 setTrend('kpiMembersTrend', ch.members);
                 setTrend('kpiClaimsTrend', ch.claims);
-                setTrend('kpiApprovedTrend', ch.approved_usd);
-                setTrend('kpiCostTrend', ch.cost_per_member);
             }
             
             if (p && ch) {
@@ -3792,42 +3613,25 @@
                 document.getElementById('cmpMembers').textContent = fmt(c.members);
                 document.getElementById('cmpMembersPrev').textContent = fmt(p.members);
                 setChange('cmpMembersChange', ch.members);
-                document.getElementById('cmpApproved').textContent = '$' + fmt(c.approved_usd);
-                document.getElementById('cmpApprovedPrev').textContent = '$' + fmt(p.approved_usd);
-                setChange('cmpApprovedChange', ch.approved_usd);
-                document.getElementById('cmpCost').textContent = '$' + c.cost_per_member.toFixed(2);
-                document.getElementById('cmpCostPrev').textContent = '$' + p.cost_per_member.toFixed(2);
-                setChange('cmpCostChange', ch.cost_per_member);
             }
             
-            // NEW: Inpatient/Outpatient/Ex Gratia data (mock - will come from CBMS/Excel)
-            const inpatientPct = 22;
-            const outpatientPct = 70;
-            const exGratiaPct = 8;
+            // Inpatient/Outpatient/Ex Gratia data (mock - will come from CBMS/Excel)
             const inpatientCases = Math.round(c.claims * 0.22);
             const outpatientCases = Math.round(c.claims * 0.70);
             const exGratiaCases = c.claims - inpatientCases - outpatientCases;
-            const inpatientCostVal = Math.round(c.approved_usd * 0.60);
-            const outpatientCostVal = Math.round(c.approved_usd * 0.32);
-            const exGratiaCostVal = c.approved_usd - inpatientCostVal - outpatientCostVal;
             
             document.getElementById('inpatientCases').textContent = fmt(inpatientCases);
             document.getElementById('outpatientCases').textContent = fmt(outpatientCases);
             document.getElementById('exGratiaCases').textContent = fmt(exGratiaCases);
-            document.getElementById('inpatientCost').textContent = '$' + fmt(inpatientCostVal);
-            document.getElementById('outpatientCost').textContent = '$' + fmt(outpatientCostVal);
-            document.getElementById('exGratiaCost').textContent = '$' + fmt(exGratiaCostVal);
             
-            // NEW: Principal/Dependent data (mock - will come from CBMS)
-            const principalPct = 40;
-            const dependentPct = 60;
+            // Principal/Dependent data (mock - will come from CBMS)
             const principalMembers = Math.round(c.members * 0.4);
             const dependentMembers = c.members - principalMembers;
             
             document.getElementById('principalCount').textContent = fmt(principalMembers);
             document.getElementById('dependentCount').textContent = fmt(dependentMembers);
             
-            // NEW: Member Movement (mock - will come from CBMS)
+            // Member Movement (mock - will come from CBMS)
             const newEnroll = Math.round(c.members * 0.08);
             const cancelled = Math.round(c.members * 0.03);
             document.getElementById('newEnrollments').textContent = '+' + newEnroll;
@@ -3835,12 +3639,11 @@
             document.getElementById('netChange').textContent = (newEnroll - cancelled > 0 ? '+' : '') + (newEnroll - cancelled);
             
             try { createCharts(periods, c); } catch(e) { console.error('createCharts error:', e); }
-            try { createInOutCharts(periods, inpatientCases, outpatientCases, exGratiaCases, inpatientCostVal, outpatientCostVal, exGratiaCostVal); } catch(e) { console.error('createInOutCharts error:', e); }
+            try { createInOutCharts(periods, inpatientCases, outpatientCases, exGratiaCases); } catch(e) { console.error('createInOutCharts error:', e); }
             try { createMemberTypeCharts(principalMembers, dependentMembers, c.claims); } catch(e) { console.error('createMemberTypeCharts error:', e); }
             try { createMovementCharts(periods); } catch(e) { console.error('createMovementCharts error:', e); }
-            try { createCostBreakdownChart(c); } catch(e) { console.error('createCostBreakdownChart error:', e); }
             
-            // NEW: Additional charts - temporarily disabled for debugging
+            // Additional charts
             try {
                 createCategoryCharts(c);
                 createYoYCharts(periods);
@@ -3855,7 +3658,7 @@
             updateTable(periods);
         }
         
-        function createInOutCharts(periods, inCases, outCases, exGratiaCases, inCost, outCost, exGratiaCost) {
+        function createInOutCharts(periods, inCases, outCases, exGratiaCases) {
             // Inpatient/Outpatient/Ex Gratia Pie
             const ctx1 = document.getElementById('inOutPieChart').getContext('2d');
             if (charts.inOutPie) charts.inOutPie.destroy();
@@ -3889,47 +3692,6 @@
                     cutout: '55%', 
                     plugins: { 
                         legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } }
-                    }
-                }
-            });
-            
-            // Cost Comparison Bar
-            const ctx2 = document.getElementById('inOutCostChart').getContext('2d');
-            if (charts.inOutCost) charts.inOutCost.destroy();
-            
-            const barRedGrad = ctx2.createLinearGradient(0, 0, 0, 250);
-            barRedGrad.addColorStop(0, '#EF9A9A');
-            barRedGrad.addColorStop(0.3, '#EF5350');
-            barRedGrad.addColorStop(1, '#C62828');
-            const barBlueGrad = ctx2.createLinearGradient(0, 0, 0, 250);
-            barBlueGrad.addColorStop(0, '#90CAF9');
-            barBlueGrad.addColorStop(0.3, '#42A5F5');
-            barBlueGrad.addColorStop(1, '#1565C0');
-            const barPurpleGrad = ctx2.createLinearGradient(0, 0, 0, 250);
-            barPurpleGrad.addColorStop(0, '#FFE082');
-            barPurpleGrad.addColorStop(0.3, '#DAA520');
-            barPurpleGrad.addColorStop(1, '#B8860B');
-            
-            charts.inOutCost = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: ['Inpatient', 'Outpatient', 'Ex Gratia'],
-                    datasets: [{ 
-                        data: [inCost, outCost, exGratiaCost], 
-                        backgroundColor: [barRedGrad, barBlueGrad, barPurpleGrad], 
-                        borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 },
-                        borderWidth: 2,
-                        borderColor: ['#B71C1C', '#0D47A1', '#8B7500'],
-                        barPercentage: 0.7
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } }, 
-                    scales: { 
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { weight: 'bold', size: 10 } } }, 
-                        y: { grid: { color: 'rgba(30,58,30,0.5)' }, ticks: { color: '#7a8f7a', callback: v => '$' + fmt(v) } } 
                     }
                 }
             });
@@ -5080,9 +4842,6 @@
                     <td><strong>${p.period_label}</strong></td>
                     <td>${fmt(p.members)}</td>
                     <td>${fmt(p.claims)}</td>
-                    <td>₱${fmt(p.approved_php)}</td>
-                    <td class="currency">$${fmt(p.approved_usd)}</td>
-                    <td class="currency">$${p.cost_per_member.toFixed(2)}</td>
                     <td>${util}%</td>
                 </tr>`;
             }).reverse().join('');
