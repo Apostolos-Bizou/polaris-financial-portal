@@ -7227,7 +7227,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             <!-- RIGHT - Logo with Vision Next2Me -->
             <div class="right-section-intro">
                 <div class="logo-box-intro">
-                    <div class="vision-text-intro">Vision</div>
+                    <div class="vision-text-intro">YOU</div>
                     <div class="next2me-text-intro">
                         <span class="next">Next</span>
                         <span class="two">2</span>
@@ -12685,7 +12685,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     document.getElementById('welcomeLoadingScreen').classList.remove('hidden');
                     initWelcomeScreen();
                     
-                    // Preload data then show dashboard
+                    // Preload data in background - screen stays until user clicks
                     (async () => {
                         try {
                             await preloadAllDataWithProgress();
@@ -12695,11 +12695,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         } catch (e) {
                             console.error('Preload error:', e);
                         }
-                        
-                        // Transition to main dashboard
-                        setTimeout(() => {
-                            transitionToMainDashboard();
-                        }, 3000);
+                        // Data loaded - user can click anywhere to enter
+                        // No auto-transition - wait for user click
                     })();
                 } else if (data.success && userData && userData.role !== 'admin') {
                     errorEl.textContent = 'Access denied. Admin credentials required.';
@@ -19614,7 +19611,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         document.getElementById('loginModal').classList.add('hidden');
                         initWelcomeScreen();
                         
-                        // Preload data then show dashboard
+                        // Preload data in background - screen stays until user clicks
                         (async () => {
                             try {
                                 await preloadAllDataWithProgress();
@@ -19624,11 +19621,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             } catch (e) {
                                 console.error('Preload error:', e);
                             }
-                            
-                            // Transition to main dashboard
-                            setTimeout(() => {
-                                transitionToMainDashboard();
-                            }, 500);
+                            // Data loaded - user can click anywhere to enter
+                            // No auto-transition - wait for user click
                         })();
                         return;
                     }
