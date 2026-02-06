@@ -191,6 +191,43 @@
             box-shadow: 0 8px 25px rgba(123,31,162,0.5);
         }
         
+        /* Company Selector Dropdown */
+        .company-selector {
+            position: relative;
+        }
+        .company-selector select {
+            background: linear-gradient(135deg, var(--polaris-green), var(--polaris-green-light));
+            color: white;
+            border: none;
+            padding: 0.6rem 2rem 0.6rem 1rem;
+            border-radius: 25px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            min-width: 180px;
+            box-shadow: 0 4px 15px rgba(27,94,32,0.3);
+            transition: all 0.3s;
+        }
+        .company-selector select:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(27,94,32,0.5);
+        }
+        .company-selector select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(212,175,55,0.3);
+        }
+        .company-selector select option {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 0.5rem;
+        }
+        
         /* Report Builder Modal */
         .report-builder-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -647,6 +684,12 @@
                 <span class="portal-badge">CLIENT PORTAL</span>
             </div>
             <div class="user-section">
+                <!-- Company Selector -->
+                <div class="company-selector" id="companySelector" style="display:none">
+                    <select id="companyDropdown" onchange="changeCompany(this.value)">
+                        <option value="">Select Company</option>
+                    </select>
+                </div>
                 <button onclick="openReportBuilder()" class="reports-btn">
                     <span>📊</span> Reports
                 </button>
@@ -666,7 +709,7 @@
         <div class="page-header">
             <h1 class="page-title">📊 Healthcare Analytics Dashboard</h1>
             <p class="page-subtitle">
-                Real-time insights into your health plan performance
+                <span id="pageCompanyName" style="color: var(--polaris-gold); font-weight: 600;"></span>
                 <span class="period-badge" id="periodBadge">Q3 2025</span>
             </p>
         </div>
@@ -1306,6 +1349,8 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbxsUTp8W3R7J59r5q1bGY93dSTO8CGzrRxatcRt4PAaTUEoxVxFbEPccRjaT6OekBrn/exec';
         let currentUser = null, charts = {};
+        let companiesList = [];  // List of parent + subsidiaries
+        let selectedCompanyId = null;  // Currently selected company
         
         // Global Chart.js defaults for larger, more readable fonts
         Chart.defaults.font.size = 14;
@@ -1327,17 +1372,81 @@
         
         async function handleLogin() {
             const u = document.getElementById('loginUsername').value;
+            const p = document.getElementById('loginPassword').value;
             if (!u) { document.getElementById('loginError').textContent = 'Enter username'; return; }
-            currentUser = { username: u };
-            localStorage.setItem('polaris_user', JSON.stringify(currentUser));
-            showDashboard();
+            
+            try {
+                // Authenticate user and get their companies
+                const response = await fetch(`${API_URL}?action=authenticateClient&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
+                const data = await response.json();
+                
+                if (data.success && data.user) {
+                    currentUser = data.user;
+                    companiesList = data.companies || [{ client_id: data.user.client_id, company_name: data.user.company_name || 'My Company', is_parent: true }];
+                    selectedCompanyId = currentUser.client_id;
+                    localStorage.setItem('polaris_user', JSON.stringify(currentUser));
+                    localStorage.setItem('polaris_companies', JSON.stringify(companiesList));
+                    showDashboard();
+                } else {
+                    document.getElementById('loginError').textContent = data.message || 'Invalid credentials';
+                }
+            } catch (e) {
+                console.error('Login error:', e);
+                // Fallback for testing
+                currentUser = { username: u, client_id: u };
+                localStorage.setItem('polaris_user', JSON.stringify(currentUser));
+                showDashboard();
+            }
         }
         
-        function handleLogout() { localStorage.removeItem('polaris_user'); location.reload(); }
+        function handleLogout() { 
+            localStorage.removeItem('polaris_user'); 
+            localStorage.removeItem('polaris_companies');
+            location.reload(); 
+        }
+        
+        // Change company and reload data
+        async function changeCompany(clientId) {
+            if (!clientId || clientId === selectedCompanyId) return;
+            selectedCompanyId = clientId;
+            
+            // Update page title with company name
+            const company = companiesList.find(c => c.client_id === clientId);
+            if (company) {
+                document.getElementById('pageCompanyName').textContent = company.company_name;
+            }
+            
+            // Reload data for selected company
+            await loadData(clientId);
+        }
+        
+        // Populate company dropdown
+        function populateCompanyDropdown() {
+            const dropdown = document.getElementById('companyDropdown');
+            const selector = document.getElementById('companySelector');
+            
+            if (companiesList.length <= 1) {
+                selector.style.display = 'none';
+                return;
+            }
+            
+            selector.style.display = 'block';
+            dropdown.innerHTML = '';
+            
+            companiesList.forEach(company => {
+                const option = document.createElement('option');
+                option.value = company.client_id;
+                option.textContent = company.is_parent ? `🏢 ${company.company_name} (Parent)` : `  └─ ${company.company_name}`;
+                if (company.client_id === selectedCompanyId) {
+                    option.selected = true;
+                }
+                dropdown.appendChild(option);
+            });
+        }
         
         function openActiveMembers() {
-            // Get client_id from logged in user
-            const clientId = currentUser.client_id || currentUser.username || '';
+            // Get client_id from selected company
+            const clientId = selectedCompanyId || currentUser.client_id || currentUser.username || '';
             const url = 'https://apostolos-bizou.github.io/polaris-member-tracker/?client=' + encodeURIComponent(clientId);
             window.open(url, '_blank');
         }
@@ -3575,13 +3684,30 @@
             document.getElementById('mainFooter').style.display = 'block';
             document.getElementById('clientName').textContent = currentUser.username || 'User';
             document.getElementById('clientAvatar').textContent = (currentUser.username || 'U')[0].toUpperCase();
-            await loadData();
+            
+            // Load saved companies list if exists
+            const savedCompanies = localStorage.getItem('polaris_companies');
+            if (savedCompanies) {
+                companiesList = JSON.parse(savedCompanies);
+                selectedCompanyId = currentUser.client_id || (companiesList[0] && companiesList[0].client_id);
+            }
+            
+            // Populate company dropdown
+            populateCompanyDropdown();
+            
+            await loadData(selectedCompanyId);
             document.getElementById('loadingScreen').classList.add('hidden');
         }
         
-        async function loadData() {
+        async function loadData(clientId) {
             try {
-                const r = await fetch(`${API_URL}?action=getMasterComparison`);
+                // Build API URL with client filter
+                let apiUrl = `${API_URL}?action=getMasterComparison`;
+                if (clientId) {
+                    apiUrl += `&client_id=${encodeURIComponent(clientId)}`;
+                }
+                
+                const r = await fetch(apiUrl);
                 const d = await r.json();
                 if (d.success) updateDashboard(d.data);
                 document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
