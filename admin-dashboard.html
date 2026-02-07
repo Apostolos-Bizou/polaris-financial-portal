@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-07 v3.40 - Fix Charts quarters + Top Clients filter by selected parent -->
+<!-- VERSION: 2026-02-07 v3.41 - Frontend calls new v3.40 chart endpoints (Categories, Hospitals, Geographic) -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10534,23 +10534,76 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         /**
          * Load all financial breakdowns from API
+         * v3.40: Now calls dedicated endpoints in parallel for better performance
          * Reads from: FinancialData, Claims_Categories, Hospitals sheets
          */
         async function loadFinancialBreakdowns(clientId, period) {
             try {
-                const params = new URLSearchParams({ action: 'getDashboardKPIs' });
-                if (clientId) params.append('clientId', clientId);
-                if (period) params.append('period', period);
+                // Build common params
+                const baseParams = new URLSearchParams();
+                if (clientId && clientId !== 'ALL') baseParams.append('clientId', clientId);
+                if (period) baseParams.append('period', period);
                 
-                const response = await fetch(`${API_URL}?${params.toString()}`);
-                const data = await response.json();
+                // v3.40: Call all endpoints in PARALLEL for speed
+                const [kpiResponse, categoriesResponse, hospitalsResponse, geoResponse] = await Promise.all([
+                    fetch(`${API_URL}?action=getDashboardKPIs&${baseParams.toString()}`),
+                    fetch(`${API_URL}?action=getCategoriesBreakdown&${baseParams.toString()}`),
+                    fetch(`${API_URL}?action=getHospitalsData&${baseParams.toString()}`),
+                    fetch(`${API_URL}?action=getGeographicData&${baseParams.toString()}`)
+                ]);
                 
-                if (data.error) {
-                    console.warn('API returned error:', data.error);
-                    return null;
+                const [kpiData, categoriesData, hospitalsData, geoData] = await Promise.all([
+                    kpiResponse.json(),
+                    categoriesResponse.json(),
+                    hospitalsResponse.json(),
+                    geoResponse.json()
+                ]);
+                
+                console.log('📊 v3.40 Parallel API calls completed:', {
+                    kpis: kpiData.success,
+                    categories: categoriesData.success,
+                    hospitals: hospitalsData.success,
+                    geographic: geoData.success
+                });
+                
+                // Merge all data into unified response
+                const mergedData = kpiData || {};
+                
+                // Add categories data (v3.40 format)
+                if (categoriesData.success && categoriesData.data) {
+                    mergedData.categories = {
+                        categories: categoriesData.data,
+                        totals: categoriesData.totals
+                    };
+                    console.log('📊 Categories loaded:', categoriesData.data.length, 'categories');
                 }
                 
-                return data;
+                // Add hospitals data (v3.40 format) 
+                if (hospitalsData.success && hospitalsData.data) {
+                    // Map to expected format for charts
+                    mergedData.hospitals = hospitalsData.data.map(h => ({
+                        name: h.name,
+                        city: h.city,
+                        region: h.region,
+                        claims: h.claims,
+                        cost: h.cost_usd,
+                        avg_claim: h.avg_claim
+                    }));
+                    mergedData.hospitalsTotals = hospitalsData.totals;
+                    console.log('📊 Hospitals loaded:', hospitalsData.data.length, 'hospitals');
+                }
+                
+                // Add geographic data (v3.40 format)
+                if (geoData.success && geoData.data) {
+                    mergedData.geographic = {
+                        regions: geoData.data.regions,
+                        topCities: geoData.data.top_cities,
+                        totals: geoData.totals
+                    };
+                    console.log('📊 Geographic loaded:', geoData.data.regions?.length, 'regions');
+                }
+                
+                return mergedData;
             } catch (error) {
                 console.error('loadFinancialBreakdowns error:', error);
                 return null;
@@ -17979,30 +18032,46 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         // ============ NEW SECTIONS CHARTS ============
         
         function createCategoryCharts(current) {
-            // REAL DATA ONLY - NO MOCK DATA
+            // v3.40: REAL DATA from getCategoriesBreakdown endpoint
             const hasRealData = window.currentClientKPIs && window.currentClientKPIs.kpis;
             
             let categories;
             if (hasRealData && window.currentClientKPIs.categories && window.currentClientKPIs.categories.categories && window.currentClientKPIs.categories.categories.length > 0) {
-                // Use real category data from API (v3.25 FIX: cost_usd not amount_usd)
+                // Use real category data from API (v3.40: uses getCategoriesBreakdown endpoint)
                 const apiCats = window.currentClientKPIs.categories.categories;
-                const colorMap = { 'Medical': '#4CAF50', 'Dental': '#2196F3', 'Maternity': '#E91E63', 'Optical': '#FF9800', 'Laboratory': '#D4AF37', 'Other': '#607D8B' };
+                const colorMap = { 
+                    'General Consultation': '#4CAF50', 
+                    'Medical': '#4CAF50', 
+                    'Dental': '#2196F3', 
+                    'Maternity': '#E91E63', 
+                    'Optical': '#FF9800', 
+                    'Ophthalmology': '#FF9800',
+                    'Laboratory': '#D4AF37', 
+                    'Laboratory & Diagnostics': '#D4AF37',
+                    'Pharmacy/Medication': '#9C27B0',
+                    'Inpatient Hospitalization': '#F44336',
+                    'Surgery': '#795548',
+                    'Emergency': '#f44336',
+                    'Physical Therapy': '#00BCD4',
+                    'Other': '#607D8B' 
+                };
                 categories = apiCats.map(c => ({
                     name: c.category,
                     cases: c.cases || 0,
                     cost: c.cost_usd || 0,
+                    pct: c.pct_of_total || 0,
                     color: colorMap[c.category] || '#607D8B'
                 }));
-                console.log('📊 Using REAL category data (v3.25):', categories);
+                console.log('📊 v3.40: Using REAL category data from getCategoriesBreakdown:', categories.length, 'categories');
             } else {
                 // No data - show zeros for all categories
                 categories = [
-                    { name: 'Medical', cases: 0, cost: 0, color: '#4CAF50' },
-                    { name: 'Dental', cases: 0, cost: 0, color: '#2196F3' },
-                    { name: 'Maternity', cases: 0, cost: 0, color: '#E91E63' },
-                    { name: 'Optical', cases: 0, cost: 0, color: '#FF9800' },
-                    { name: 'Laboratory', cases: 0, cost: 0, color: '#D4AF37' },
-                    { name: 'Other', cases: 0, cost: 0, color: '#607D8B' }
+                    { name: 'Medical', cases: 0, cost: 0, pct: 0, color: '#4CAF50' },
+                    { name: 'Dental', cases: 0, cost: 0, pct: 0, color: '#2196F3' },
+                    { name: 'Maternity', cases: 0, cost: 0, pct: 0, color: '#E91E63' },
+                    { name: 'Optical', cases: 0, cost: 0, pct: 0, color: '#FF9800' },
+                    { name: 'Laboratory', cases: 0, cost: 0, pct: 0, color: '#D4AF37' },
+                    { name: 'Other', cases: 0, cost: 0, pct: 0, color: '#607D8B' }
                 ];
             }
             
@@ -18314,21 +18383,22 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         
         function createHospitalCharts() {
-            // REAL DATA ONLY - NO MOCK DATA
+            // v3.40: REAL DATA from getHospitalsData endpoint
             const hasRealData = window.currentClientKPIs && window.currentClientKPIs.kpis;
             
             let hospitals;
             if (hasRealData && window.currentClientKPIs.hospitals && window.currentClientKPIs.hospitals.length > 0) {
-                // Use real hospital data from API
+                // Use real hospital data from API (v3.40: uses getHospitalsData endpoint)
                 hospitals = window.currentClientKPIs.hospitals;
+                console.log('📊 v3.40: Using REAL hospital data from getHospitalsData:', hospitals.length, 'hospitals');
             } else {
                 // No data - show empty
                 hospitals = [
-                    { name: 'No Data Available', claims: 0, cost: 0 }
+                    { name: 'No Data Available', claims: 0, cost: 0, city: '', region: '' }
                 ];
             }
             
-            const totalCost = hospitals.reduce((a, h) => a + h.cost, 0);
+            const totalCost = hospitals.reduce((a, h) => a + (h.cost || 0), 0);
             
             // Top Hospitals by Claims - v3.26: With data labels
             const ctx1 = document.getElementById('topHospitalsChart').getContext('2d');
@@ -18367,7 +18437,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 }
             });
             
-            // Top Hospitals by Cost - v3.26: With data labels
+            // Top Hospitals by Cost - v3.40: Shows USD
             const ctx2 = document.getElementById('topHospitalsCostChart').getContext('2d');
             if (charts.topHospitalsCost) charts.topHospitalsCost.destroy();
             charts.topHospitalsCost = new Chart(ctx2, {
@@ -18375,7 +18445,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 data: {
                     labels: hospitals.map(h => h.name),
                     datasets: [{
-                        data: hospitals.map(h => h.cost),
+                        data: hospitals.map(h => h.cost || 0),
                         backgroundColor: 'rgba(212,175,55,0.7)',
                         borderColor: '#D4AF37',
                         borderWidth: 1,
@@ -18394,62 +18464,64 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             font: { size: 10, weight: 'bold' },
                             anchor: 'center',
                             align: 'center',
-                            formatter: (value) => value > 0 ? '₱' + (value / 1000000).toFixed(1) + 'M' : ''
+                            formatter: (value) => value > 0 ? '$' + (value / 1000).toFixed(1) + 'K' : ''
                         }
                     },
                     scales: {
-                        x: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => '₱' + (v/1000000).toFixed(0) + 'M' } },
+                        x: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => '$' + (v/1000).toFixed(0) + 'K' } },
                         y: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 9 } } }
                     }
                 }
             });
             
-            // Hospital Table - v3.26: Fixed NaN and PHP formatting
+            // Hospital Table - v3.40: Shows USD and includes city/region
             const tbody = document.getElementById('hospitalsTableBody');
-            console.log('📊 Using REAL hospital data (v3.26):', hospitals);
+            console.log('📊 v3.40: Rendering hospital table with', hospitals.length, 'hospitals');
             tbody.innerHTML = hospitals.map((h, i) => {
-                const avgClaim = h.claims > 0 ? Math.round(h.cost / h.claims) : 0;
+                const avgClaim = h.avg_claim || (h.claims > 0 ? Math.round(h.cost / h.claims) : 0);
                 const pctOfTotal = totalCost > 0 ? (h.cost / totalCost * 100).toFixed(1) : 0;
+                const location = h.city ? `${h.city}${h.region ? ' (' + h.region + ')' : ''}` : '';
                 return `
                 <tr>
                     <td><span style="background:${i < 3 ? '#D4AF37' : '#2E7D32'};color:#000;padding:2px 8px;border-radius:10px;font-weight:bold">${i + 1}</span></td>
-                    <td><strong>${h.name}</strong></td>
-                    <td>${h.claims.toLocaleString()}</td>
-                    <td>₱${(h.cost / 1000000).toFixed(2)}M</td>
-                    <td>₱${avgClaim.toLocaleString()}</td>
+                    <td><strong>${h.name}</strong>${location ? '<br><small style="color:#7a8f7a">' + location + '</small>' : ''}</td>
+                    <td>${(h.claims || 0).toLocaleString()}</td>
+                    <td>$${((h.cost || 0) / 1000).toFixed(1)}K</td>
+                    <td>$${avgClaim.toLocaleString()}</td>
                     <td>${pctOfTotal}%</td>
                 </tr>
             `}).join('');
         }
         
         function createGeoCharts() {
-            // REAL DATA ONLY - NO MOCK DATA
+            // v3.40: REAL DATA from getGeographicData endpoint
             const hasRealData = window.currentClientKPIs && window.currentClientKPIs.kpis;
             
-            // v3.26 FIX: Use geographic.regions with correct field names
-            const colorMap = { 'NCR': '#4CAF50', 'Visayas': '#2196F3', 'Mindanao': '#FF9800', 'Other': '#607D8B' };
+            const colorMap = { 'NCR': '#4CAF50', 'Luzon': '#8BC34A', 'Visayas': '#2196F3', 'Mindanao': '#FF9800', 'Other': '#607D8B' };
             
             let regions;
             if (hasRealData && window.currentClientKPIs.geographic && window.currentClientKPIs.geographic.regions && window.currentClientKPIs.geographic.regions.length > 0) {
-                // Use real geographic data from API
+                // Use real geographic data from API (v3.40: uses getGeographicData endpoint)
                 const apiRegions = window.currentClientKPIs.geographic.regions;
                 regions = apiRegions.map(r => ({
                     name: r.region,
                     claims: r.claims || 0,
-                    cost: r.cost || 0,
+                    cost: r.cost_usd || r.cost || 0,
+                    hospitals: r.hospitals || 0,
+                    pct: r.claims_pct || 0,
                     color: colorMap[r.region] || '#607D8B'
                 }));
-                console.log('📊 Using REAL geographic data (v3.26):', regions);
+                console.log('📊 v3.40: Using REAL geographic data from getGeographicData:', regions.length, 'regions');
             } else {
                 // No data - show zeros
                 regions = [
-                    { name: 'No Data', claims: 0, cost: 0, color: '#607D8B' }
+                    { name: 'No Data', claims: 0, cost: 0, hospitals: 0, pct: 0, color: '#607D8B' }
                 ];
             }
             
-            // v3.26: Update city stats from API data
+            // v3.40: Update city stats from API data (topCities from getGeographicData)
             const geoData = window.currentClientKPIs?.geographic || {};
-            const apiCities = geoData.cities || [];
+            const apiCities = geoData.topCities || [];
             
             // Map cities to regions for the summary boxes
             let manilaTotal = 0, cebuTotal = 0, davaoTotal = 0, iloiloTotal = 0, otherTotal = 0;
@@ -18474,7 +18546,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             document.getElementById('geoIloilo').textContent = iloiloTotal.toLocaleString();
             document.getElementById('geoOther').textContent = otherTotal.toLocaleString();
             
-            console.log('📊 Using REAL city data (v3.26):', { manilaTotal, cebuTotal, davaoTotal, iloiloTotal, otherTotal, apiCities });
+            console.log('📊 v3.40: City totals from getGeographicData:', { manilaTotal, cebuTotal, davaoTotal, iloiloTotal, otherTotal });
             
             // Region Pie Chart
             const ctx1 = document.getElementById('geoRegionChart').getContext('2d');
