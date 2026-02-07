@@ -715,7 +715,14 @@
         </div>
         
         <section class="section">
-            <div class="kpi-grid">
+            <div class="kpi-grid" style="grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1.5rem;">
+                <div class="kpi-card" style="background: linear-gradient(135deg, #0D1F0D 0%, #1a3a1a 50%, #0D1F0D 100%); border: 3px solid #4CAF50; box-shadow: 0 0 40px rgba(76,175,80,0.3), inset 0 1px 0 rgba(255,255,255,0.1); position:relative; overflow:hidden;">
+                    <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:radial-gradient(circle, rgba(76,175,80,0.15) 0%, transparent 70%);"></div>
+                    <div class="kpi-icon" style="font-size:2.5rem">💰</div>
+                    <div class="kpi-label" style="color: #81C784; font-size:1.2rem; font-weight:700; text-transform:uppercase; letter-spacing:2px;">Cost per Member</div>
+                    <div class="kpi-value" id="kpiCostPerMember" style="font-size: 4.5rem; color: #4CAF50; text-shadow: 0 0 40px rgba(76,175,80,0.7), 0 4px 20px rgba(0,0,0,0.4); font-weight:800; letter-spacing:-3px; line-height:1;">$0.00</div>
+                    <div class="kpi-trend" style="background:rgba(76,175,80,0.25);color:#A5D6A7;font-weight:600;font-size:0.95rem;padding:0.5rem 1rem;border-radius:20px;margin-top:0.5rem">Per Member / Period</div>
+                </div>
                 <div class="kpi-card">
                     <div class="kpi-icon">👥</div>
                     <div class="kpi-label">Total Members</div>
@@ -3588,9 +3595,13 @@
         
         // Aggregate data for multiple clients
         function aggregateClientData(filteredData) {
+            const members = filteredData.reduce((sum, d) => sum + (d.members || 0), 0);
+            const approved_usd = filteredData.reduce((sum, d) => sum + (d.approved_usd || 0), 0);
             return {
-                members: filteredData.reduce((sum, d) => sum + (d.members || 0), 0),
+                members: members,
                 claims: filteredData.reduce((sum, d) => sum + (d.claims || 0), 0),
+                approved_usd: approved_usd,
+                cost_per_member: members > 0 ? approved_usd / members : 0,
                 inpatient_cases: filteredData.reduce((sum, d) => sum + (d.inpatient_cases || 0), 0),
                 outpatient_cases: filteredData.reduce((sum, d) => sum + (d.outpatient_cases || 0), 0),
                 exgratia_cases: filteredData.reduce((sum, d) => sum + (d.exgratia_cases || 0), 0),
@@ -3633,6 +3644,9 @@
             if (p) document.getElementById('cmpPeriodLabel').textContent = `${latestPeriod} vs ${previousPeriod}`;
             
             // Update KPIs with REAL data
+            // COST PER MEMBER - Big green number
+            document.getElementById('kpiCostPerMember').textContent = '$' + c.cost_per_member.toFixed(2);
+            
             document.getElementById('kpiMembers').textContent = fmt(c.members);
             document.getElementById('kpiClaims').textContent = fmt(c.claims);
             const util = c.members > 0 ? (c.claims / c.members * 100) : 0;
