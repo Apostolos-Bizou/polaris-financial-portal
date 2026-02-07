@@ -1241,14 +1241,6 @@
                             </div>
                             <span class="rb-section-item-badge">1 σελίδα</span>
                         </label>
-                        <label class="rb-section-item selected">
-                            <input type="checkbox" id="sec_cost" checked>
-                            <div class="rb-section-item-content">
-                                <div class="rb-section-item-title">💰 Cost Breakdown</div>
-                                <div class="rb-section-item-desc">Ανάλυση κόστους ανά κατηγορία</div>
-                            </div>
-                            <span class="rb-section-item-badge">1 σελίδα</span>
-                        </label>
                         <label class="rb-section-item">
                             <input type="checkbox" id="sec_members">
                             <div class="rb-section-item-content">
@@ -1405,19 +1397,24 @@
             location.reload(); 
         }
         
-        // Change company and reload data
-        async function changeCompany(clientId) {
+        // Change company and refilter data (no new API call needed)
+        function changeCompany(clientId) {
             if (!clientId || clientId === selectedCompanyId) return;
             selectedCompanyId = clientId;
             
             // Update page title with company name
             const company = companiesList.find(c => c.client_id === clientId);
             if (company) {
-                document.getElementById('pageCompanyName').textContent = company.company_name;
+                const displayName = company.is_parent 
+                    ? `${company.company_name} (All Companies)` 
+                    : company.company_name;
+                document.getElementById('pageCompanyName').textContent = displayName;
             }
             
-            // Reload data for selected company
-            await loadData(clientId);
+            // Refilter existing data (no need to refetch)
+            if (rawApiData) {
+                updateDashboard(rawApiData, clientId);
+            }
         }
         
         // Populate company dropdown
@@ -1460,7 +1457,6 @@
                 executive: true,
                 inout: true,
                 claims: true,
-                cost: true,
                 members: false,
                 movement: false,
                 plans: false,
@@ -1485,10 +1481,10 @@
             
             // Set sections based on template
             const templates = {
-                board: { executive: true, inout: true, claims: true, cost: true, members: false, movement: false, plans: false, history: false, trends: false },
-                monthly: { executive: true, inout: true, claims: true, cost: true, members: true, movement: true, plans: false, history: false, trends: false },
-                executive: { executive: true, inout: false, claims: false, cost: true, members: false, movement: false, plans: false, history: false, trends: false },
-                full: { executive: true, inout: true, claims: true, cost: true, members: true, movement: true, plans: true, history: true, trends: true }
+                board: { executive: true, inout: true, claims: true, members: false, movement: false, plans: false, history: false, trends: false },
+                monthly: { executive: true, inout: true, claims: true, members: true, movement: true, plans: false, history: false, trends: false },
+                executive: { executive: true, inout: false, claims: false, members: false, movement: false, plans: false, history: false, trends: false },
+                full: { executive: true, inout: true, claims: true, members: true, movement: true, plans: true, history: true, trends: true }
             };
             
             reportConfig.sections = { ...templates[template] };
@@ -1671,16 +1667,13 @@
                     doc.setFont('helvetica', 'normal');
                 };
                 
-                // Get all values
+                // Get all values (NO FINANCIAL DATA for client portal)
                 const totalMembers = document.getElementById('kpiMembers')?.textContent || '8,547';
                 const totalClaims = document.getElementById('kpiClaims')?.textContent || '1,234';
-                const approvedAmount = document.getElementById('kpiApproved')?.textContent || '$156,789';
-                const costPerMember = document.getElementById('kpiCost')?.textContent || '$67.83';
                 const utilization = document.getElementById('kpiUtilization')?.textContent || '14.4%';
                 const inpatientCases = document.getElementById('inpatientCases')?.textContent || '308';
                 const outpatientCases = document.getElementById('outpatientCases')?.textContent || '926';
-                const inpatientCost = document.getElementById('inpatientCost')?.textContent || '$101,913';
-                const outpatientCost = document.getElementById('outpatientCost')?.textContent || '$54,876';
+                const exGratiaCases = document.getElementById('exGratiaCases')?.textContent || '0';
                 const principalCount = document.getElementById('principalCount')?.textContent || '3,419';
                 const dependentCount = document.getElementById('dependentCount')?.textContent || '5,128';
                 const newEnroll = document.getElementById('newEnrollments')?.textContent || '+684';
@@ -1741,8 +1734,8 @@
                 const quickStats = [
                     { label: 'Members', value: totalMembers, color: green },
                     { label: 'Claims', value: totalClaims, color: blue },
-                    { label: 'Approved', value: approvedAmount, color: gold },
-                    { label: 'Cost/Member', value: costPerMember, color: purple }
+                    { label: 'Utilization', value: utilization, color: gold },
+                    { label: 'Net Growth', value: netChange, color: purple }
                 ];
                 
                 const statWidth = (contentWidth - 15) / 4;
@@ -1771,7 +1764,6 @@
                     executive: { name: 'Executive Summary', icon: '📊' },
                     inout: { name: 'Inpatient vs Outpatient', icon: '🏥' },
                     claims: { name: 'Claims Analysis', icon: '📋' },
-                    cost: { name: 'Cost Breakdown', icon: '💰' },
                     members: { name: 'Member Analysis', icon: '👥' },
                     movement: { name: 'Member Movement', icon: '📈' },
                     plans: { name: 'Plan Performance', icon: '🏆' },
@@ -1825,9 +1817,9 @@
                     // KPI Cards Row 1
                     const kpiW = (contentWidth - 10) / 3;
                     const kpis = [
-                        { label: 'Total Members', value: totalMembers, sub: '+5.2% vs last period', color: green, subColor: greenLight },
-                        { label: 'Total Claims', value: totalClaims, sub: '+12.3% vs last period', color: blue, subColor: red },
-                        { label: 'Approved Amount', value: approvedAmount, sub: 'USD Equivalent', color: gold, subColor: textMuted }
+                        { label: 'Total Members', value: totalMembers, sub: 'Active Members', color: green, subColor: greenLight },
+                        { label: 'Total Claims', value: totalClaims, sub: 'This Period', color: blue, subColor: textMuted },
+                        { label: 'Utilization Rate', value: utilization, sub: 'Claims per Member', color: gold, subColor: textMuted }
                     ];
                     
                     kpis.forEach((kpi, i) => {
@@ -1864,9 +1856,9 @@
                     
                     // KPI Cards Row 2
                     const kpis2 = [
-                        { label: 'Cost per Member', value: costPerMember, color: purple },
-                        { label: 'Utilization Rate', value: utilization, color: teal },
-                        { label: 'Avg Claim Value', value: '$127.05', color: orange }
+                        { label: 'Inpatient Cases', value: inpatientCases, color: purple },
+                        { label: 'Outpatient Cases', value: outpatientCases, color: teal },
+                        { label: 'Ex Gratia Cases', value: exGratiaCases, color: orange }
                     ];
                     
                     kpis2.forEach((kpi, i) => {
@@ -1897,7 +1889,7 @@
                     
                     const metrics = [
                         { label: 'Claims Processing Rate', value: 94, target: 95, color: green },
-                        { label: 'Cost Efficiency', value: 78, target: 80, color: blue },
+                        { label: 'Member Retention', value: 92, target: 90, color: blue },
                         { label: 'Member Satisfaction', value: 88, target: 85, color: purple },
                         { label: 'Network Utilization', value: 72, target: 75, color: orange }
                     ];
@@ -1963,10 +1955,10 @@
                     yPos += 10;
                     
                     const rows = [
-                        ['Total Claims', '1,234', '1,099', '+12.3%', greenLight],
-                        ['Members', '8,547', '8,119', '+5.2%', greenLight],
-                        ['Approved (USD)', '$156,789', '$142,350', '+10.1%', greenLight],
-                        ['Cost/Member', '$67.83', '$62.45', '+8.6%', redLight]
+                        ['Total Claims', totalClaims, '-', '-', greenLight],
+                        ['Members', totalMembers, '-', '-', greenLight],
+                        ['Inpatient Cases', inpatientCases, '-', '-', blue],
+                        ['Outpatient Cases', outpatientCases, '-', '-', teal]
                     ];
                     
                     rows.forEach((row, ri) => {
@@ -2072,29 +2064,33 @@
                     
                     yPos += 65;
                     
-                    // Cost Comparison
+                    // Cases Distribution (NO COST DATA)
                     doc.setFontSize(10);
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(...textDark);
-                    doc.text('COST ANALYSIS', margin, yPos);
+                    doc.text('CASES DISTRIBUTION', margin, yPos);
                     
                     yPos += 8;
                     
-                    // Visual bar comparison
-                    const totalCostVal = 156789;
-                    const inCostVal = 101913;
-                    const outCostVal = 54876;
-                    const inPct = (inCostVal / totalCostVal * 100).toFixed(0);
-                    const outPct = (outCostVal / totalCostVal * 100).toFixed(0);
+                    // Visual bar comparison (cases only)
+                    const inCasesVal = parseInt(inpatientCases.replace(/,/g, '')) || 308;
+                    const outCasesVal = parseInt(outpatientCases.replace(/,/g, '')) || 926;
+                    const exCasesVal = parseInt(exGratiaCases.replace(/,/g, '')) || 0;
+                    const totalCasesVal = inCasesVal + outCasesVal + exCasesVal;
+                    const inPct = totalCasesVal > 0 ? (inCasesVal / totalCasesVal * 100).toFixed(0) : 0;
+                    const outPct = totalCasesVal > 0 ? (outCasesVal / totalCasesVal * 100).toFixed(0) : 0;
                     
                     // Stacked bar
+                    const barTotal = contentWidth;
+                    const inBarW = totalCasesVal > 0 ? (inCasesVal / totalCasesVal) * barTotal : barTotal * 0.25;
+                    const outBarW = totalCasesVal > 0 ? (outCasesVal / totalCasesVal) * barTotal : barTotal * 0.75;
+                    
                     doc.setFillColor(...red);
-                    const inBarW = (inCostVal / totalCostVal) * contentWidth;
                     doc.roundedRect(margin, yPos, inBarW, 25, 3, 3, 'F');
                     doc.rect(margin + inBarW - 5, yPos, 5, 25, 'F');
                     
                     doc.setFillColor(...blue);
-                    doc.roundedRect(margin + inBarW, yPos, contentWidth - inBarW, 25, 3, 3, 'F');
+                    doc.roundedRect(margin + inBarW, yPos, outBarW, 25, 3, 3, 'F');
                     doc.rect(margin + inBarW, yPos, 5, 25, 'F');
                     
                     // Labels on bar
@@ -2102,14 +2098,14 @@
                     doc.setFontSize(8);
                     doc.setFont('helvetica', 'bold');
                     doc.text('Inpatient ' + inPct + '%', margin + 8, yPos + 10);
-                    doc.text(inpatientCost, margin + 8, yPos + 19);
+                    doc.text(inCasesVal + ' cases', margin + 8, yPos + 19);
                     
                     doc.text('Outpatient ' + outPct + '%', margin + inBarW + 8, yPos + 10);
-                    doc.text(outpatientCost, margin + inBarW + 8, yPos + 19);
+                    doc.text(outCasesVal + ' cases', margin + inBarW + 8, yPos + 19);
                     
                     yPos += 35;
                     
-                    // Detailed breakdown table
+                    // Detailed breakdown table (NO COST DATA)
                     doc.setFontSize(10);
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(...textDark);
@@ -2117,8 +2113,8 @@
                     
                     yPos += 8;
                     
-                    const detailHeaders = ['Category', 'Cases', 'Cost', 'Avg/Case', '% Total'];
-                    const detailWidths = [40, 30, 40, 35, 30];
+                    const detailHeaders = ['Category', 'Cases', '% of Total'];
+                    const detailWidths = [60, 55, 55];
                     
                     doc.setFillColor(...purple);
                     doc.roundedRect(margin, yPos, contentWidth, 10, 2, 2, 'F');
@@ -2135,9 +2131,10 @@
                     yPos += 10;
                     
                     const detailRows = [
-                        { data: ['Inpatient', '308', '$101,913', '$330.89', '65%'], color: red },
-                        { data: ['Outpatient', '926', '$54,876', '$59.26', '35%'], color: blue },
-                        { data: ['TOTAL', '1,234', '$156,789', '$127.05', '100%'], color: purple, bold: true }
+                        { data: ['Inpatient', inpatientCases, inPct + '%'], color: red },
+                        { data: ['Outpatient', outpatientCases, outPct + '%'], color: blue },
+                        { data: ['Ex Gratia', exGratiaCases, totalCasesVal > 0 ? (exCasesVal / totalCasesVal * 100).toFixed(0) + '%' : '0%'], color: gold },
+                        { data: ['TOTAL', fmt(totalCasesVal), '100%'], color: purple, bold: true }
                     ];
                     
                     detailRows.forEach((row, ri) => {
@@ -2369,155 +2366,7 @@
                     doc.text('Page 4  •  Polaris Financial Services  •  Confidential', pageWidth / 2, pageHeight - 3, { align: 'center' });
                 }
                 
-                // ==================== PAGE 5: COST BREAKDOWN ====================
-                if (sections.cost) {
-                    sectionsDone++;
-                    updateProgress(10 + (sectionsDone / totalSections * 70), 'Adding Cost Breakdown...');
-                    await new Promise(r => setTimeout(r, 80));
-                    doc.addPage();
-                    
-                    // Header
-                    doc.setFillColor(...purple);
-                    doc.rect(0, 0, pageWidth, 22, 'F');
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFontSize(12);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('Cost Breakdown', margin, 14);
-                    
-                    yPos = 32;
-                    
-                    // Main cost display
-                    doc.setFillColor(...green);
-                    doc.roundedRect(margin, yPos, contentWidth, 50, 5, 5, 'F');
-                    
-                    // Decorative element
-                    doc.setFillColor(56, 142, 60);
-                    doc.circle(margin + contentWidth - 30, yPos + 25, 35, 'F');
-                    doc.setFillColor(76, 175, 80);
-                    doc.circle(margin + contentWidth - 25, yPos + 20, 20, 'F');
-                    
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFontSize(10);
-                    doc.setFont('helvetica', 'normal');
-                    doc.text('TOTAL COST PER MEMBER', margin + 12, yPos + 18);
-                    doc.setFontSize(32);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(costPerMember, margin + 12, yPos + 42);
-                    
-                    yPos += 60;
-                    
-                    // Cost components
-                    doc.setFontSize(10);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setTextColor(...textDark);
-                    doc.text('COST COMPONENTS', margin, yPos);
-                    
-                    yPos += 8;
-                    
-                    const costNum = 67.83;
-                    const components = [
-                        { name: 'Base Claims Cost', value: (costNum * 0.70).toFixed(2), pct: 70, color: green },
-                        { name: 'Audit Fee (15%)', value: (costNum * 0.105).toFixed(2), pct: 10.5, color: gold },
-                        { name: 'Administrative', value: '8.50', pct: 12.5, color: blue },
-                        { name: 'Registration Fee', value: '2.00', pct: 3, color: purple },
-                        { name: 'Service Fee', value: '0.75', pct: 1, color: orange },
-                        { name: 'Other Fees', value: '2.10', pct: 3, color: teal }
-                    ];
-                    
-                    components.forEach((comp, i) => {
-                        const y = yPos + (i * 20);
-                        
-                        doc.setFillColor(...bgLight);
-                        doc.roundedRect(margin, y, contentWidth, 18, 2, 2, 'F');
-                        
-                        // Color indicator
-                        doc.setFillColor(...comp.color);
-                        doc.roundedRect(margin + 3, y + 3, 12, 12, 2, 2, 'F');
-                        
-                        // Name
-                        doc.setFontSize(9);
-                        doc.setFont('helvetica', 'bold');
-                        doc.setTextColor(...textDark);
-                        doc.text(comp.name, margin + 20, y + 12);
-                        
-                        // Progress bar
-                        drawProgressBar(margin + 80, y + 6, 60, 5, comp.pct, comp.color, comp.color);
-                        
-                        // Value
-                        doc.setFontSize(10);
-                        doc.setFont('helvetica', 'bold');
-                        doc.setTextColor(...comp.color);
-                        doc.text('$' + comp.value, margin + 150, y + 12);
-                    });
-                    
-                    yPos += 130;
-                    
-                    // Cost trend mini chart
-                    doc.setFontSize(10);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setTextColor(...textDark);
-                    doc.text('COST TREND (6 MONTHS)', margin, yPos);
-                    
-                    yPos += 8;
-                    
-                    doc.setFillColor(...bgLight);
-                    doc.roundedRect(margin, yPos, contentWidth, 55, 3, 3, 'F');
-                    
-                    // Draw line chart
-                    const costData = [58.2, 61.4, 63.8, 65.2, 66.5, 67.83];
-                    const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-                    const chartMargin = 25;
-                    const chartW = contentWidth - chartMargin * 2;
-                    const chartH = 35;
-                    const minCost = 55;
-                    const maxCost = 75;
-                    
-                    // Grid lines
-                    doc.setDrawColor(220, 220, 220);
-                    doc.setLineWidth(0.2);
-                    for (let i = 0; i <= 4; i++) {
-                        const gy = yPos + 8 + (i * chartH / 4);
-                        doc.line(margin + chartMargin, gy, margin + chartMargin + chartW, gy);
-                    }
-                    
-                    // Y-axis labels
-                    doc.setFontSize(6);
-                    doc.setTextColor(...textMuted);
-                    doc.text('$75', margin + 5, yPos + 10);
-                    doc.text('$65', margin + 5, yPos + 27);
-                    doc.text('$55', margin + 5, yPos + 44);
-                    
-                    // Draw line
-                    doc.setDrawColor(...green);
-                    doc.setLineWidth(1);
-                    
-                    costData.forEach((val, i) => {
-                        const x = margin + chartMargin + (i * chartW / 5);
-                        const y = yPos + 8 + ((maxCost - val) / (maxCost - minCost)) * chartH;
-                        
-                        if (i > 0) {
-                            const prevX = margin + chartMargin + ((i - 1) * chartW / 5);
-                            const prevY = yPos + 8 + ((maxCost - costData[i-1]) / (maxCost - minCost)) * chartH;
-                            doc.line(prevX, prevY, x, y);
-                        }
-                        
-                        // Point
-                        doc.setFillColor(...green);
-                        doc.circle(x, y, 2, 'F');
-                        
-                        // Month label
-                        doc.setFontSize(6);
-                        doc.setTextColor(...textMuted);
-                        doc.text(monthLabels[i], x - 4, yPos + 52);
-                    });
-                    
-                    // Footer
-                    doc.setFillColor(...purple);
-                    doc.rect(0, pageHeight - 8, pageWidth, 8, 'F');
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFontSize(6);
-                    doc.text('Page 5  •  Polaris Financial Services  •  Confidential', pageWidth / 2, pageHeight - 3, { align: 'center' });
-                }
+                // Cost Breakdown section REMOVED from client portal (no financial data)
                 
                 // ==================== FINALIZE ====================
                 updateProgress(95, 'Finalizing...');
@@ -3699,28 +3548,91 @@
             document.getElementById('loadingScreen').classList.add('hidden');
         }
         
+        // Store raw API data for filtering
+        let rawApiData = null;
+        
         async function loadData(clientId) {
             try {
-                // Build API URL with client filter
-                let apiUrl = `${API_URL}?action=getMasterComparison`;
-                if (clientId) {
-                    apiUrl += `&client_id=${encodeURIComponent(clientId)}`;
-                }
+                // Always fetch ALL data (no client_id filter) - we filter on frontend
+                const apiUrl = `${API_URL}?action=getMasterComparison`;
                 
                 const r = await fetch(apiUrl);
                 const d = await r.json();
-                if (d.success) updateDashboard(d.data);
+                if (d.success) {
+                    rawApiData = d.data;
+                    updateDashboard(d.data, clientId);
+                }
                 document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
             } catch(e) { console.error(e); }
         }
         
-        function updateDashboard(data) {
-            if (!data.current_period) return;
-            const c = data.current_period, p = data.previous_period, ch = data.changes, periods = data.all_periods || [];
+        // Get list of client_ids to include based on selection
+        function getClientIdsToFilter(selectedId) {
+            const selected = companiesList.find(c => c.client_id === selectedId);
             
-            document.getElementById('periodBadge').textContent = c.period_label;
-            if (p) document.getElementById('cmpPeriodLabel').textContent = `${c.period_label} vs ${p.period_label}`;
+            if (selected && selected.is_parent) {
+                // Parent selected - include ALL companies in the group
+                return companiesList.map(c => c.client_id);
+            } else {
+                // Subsidiary selected - include only that one
+                return [selectedId];
+            }
+        }
+        
+        // Filter and aggregate client_details by period
+        function filterClientData(clientDetails, clientIds, period) {
+            return clientDetails.filter(cd => 
+                clientIds.includes(cd.client_id) && cd.period === period
+            );
+        }
+        
+        // Aggregate data for multiple clients
+        function aggregateClientData(filteredData) {
+            return {
+                members: filteredData.reduce((sum, d) => sum + (d.members || 0), 0),
+                claims: filteredData.reduce((sum, d) => sum + (d.claims || 0), 0),
+                inpatient_cases: filteredData.reduce((sum, d) => sum + (d.inpatient_cases || 0), 0),
+                outpatient_cases: filteredData.reduce((sum, d) => sum + (d.outpatient_cases || 0), 0),
+                exgratia_cases: filteredData.reduce((sum, d) => sum + (d.exgratia_cases || 0), 0),
+                new_enrollments: filteredData.reduce((sum, d) => sum + (d.new_enrollments || 0), 0),
+                cancellations: filteredData.reduce((sum, d) => sum + (d.cancellations || 0), 0)
+            };
+        }
+        
+        function updateDashboard(data, clientId) {
+            if (!data.client_details || !data.periods) return;
             
+            const clientIds = getClientIdsToFilter(clientId || selectedCompanyId);
+            const periods = data.periods || [];
+            const latestPeriod = data.latest_period || periods[periods.length - 1];
+            const previousPeriod = periods.length > 1 ? periods[periods.indexOf(latestPeriod) - 1] : null;
+            
+            // Get filtered data for current period
+            const currentData = filterClientData(data.client_details, clientIds, latestPeriod);
+            const c = aggregateClientData(currentData);
+            
+            // Get filtered data for previous period
+            let p = null, ch = null;
+            if (previousPeriod) {
+                const prevData = filterClientData(data.client_details, clientIds, previousPeriod);
+                p = aggregateClientData(prevData);
+                
+                // Calculate changes
+                ch = {
+                    members: { 
+                        percentage: p.members > 0 ? ((c.members - p.members) / p.members * 100) : null 
+                    },
+                    claims: { 
+                        percentage: p.claims > 0 ? ((c.claims - p.claims) / p.claims * 100) : null 
+                    }
+                };
+            }
+            
+            // Update period badge
+            document.getElementById('periodBadge').textContent = latestPeriod;
+            if (p) document.getElementById('cmpPeriodLabel').textContent = `${latestPeriod} vs ${previousPeriod}`;
+            
+            // Update KPIs with REAL data
             document.getElementById('kpiMembers').textContent = fmt(c.members);
             document.getElementById('kpiClaims').textContent = fmt(c.claims);
             const util = c.members > 0 ? (c.claims / c.members * 100) : 0;
@@ -3732,6 +3644,7 @@
                 setTrend('kpiClaimsTrend', ch.claims);
             }
             
+            // Period comparison
             if (p && ch) {
                 document.getElementById('cmpClaims').textContent = fmt(c.claims);
                 document.getElementById('cmpClaimsPrev').textContent = fmt(p.claims);
@@ -3741,38 +3654,54 @@
                 setChange('cmpMembersChange', ch.members);
             }
             
-            // Inpatient/Outpatient/Ex Gratia data (mock - will come from CBMS/Excel)
-            const inpatientCases = Math.round(c.claims * 0.22);
-            const outpatientCases = Math.round(c.claims * 0.70);
-            const exGratiaCases = c.claims - inpatientCases - outpatientCases;
+            // REAL Inpatient/Outpatient/Ex Gratia data from API
+            const inpatientCases = c.inpatient_cases || 0;
+            const outpatientCases = c.outpatient_cases || 0;
+            const exGratiaCases = c.exgratia_cases || 0;
             
             document.getElementById('inpatientCases').textContent = fmt(inpatientCases);
             document.getElementById('outpatientCases').textContent = fmt(outpatientCases);
             document.getElementById('exGratiaCases').textContent = fmt(exGratiaCases);
             
-            // Principal/Dependent data (mock - will come from CBMS)
+            // Principal/Dependent data (still estimate until CBMS provides)
             const principalMembers = Math.round(c.members * 0.4);
             const dependentMembers = c.members - principalMembers;
             
             document.getElementById('principalCount').textContent = fmt(principalMembers);
             document.getElementById('dependentCount').textContent = fmt(dependentMembers);
             
-            // Member Movement (mock - will come from CBMS)
-            const newEnroll = Math.round(c.members * 0.08);
-            const cancelled = Math.round(c.members * 0.03);
+            // REAL Member Movement from API
+            const newEnroll = c.new_enrollments || 0;
+            const cancelled = c.cancellations || 0;
             document.getElementById('newEnrollments').textContent = '+' + newEnroll;
             document.getElementById('cancellations').textContent = '-' + cancelled;
-            document.getElementById('netChange').textContent = (newEnroll - cancelled > 0 ? '+' : '') + (newEnroll - cancelled);
+            document.getElementById('netChange').textContent = (newEnroll - cancelled >= 0 ? '+' : '') + (newEnroll - cancelled);
             
-            try { createCharts(periods, c); } catch(e) { console.error('createCharts error:', e); }
-            try { createInOutCharts(periods, inpatientCases, outpatientCases, exGratiaCases); } catch(e) { console.error('createInOutCharts error:', e); }
+            // Build periods data for charts
+            const periodsData = periods.map(period => {
+                const periodFiltered = filterClientData(data.client_details, clientIds, period);
+                const agg = aggregateClientData(periodFiltered);
+                return {
+                    period_label: period,
+                    members: agg.members,
+                    claims: agg.claims,
+                    inpatient_cases: agg.inpatient_cases,
+                    outpatient_cases: agg.outpatient_cases,
+                    exgratia_cases: agg.exgratia_cases,
+                    new_enrollments: agg.new_enrollments,
+                    cancellations: agg.cancellations
+                };
+            });
+            
+            try { createCharts(periodsData, c); } catch(e) { console.error('createCharts error:', e); }
+            try { createInOutCharts(periodsData, inpatientCases, outpatientCases, exGratiaCases); } catch(e) { console.error('createInOutCharts error:', e); }
             try { createMemberTypeCharts(principalMembers, dependentMembers, c.claims); } catch(e) { console.error('createMemberTypeCharts error:', e); }
-            try { createMovementCharts(periods); } catch(e) { console.error('createMovementCharts error:', e); }
+            try { createMovementChartsReal(periodsData); } catch(e) { console.error('createMovementCharts error:', e); }
             
             // Additional charts
             try {
                 createCategoryCharts(c);
-                createYoYCharts(periods);
+                createYoYCharts(periodsData);
                 createHospitalCharts();
                 createGeoCharts();
             } catch(e) {
@@ -3781,7 +3710,236 @@
             
             updateMetrics(util);
             updateInsights(ch);
-            updateTable(periods);
+            updateTableReal(periodsData);
+        }
+        
+        // Real movement charts with actual data
+        function createMovementChartsReal(periods) {
+            // Movement Compare Chart
+            const ctx1 = document.getElementById('movementCompareChart').getContext('2d');
+            if (charts.movementCompare) charts.movementCompare.destroy();
+            
+            const enrollGrad = ctx1.createLinearGradient(0, 0, 0, 250);
+            enrollGrad.addColorStop(0, '#A5D6A7');
+            enrollGrad.addColorStop(0.5, '#66BB6A');
+            enrollGrad.addColorStop(1, '#2E7D32');
+            
+            const cancelGrad = ctx1.createLinearGradient(0, 0, 0, 250);
+            cancelGrad.addColorStop(0, '#EF9A9A');
+            cancelGrad.addColorStop(0.5, '#EF5350');
+            cancelGrad.addColorStop(1, '#C62828');
+            
+            charts.movementCompare = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: periods.map(p => p.period_label),
+                    datasets: [
+                        { 
+                            label: 'New Enrollments',
+                            data: periods.map(p => p.new_enrollments || 0), 
+                            backgroundColor: enrollGrad, 
+                            borderRadius: 6,
+                            borderWidth: 2,
+                            borderColor: '#1B5E20',
+                            barPercentage: 0.8,
+                            categoryPercentage: 0.7
+                        },
+                        { 
+                            label: 'Cancellations',
+                            data: periods.map(p => p.cancellations || 0), 
+                            backgroundColor: cancelGrad,
+                            borderRadius: 6,
+                            borderWidth: 2,
+                            borderColor: '#B71C1C',
+                            barPercentage: 0.8,
+                            categoryPercentage: 0.7
+                        }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            display: true, 
+                            position: 'top', 
+                            labels: { 
+                                color: '#b8c9b8', 
+                                font: { size: 13, weight: 'bold' },
+                                usePointStyle: true,
+                                pointStyle: 'rectRounded'
+                            } 
+                        } 
+                    }, 
+                    scales: { 
+                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 12, weight: 'bold' } } }, 
+                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
+                    }
+                }
+            });
+            
+            // Movement Trend Chart
+            const ctx2 = document.getElementById('movementTrendChart').getContext('2d');
+            if (charts.movementTrend) charts.movementTrend.destroy();
+            
+            const netGrad = ctx2.createLinearGradient(0, 0, 0, 250);
+            netGrad.addColorStop(0, 'rgba(212,175,55,0.4)');
+            netGrad.addColorStop(1, 'rgba(212,175,55,0.05)');
+            
+            charts.movementTrend = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: periods.map(p => p.period_label),
+                    datasets: [
+                        { 
+                            label: 'Enrollments',
+                            data: periods.map(p => p.new_enrollments || 0), 
+                            borderColor: '#4CAF50', 
+                            backgroundColor: 'rgba(76,175,80,0.1)',
+                            fill: false,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#4CAF50',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 8
+                        },
+                        { 
+                            label: 'Cancellations',
+                            data: periods.map(p => p.cancellations || 0), 
+                            borderColor: '#e74c3c', 
+                            backgroundColor: 'rgba(231,76,60,0.1)',
+                            fill: false,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#e74c3c',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 8
+                        },
+                        { 
+                            label: 'Net Change',
+                            data: periods.map(p => (p.new_enrollments || 0) - (p.cancellations || 0)), 
+                            borderColor: '#FFD700', 
+                            backgroundColor: netGrad, 
+                            fill: true, 
+                            tension: 0.4,
+                            borderWidth: 4,
+                            pointBackgroundColor: '#FFD700',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 3,
+                            pointRadius: 6,
+                            pointHoverRadius: 10
+                        }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            display: true, 
+                            position: 'top', 
+                            labels: { 
+                                color: '#b8c9b8', 
+                                font: { size: 13, weight: 'bold' },
+                                usePointStyle: true 
+                            } 
+                        } 
+                    }, 
+                    scales: { 
+                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 12, weight: 'bold' } } }, 
+                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
+                    }
+                }
+            });
+            
+            // Full Trend Chart
+            const ctx3 = document.getElementById('movementFullTrendChart').getContext('2d');
+            if (charts.movementFullTrend) charts.movementFullTrend.destroy();
+            
+            const fillGreen = ctx3.createLinearGradient(0, 0, 0, 200);
+            fillGreen.addColorStop(0, 'rgba(76,175,80,0.3)');
+            fillGreen.addColorStop(1, 'rgba(76,175,80,0.05)');
+            const fillRed = ctx3.createLinearGradient(0, 0, 0, 200);
+            fillRed.addColorStop(0, 'rgba(231,76,60,0.3)');
+            fillRed.addColorStop(1, 'rgba(231,76,60,0.05)');
+            
+            charts.movementFullTrend = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: periods.map(p => p.period_label),
+                    datasets: [
+                        { 
+                            label: 'New Enrollments',
+                            data: periods.map(p => p.new_enrollments || 0), 
+                            borderColor: '#4CAF50', 
+                            backgroundColor: fillGreen,
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#4CAF50',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 10
+                        },
+                        { 
+                            label: 'Cancellations',
+                            data: periods.map(p => p.cancellations || 0), 
+                            borderColor: '#e74c3c', 
+                            backgroundColor: fillRed,
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#e74c3c',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 10
+                        }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            display: true, 
+                            position: 'top', 
+                            labels: { 
+                                color: '#b8c9b8', 
+                                font: { size: 14, weight: 'bold' },
+                                usePointStyle: true,
+                                padding: 25
+                            } 
+                        } 
+                    }, 
+                    scales: { 
+                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 13, weight: 'bold' } } }, 
+                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
+                    }
+                }
+            });
+        }
+        
+        // Real table with actual data
+        function updateTableReal(periods) {
+            const tbody = document.getElementById('historyTable');
+            tbody.innerHTML = periods.map((p, i) => {
+                const rank = periods.length - i;
+                const cls = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+                const util = p.members > 0 ? (p.claims / p.members * 100).toFixed(1) : 0;
+                return `<tr>
+                    <td><div class="rank-badge ${cls}">${rank}</div></td>
+                    <td><strong>${p.period_label}</strong></td>
+                    <td>${fmt(p.members)}</td>
+                    <td>${fmt(p.claims)}</td>
+                    <td>${util}%</td>
+                </tr>`;
+            }).reverse().join('');
         }
         
         function createInOutCharts(periods, inCases, outCases, exGratiaCases) {
@@ -4181,91 +4339,19 @@
             });
         }
         
-        function createCostBreakdownChart(current) {
-            const ctx = document.getElementById('costBreakdownChart').getContext('2d');
-            if (charts.costBreakdown) charts.costBreakdown.destroy();
-            
-            // 3D Shadow plugin
-            const shadow3D = {
-                id: 'shadow3D',
-                beforeDraw: (chart) => {
-                    const ctx = chart.ctx;
-                    ctx.save();
-                    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-                    ctx.shadowBlur = 12;
-                    ctx.shadowOffsetX = 6;
-                    ctx.shadowOffsetY = 6;
-                }
-            };
-            
-            const baseCost = current.cost_per_member * 0.7;
-            const auditFee = baseCost * 0.15;
-            const regFee = 24;
-            const monthlyFee = 9;
-            
-            // Create gradients for 3D effect
-            const greenGrad = ctx.createLinearGradient(0, 0, 0, 300);
-            greenGrad.addColorStop(0, '#66BB6A');
-            greenGrad.addColorStop(0.5, '#43A047');
-            greenGrad.addColorStop(1, '#2E7D32');
-            
-            const goldGrad = ctx.createLinearGradient(0, 0, 0, 300);
-            goldGrad.addColorStop(0, '#FFE082');
-            goldGrad.addColorStop(0.5, '#FFD54F');
-            goldGrad.addColorStop(1, '#FFC107');
-            
-            const blueGrad = ctx.createLinearGradient(0, 0, 0, 300);
-            blueGrad.addColorStop(0, '#64B5F6');
-            blueGrad.addColorStop(0.5, '#42A5F5');
-            blueGrad.addColorStop(1, '#1E88E5');
-            
-            const purpleGrad = ctx.createLinearGradient(0, 0, 0, 300);
-            purpleGrad.addColorStop(0, '#4DD0E1');
-            purpleGrad.addColorStop(0.5, '#00BCD4');
-            purpleGrad.addColorStop(1, '#00838F');
-            
-            const redGrad = ctx.createLinearGradient(0, 0, 0, 300);
-            redGrad.addColorStop(0, '#EF5350');
-            redGrad.addColorStop(0.5, '#E53935');
-            redGrad.addColorStop(1, '#C62828');
-            
-            charts.costBreakdown = new Chart(ctx, {
-                type: 'bar',
-                plugins: [shadow3D],
-                data: {
-                    labels: ['Base Claims', 'Audit Fee', 'Registration', 'Monthly', 'Total'],
-                    datasets: [{
-                        data: [baseCost, auditFee, regFee, monthlyFee, current.cost_per_member],
-                        backgroundColor: [greenGrad, goldGrad, blueGrad, purpleGrad, redGrad],
-                        borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 },
-                        borderWidth: 2,
-                        borderColor: ['#1B5E20', '#F57F17', '#1565C0', '#006064', '#B71C1C'],
-                        barPercentage: 0.7
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } }, 
-                    scales: { 
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { weight: 'bold', size: 10 } } }, 
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => '$' + v.toFixed(0) } } 
-                    } 
-                }
-            });
-        }
+        // NOTE: createCostBreakdownChart function removed (uses financial data)
         
         // ============ NEW SECTIONS CHARTS ============
         
         function createCategoryCharts(current) {
-            // Mock data - will come from Excel/CBMS
+            // Mock data - will come from Excel/CBMS (NO COST DATA for client portal)
             const categories = [
-                { name: 'Medical', cases: 450, cost: 125000, color: '#4CAF50' },
-                { name: 'Dental', cases: 180, cost: 28000, color: '#2196F3' },
-                { name: 'Maternity', cases: 45, cost: 85000, color: '#E91E63' },
-                { name: 'Optical', cases: 120, cost: 15000, color: '#FF9800' },
-                { name: 'Laboratory', cases: 280, cost: 42000, color: '#D4AF37' },
-                { name: 'Other', cases: 95, cost: 18000, color: '#607D8B' }
+                { name: 'Medical', cases: 450, color: '#4CAF50' },
+                { name: 'Dental', cases: 180, color: '#2196F3' },
+                { name: 'Maternity', cases: 45, color: '#E91E63' },
+                { name: 'Optical', cases: 120, color: '#FF9800' },
+                { name: 'Laboratory', cases: 280, color: '#D4AF37' },
+                { name: 'Other', cases: 95, color: '#607D8B' }
             ];
             
             // Update stat values
@@ -4358,27 +4444,19 @@
         }
         
         function createYoYCharts(periods) {
-            // Mock YoY data
-            const data2024 = { claims: 3850, cost: 285000, members: 980 };
-            const data2025 = { claims: 4320, cost: 312000, members: 1127 };
+            // Mock YoY data (NO COST DATA for client portal)
+            const data2024 = { claims: 3850, members: 980 };
+            const data2025 = { claims: 4320, members: 1127 };
             
-            // Update YoY stats
+            // Update YoY stats (NO COST DATA)
             document.getElementById('yoyClaims2025').textContent = fmt(data2025.claims);
             document.getElementById('yoyClaims2024').textContent = fmt(data2024.claims);
-            document.getElementById('yoyCost2025').textContent = '$' + fmt(data2025.cost);
-            document.getElementById('yoyCost2024').textContent = '$' + fmt(data2024.cost);
             
             const claimsChange = ((data2025.claims - data2024.claims) / data2024.claims * 100).toFixed(0);
-            const costChange = ((data2025.cost - data2024.cost) / data2024.cost * 100).toFixed(0);
             const memberChange = ((data2025.members - data2024.members) / data2024.members * 100).toFixed(0);
-            const costPerMember2024 = data2024.cost / data2024.members;
-            const costPerMember2025 = data2025.cost / data2025.members;
-            const cpmChange = ((costPerMember2025 - costPerMember2024) / costPerMember2024 * 100).toFixed(0);
             
             document.getElementById('yoyClaimsChange').textContent = (claimsChange > 0 ? '+' : '') + claimsChange + '%';
-            document.getElementById('yoyCostChange').textContent = (costChange > 0 ? '+' : '') + costChange + '%';
             document.getElementById('yoyMemberChange').textContent = (memberChange > 0 ? '+' : '') + memberChange + '%';
-            document.getElementById('yoyCostPerMember').textContent = (cpmChange > 0 ? '+' : '') + cpmChange + '%';
             
             // YoY Claims Chart
             const ctx1 = document.getElementById('yoyClaimsChart').getContext('2d');
@@ -4399,29 +4477,6 @@
                     scales: {
                         x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
                         y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
-                    }
-                }
-            });
-            
-            // YoY Cost Chart
-            const ctx2 = document.getElementById('yoyCostChart').getContext('2d');
-            if (charts.yoyCost) charts.yoyCost.destroy();
-            charts.yoyCost = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-                    datasets: [
-                        { label: '2024', data: [68000, 72000, 78000, 67000], backgroundColor: 'rgba(122,143,122,0.7)', borderRadius: 4 },
-                        { label: '2025', data: [82000, 95000, 88000, null], backgroundColor: 'rgba(76,175,80,0.8)', borderRadius: 4 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => '$' + fmt(v) } }
                     }
                 }
             });
@@ -4471,21 +4526,21 @@
         }
         
         function createHospitalCharts() {
-            // Mock hospital data - will come from CBMS
+            // Mock hospital data - will come from CBMS (NO COST DATA for client portal)
             const hospitals = [
-                { name: 'St. Luke\'s BGC', claims: 185, cost: 452000 },
-                { name: 'Makati Medical', claims: 156, cost: 380000 },
-                { name: 'The Medical City', claims: 142, cost: 325000 },
-                { name: 'Asian Hospital', claims: 128, cost: 298000 },
-                { name: 'Manila Doctors', claims: 115, cost: 245000 },
-                { name: 'Cardinal Santos', claims: 98, cost: 215000 },
-                { name: 'Chong Hua Cebu', claims: 87, cost: 178000 },
-                { name: 'UERM', claims: 76, cost: 145000 },
-                { name: 'PGH', claims: 68, cost: 98000 },
-                { name: 'Others', claims: 315, cost: 480000 }
+                { name: 'St. Luke\'s BGC', claims: 185 },
+                { name: 'Makati Medical', claims: 156 },
+                { name: 'The Medical City', claims: 142 },
+                { name: 'Asian Hospital', claims: 128 },
+                { name: 'Manila Doctors', claims: 115 },
+                { name: 'Cardinal Santos', claims: 98 },
+                { name: 'Chong Hua Cebu', claims: 87 },
+                { name: 'UERM', claims: 76 },
+                { name: 'PGH', claims: 68 },
+                { name: 'Others', claims: 315 }
             ];
             
-            const totalCost = hospitals.reduce((a, h) => a + h.cost, 0);
+            const totalClaims = hospitals.reduce((a, h) => a + h.claims, 0);
             
             // Top Hospitals by Claims
             const ctx1 = document.getElementById('topHospitalsChart').getContext('2d');
@@ -4514,56 +4569,28 @@
                 }
             });
             
-            // Top Hospitals by Cost
-            const ctx2 = document.getElementById('topHospitalsCostChart').getContext('2d');
-            if (charts.topHospitalsCost) charts.topHospitalsCost.destroy();
-            charts.topHospitalsCost = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: hospitals.map(h => h.name),
-                    datasets: [{
-                        data: hospitals.map(h => h.cost),
-                        backgroundColor: 'rgba(212,175,55,0.7)',
-                        borderColor: '#D4AF37',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => '$' + fmt(v) } },
-                        y: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 9 } } }
-                    }
-                }
-            });
-            
-            // Hospital Table
+            // Hospital Table (NO COST DATA for client portal)
             const tbody = document.getElementById('hospitalsTableBody');
+            const totalClaims = hospitals.reduce((a, h) => a + h.claims, 0);
             tbody.innerHTML = hospitals.map((h, i) => `
                 <tr>
                     <td><span style="background:${i < 3 ? '#D4AF37' : '#2E7D32'};color:#000;padding:2px 8px;border-radius:10px;font-weight:bold">${i + 1}</span></td>
                     <td><strong>${h.name}</strong></td>
                     <td>${h.claims}</td>
-                    <td>$${fmt(h.cost)}</td>
-                    <td>$${fmt(Math.round(h.cost / h.claims))}</td>
-                    <td>${(h.cost / totalCost * 100).toFixed(1)}%</td>
+                    <td>${(h.claims / totalClaims * 100).toFixed(1)}%</td>
                 </tr>
             `).join('');
         }
         
         function createGeoCharts() {
-            // Mock geographic data - will come from CBMS
+            // Mock geographic data - will come from CBMS (NO COST DATA for client portal)
             const regions = [
-                { name: 'NCR', claims: 580, cost: 1250000, color: '#4CAF50' },
-                { name: 'Central Visayas', claims: 245, cost: 485000, color: '#2196F3' },
-                { name: 'Davao Region', claims: 165, cost: 320000, color: '#FF9800' },
-                { name: 'Western Visayas', claims: 125, cost: 215000, color: '#D4AF37' },
-                { name: 'Central Luzon', claims: 95, cost: 165000, color: '#E91E63' },
-                { name: 'Other Regions', claims: 160, cost: 280000, color: '#607D8B' }
+                { name: 'NCR', claims: 580, color: '#4CAF50' },
+                { name: 'Central Visayas', claims: 245, color: '#2196F3' },
+                { name: 'Davao Region', claims: 165, color: '#FF9800' },
+                { name: 'Western Visayas', claims: 125, color: '#D4AF37' },
+                { name: 'Central Luzon', claims: 95, color: '#E91E63' },
+                { name: 'Other Regions', claims: 160, color: '#607D8B' }
             ];
             
             // Update city stats
@@ -4593,33 +4620,6 @@
                     maintainAspectRatio: false,
                     cutout: '55%',
                     plugins: { legend: { display: true, position: 'right', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } }
-                }
-            });
-            
-            // Region Cost Chart
-            const ctx2 = document.getElementById('geoCostChart').getContext('2d');
-            if (charts.geoCost) charts.geoCost.destroy();
-            charts.geoCost = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: regions.map(r => r.name),
-                    datasets: [{
-                        data: regions.map(r => r.cost),
-                        backgroundColor: regions.map(r => r.color + 'CC'),
-                        borderColor: regions.map(r => r.color),
-                        borderWidth: 2,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => '$' + fmt(v) } },
-                        y: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 9 } } }
-                    }
                 }
             });
             
@@ -4696,81 +4696,7 @@
                 plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(13,31,13,0.95)', borderColor: '#D4AF37', borderWidth: 2, titleFont: { weight: 'bold' } } }
             };
             
-            // Cost Trend - 3D Line
-            const ctx1 = document.getElementById('costTrendChart').getContext('2d');
-            if (charts.cost) charts.cost.destroy();
-            const grad = ctx1.createLinearGradient(0, 0, 0, 350);
-            grad.addColorStop(0, 'rgba(255,215,0,0.5)'); grad.addColorStop(1, 'rgba(255,215,0,0.02)');
-            charts.cost = new Chart(ctx1, {
-                type: 'line',
-                data: { 
-                    labels, 
-                    datasets: [{ 
-                        data: periods.map(p => p.cost_per_member), 
-                        borderColor: '#FFD700', 
-                        backgroundColor: grad, 
-                        fill: true, 
-                        tension: 0.4, 
-                        pointRadius: 6, 
-                        pointHoverRadius: 10,
-                        pointBackgroundColor: '#FFD700',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 3,
-                        borderWidth: 4 
-                    }] 
-                },
-                options: { ...opts, scales: { x: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#D4AF37', font: { weight: 'bold' }, callback: v => '$' + v } } } }
-            });
-            
-            // Approved - 3D Bars
-            const ctx2 = document.getElementById('approvedChart').getContext('2d');
-            if (charts.approved) charts.approved.destroy();
-            const approvedGrad = ctx2.createLinearGradient(0, 0, 0, 300);
-            approvedGrad.addColorStop(0, '#81C784');
-            approvedGrad.addColorStop(0.5, '#4CAF50');
-            approvedGrad.addColorStop(1, '#2E7D32');
-            charts.approved = new Chart(ctx2, {
-                type: 'bar',
-                plugins: [shadow3D],
-                data: { 
-                    labels, 
-                    datasets: [{ 
-                        data: periods.map(p => p.approved_usd), 
-                        backgroundColor: approvedGrad, 
-                        borderColor: '#1B5E20', 
-                        borderWidth: 2, 
-                        borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 },
-                        barPercentage: 0.7
-                    }] 
-                },
-                options: { ...opts, scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => '$' + fmt(v) } } } }
-            });
-            
-            // Gauge - Enhanced 3D
-            const canvas = document.getElementById('gaugeChart');
-            const gctx = canvas.getContext('2d');
-            const pct = Math.min(current.cost_per_member / 100, 1);
-            gctx.clearRect(0, 0, 200, 200);
-            
-            // Outer shadow ring
-            gctx.shadowColor = 'rgba(0,0,0,0.5)';
-            gctx.shadowBlur = 15;
-            gctx.shadowOffsetX = 5;
-            gctx.shadowOffsetY = 5;
-            
-            // Background ring
-            gctx.beginPath(); gctx.arc(100, 100, 75, Math.PI * 0.75, Math.PI * 2.25); 
-            gctx.lineWidth = 22; gctx.strokeStyle = '#1e3a1e'; gctx.lineCap = 'round'; gctx.stroke();
-            
-            // Gradient ring
-            const gg = gctx.createLinearGradient(0, 0, 200, 0); 
-            gg.addColorStop(0, '#4CAF50'); gg.addColorStop(0.5, '#FFD700'); gg.addColorStop(1, '#f44336');
-            gctx.beginPath(); gctx.arc(100, 100, 75, Math.PI * 0.75, Math.PI * 0.75 + Math.PI * 1.5 * pct); 
-            gctx.lineWidth = 18; gctx.strokeStyle = gg; gctx.lineCap = 'round'; gctx.stroke();
-            
-            // Reset shadow
-            gctx.shadowColor = 'transparent';
-            document.getElementById('gaugeValue').textContent = '$' + current.cost_per_member.toFixed(2);
+            // NOTE: Cost/Financial charts removed from client portal
             
             // Claims by Period - 3D Bars
             const ctx3 = document.getElementById('claimsPeriodChart').getContext('2d');
@@ -4823,32 +4749,7 @@
                 options: { ...opts, scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } } }
             });
             
-            // Avg Claim - 3D Line
-            const ctx5 = document.getElementById('avgClaimChart').getContext('2d');
-            if (charts.avgClaim) charts.avgClaim.destroy();
-            const orangeGrad = ctx5.createLinearGradient(0, 0, 0, 200);
-            orangeGrad.addColorStop(0, 'rgba(255,152,0,0.5)');
-            orangeGrad.addColorStop(1, 'rgba(255,152,0,0.02)');
-            charts.avgClaim = new Chart(ctx5, {
-                type: 'line',
-                data: { 
-                    labels, 
-                    datasets: [{ 
-                        data: periods.map(p => p.claims > 0 ? p.approved_usd / p.claims : 0), 
-                        borderColor: '#FF9800', 
-                        backgroundColor: orangeGrad, 
-                        fill: true, 
-                        tension: 0.4,
-                        borderWidth: 4,
-                        pointRadius: 5,
-                        pointBackgroundColor: '#FF9800',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 8
-                    }] 
-                },
-                options: { ...opts, scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => '$' + v.toFixed(0) } } } }
-            });
+            // NOTE: Avg Claim chart removed (uses financial data)
             
             // Plan Pie - 3D Doughnut
             const ctx6 = document.getElementById('planPieChart').getContext('2d');
@@ -4878,24 +4779,7 @@
                 options: { ...opts, cutout: '55%', plugins: { legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } } }
             });
             
-            // Plan Cost - 3D Horizontal Bars
-            const ctx7 = document.getElementById('planCostChart').getContext('2d');
-            if (charts.planCost) charts.planCost.destroy();
-            charts.planCost = new Chart(ctx7, {
-                type: 'bar',
-                plugins: [shadow3D],
-                data: { 
-                    labels: ['Gold', 'Platinum', 'Silver'], 
-                    datasets: [{ 
-                        data: [65, 85, 35], 
-                        backgroundColor: [goldPlanGrad, platGrad, silverGrad],
-                        borderColor: ['#FF8F00', '#757575', '#616161'],
-                        borderWidth: 2,
-                        borderRadius: 6 
-                    }] 
-                },
-                options: { ...opts, indexAxis: 'y', scales: { x: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => '$' + v } }, y: { grid: { display: false }, ticks: { color: '#fff', font: { weight: 'bold' } } } } }
-            });
+            // NOTE: Plan Cost chart removed (uses financial data)
             
             // Utilization - 3D Line
             const ctx8 = document.getElementById('utilizationChart').getContext('2d');
