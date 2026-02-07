@@ -4368,68 +4368,79 @@
                 { name: 'Other', cases: 95, color: '#607D8B' }
             ];
             
-            // Update stat values
-            document.getElementById('catMedical').textContent = categories[0].cases;
-            document.getElementById('catDental').textContent = categories[1].cases;
-            document.getElementById('catMaternity').textContent = categories[2].cases;
-            document.getElementById('catOptical').textContent = categories[3].cases;
-            document.getElementById('catLab').textContent = categories[4].cases;
-            document.getElementById('catOther').textContent = categories[5].cases;
+            // Update stat values (with null checks)
+            const catMedical = document.getElementById('catMedical');
+            const catDental = document.getElementById('catDental');
+            const catMaternity = document.getElementById('catMaternity');
+            const catOptical = document.getElementById('catOptical');
+            const catLab = document.getElementById('catLab');
+            const catOther = document.getElementById('catOther');
             
-            // Category Pie Chart
-            const ctx1 = document.getElementById('categoryPieChart').getContext('2d');
-            if (charts.categoryPie) charts.categoryPie.destroy();
-            charts.categoryPie = new Chart(ctx1, {
-                type: 'doughnut',
-                data: {
-                    labels: categories.map(c => c.name),
-                    datasets: [{
-                        data: categories.map(c => c.cases),
-                        backgroundColor: categories.map(c => c.color),
-                        borderWidth: 2,
-                        borderColor: '#0a1a0a',
-                        hoverOffset: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '55%',
-                    plugins: { legend: { display: true, position: 'right', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } }
-                }
-            });
+            if (catMedical) catMedical.textContent = categories[0].cases;
+            if (catDental) catDental.textContent = categories[1].cases;
+            if (catMaternity) catMaternity.textContent = categories[2].cases;
+            if (catOptical) catOptical.textContent = categories[3].cases;
+            if (catLab) catLab.textContent = categories[4].cases;
+            if (catOther) catOther.textContent = categories[5].cases;
             
-            // NOTE: categoryCostChart removed (no financial data for client portal)
-            
-            // Category Trend Chart
-            const ctx3 = document.getElementById('categoryTrendChart').getContext('2d');
-            if (charts.categoryTrend) charts.categoryTrend.destroy();
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-            charts.categoryTrend = new Chart(ctx3, {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: categories.slice(0, 4).map(cat => ({
-                        label: cat.name,
-                        data: months.map(() => Math.round(cat.cases / 6 * (0.8 + Math.random() * 0.4))),
-                        borderColor: cat.color,
-                        backgroundColor: cat.color + '20',
-                        fill: false,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointRadius: 4
-                    }))
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
+            // Category Pie Chart (with null check)
+            const canvas1 = document.getElementById('categoryPieChart');
+            if (canvas1) {
+                const ctx1 = canvas1.getContext('2d');
+                if (charts.categoryPie) charts.categoryPie.destroy();
+                charts.categoryPie = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: categories.map(c => c.name),
+                        datasets: [{
+                            data: categories.map(c => c.cases),
+                            backgroundColor: categories.map(c => c.color),
+                            borderWidth: 2,
+                            borderColor: '#0a1a0a',
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '55%',
+                        plugins: { legend: { display: true, position: 'right', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } }
                     }
-                }
-            });
+                });
+            }
+            
+            // Category Trend Chart (with null check)
+            const canvas3 = document.getElementById('categoryTrendChart');
+            if (canvas3) {
+                const ctx3 = canvas3.getContext('2d');
+                if (charts.categoryTrend) charts.categoryTrend.destroy();
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                charts.categoryTrend = new Chart(ctx3, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: categories.slice(0, 4).map(cat => ({
+                            label: cat.name,
+                            data: months.map(() => Math.round(cat.cases / 6 * (0.8 + Math.random() * 0.4))),
+                            borderColor: cat.color,
+                            backgroundColor: cat.color + '20',
+                            fill: false,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 4
+                        }))
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
+                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
+                        }
+                    }
+                });
+            }
         }
         
         function createYoYCharts(periods) {
@@ -4437,76 +4448,86 @@
             const data2024 = { claims: 3850, members: 980 };
             const data2025 = { claims: 4320, members: 1127 };
             
-            // Update YoY stats (NO COST DATA)
-            document.getElementById('yoyClaims2025').textContent = fmt(data2025.claims);
-            document.getElementById('yoyClaims2024').textContent = fmt(data2024.claims);
+            // Update YoY stats (with null checks)
+            const yoyClaims2025 = document.getElementById('yoyClaims2025');
+            const yoyClaims2024 = document.getElementById('yoyClaims2024');
+            const yoyClaimsChange = document.getElementById('yoyClaimsChange');
+            const yoyMemberChange = document.getElementById('yoyMemberChange');
+            
+            if (yoyClaims2025) yoyClaims2025.textContent = fmt(data2025.claims);
+            if (yoyClaims2024) yoyClaims2024.textContent = fmt(data2024.claims);
             
             const claimsChange = ((data2025.claims - data2024.claims) / data2024.claims * 100).toFixed(0);
             const memberChange = ((data2025.members - data2024.members) / data2024.members * 100).toFixed(0);
             
-            document.getElementById('yoyClaimsChange').textContent = (claimsChange > 0 ? '+' : '') + claimsChange + '%';
-            document.getElementById('yoyMemberChange').textContent = (memberChange > 0 ? '+' : '') + memberChange + '%';
+            if (yoyClaimsChange) yoyClaimsChange.textContent = (claimsChange > 0 ? '+' : '') + claimsChange + '%';
+            if (yoyMemberChange) yoyMemberChange.textContent = (memberChange > 0 ? '+' : '') + memberChange + '%';
             
-            // YoY Claims Chart
-            const ctx1 = document.getElementById('yoyClaimsChart').getContext('2d');
-            if (charts.yoyClaims) charts.yoyClaims.destroy();
-            charts.yoyClaims = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-                    datasets: [
-                        { label: '2024', data: [920, 980, 1050, 900], backgroundColor: 'rgba(122,143,122,0.7)', borderRadius: 4 },
-                        { label: '2025', data: [1080, 1150, 1090, null], backgroundColor: 'rgba(212,175,55,0.8)', borderRadius: 4 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
-                    }
-                }
-            });
-            
-            // YoY Trend Chart
-            const ctx3 = document.getElementById('yoyTrendChart').getContext('2d');
-            if (charts.yoyTrend) charts.yoyTrend.destroy();
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
-            charts.yoyTrend = new Chart(ctx3, {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: [
-                        { 
-                            label: '2025', 
-                            data: [320, 380, 410, 350, 420, 380, 390, 410, 360],
-                            borderColor: '#D4AF37',
-                            backgroundColor: 'rgba(212,175,55,0.2)',
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointRadius: 5
-                        },
-                        { 
-                            label: '2024', 
-                            data: [280, 320, 350, 310, 380, 340, 360, 390, 320],
-                            borderColor: '#7a8f7a',
-                            backgroundColor: 'rgba(122,143,122,0.1)',
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointRadius: 4
+            // YoY Claims Chart (with null check)
+            const canvas1 = document.getElementById('yoyClaimsChart');
+            if (canvas1) {
+                const ctx1 = canvas1.getContext('2d');
+                if (charts.yoyClaims) charts.yoyClaims.destroy();
+                charts.yoyClaims = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                        datasets: [
+                            { label: '2024', data: [920, 980, 1050, 900], backgroundColor: 'rgba(122,143,122,0.7)', borderRadius: 4 },
+                            { label: '2025', data: [1080, 1150, 1090, null], backgroundColor: 'rgba(212,175,55,0.8)', borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
+                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
                         }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
-                    scales: {
+                    }
+                });
+            }
+            
+            // YoY Trend Chart (with null check)
+            const canvas3 = document.getElementById('yoyTrendChart');
+            if (canvas3) {
+                const ctx3 = canvas3.getContext('2d');
+                if (charts.yoyTrend) charts.yoyTrend.destroy();
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
+                charts.yoyTrend = new Chart(ctx3, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [
+                            { 
+                                label: '2025', 
+                                data: [320, 380, 410, 350, 420, 380, 390, 410, 360],
+                                borderColor: '#D4AF37',
+                                backgroundColor: 'rgba(212,175,55,0.2)',
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointRadius: 5
+                            },
+                            { 
+                                label: '2024', 
+                                data: [280, 320, 350, 310, 380, 340, 360, 390, 320],
+                                borderColor: '#7a8f7a',
+                                backgroundColor: 'rgba(122,143,122,0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                pointRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
+                        scales: {
                         x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
                         y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
                     }
