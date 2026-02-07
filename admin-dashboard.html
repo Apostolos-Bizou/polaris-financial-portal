@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-07 v3.52 - Chart refresh uses selectedClient (not hardcoded ALL) -->
+<!-- VERSION: 2026-02-07 v3.53 - Top Clients by Revenue shows subsidiaries when parent selected -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12439,6 +12439,108 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     }
                     
                     console.log('🎉 v3.52: Chart data loaded for:', chartClientId);
+                    
+                    // v3.53: Update Top Clients by Revenue table
+                    try {
+                        const topClientsBody = document.getElementById('ceoTopClientsBody');
+                        if (topClientsBody && window.masterComparisonData && window.masterComparisonData.client_details) {
+                            const allClientDetails = window.masterComparisonData.client_details;
+                            
+                            // Aggregate by client across selected quarters
+                            const clientAggregates = {};
+                            allClientDetails.forEach(cd => {
+                                const periodQ = cd.period.replace('-2025', '').replace('2025-', '').replace('-2026', '').replace('2026-', '');
+                                if (!selectedQuarters.includes(periodQ)) return;
+                                
+                                const cid = cd.client_id;
+                                if (!clientAggregates[cid]) {
+                                    clientAggregates[cid] = {
+                                        client_id: cid,
+                                        client_name: cd.client_name,
+                                        parent_client_id: cd.parent_client_id || null,
+                                        members: 0,
+                                        claims: 0,
+                                        claims_cost: 0,
+                                        total_fees: 0
+                                    };
+                                }
+                                clientAggregates[cid].members = Math.max(clientAggregates[cid].members, cd.members || 0);
+                                clientAggregates[cid].claims += (cd.claims || 0);
+                                clientAggregates[cid].claims_cost += (cd.approved_usd || 0);
+                                clientAggregates[cid].total_fees += (cd.total_fees || 0);
+                            });
+                            
+                            let clientsArray = Object.values(clientAggregates).map(c => ({
+                                ...c,
+                                estimated_revenue: c.total_fees || c.members * 20
+                            }));
+                            
+                            // Filter based on selected client
+                            const currentClient = chartClientId;
+                            if (currentClient && currentClient !== 'ALL' && currentClient !== 'all') {
+                                // Check if it's a GROUP selection
+                                if (currentClient.startsWith('GROUP:')) {
+                                    const parentId = currentClient.replace('GROUP:', '');
+                                    // Show parent + all subsidiaries
+                                    clientsArray = clientsArray.filter(c => 
+                                        c.client_id === parentId || c.parent_client_id === parentId
+                                    );
+                                    console.log('📊 v3.53: Filtered to GROUP:', parentId, '→', clientsArray.length, 'clients');
+                                } else {
+                                    // Find if selected client is a parent with children
+                                    const selectedClientData = clientsArray.find(c => c.client_id === currentClient);
+                                    if (selectedClientData) {
+                                        // Check for children
+                                        const children = clientsArray.filter(c => c.parent_client_id === currentClient);
+                                        if (children.length > 0) {
+                                            // It's a parent - show parent + children
+                                            clientsArray = [selectedClientData, ...children];
+                                            console.log('📊 v3.53: Parent with', children.length, 'children');
+                                        } else {
+                                            // Check if it's a child - find siblings
+                                            const parentId = selectedClientData.parent_client_id;
+                                            if (parentId) {
+                                                // Show all siblings (same parent)
+                                                clientsArray = clientsArray.filter(c => 
+                                                    c.client_id === parentId || c.parent_client_id === parentId
+                                                );
+                                                console.log('📊 v3.53: Child of', parentId, '→ showing', clientsArray.length, 'siblings');
+                                            } else {
+                                                // Just show this client
+                                                clientsArray = [selectedClientData];
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Sort by revenue and take top 10
+                            const topClients = clientsArray
+                                .sort((a, b) => (b.estimated_revenue || 0) - (a.estimated_revenue || 0))
+                                .slice(0, 10);
+                            
+                            if (topClients.length > 0) {
+                                topClientsBody.innerHTML = topClients.map((client, index) => {
+                                    const lossRatio = client.estimated_revenue > 0 
+                                        ? Math.round(client.claims_cost / client.estimated_revenue * 100) 
+                                        : 0;
+                                    return `<tr>
+                                        <td>${index + 1}</td>
+                                        <td title="${client.client_id}">${client.client_name || client.client_id}</td>
+                                        <td style="text-align:right">${(client.members || 0).toLocaleString()}</td>
+                                        <td style="text-align:right">$${Math.round(client.claims_cost || 0).toLocaleString()}</td>
+                                        <td style="text-align:right">$${Math.round(client.estimated_revenue || 0).toLocaleString()}</td>
+                                        <td style="text-align:right;color:${lossRatio <= 70 ? '#4CAF50' : '#f39c12'}">${lossRatio}%</td>
+                                    </tr>`;
+                                }).join('');
+                                console.log('✅ v3.53: Top Clients table updated with', topClients.length, 'clients');
+                            } else {
+                                topClientsBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.5);">No client data for selection</td></tr>';
+                            }
+                        }
+                    } catch(topErr) {
+                        console.log('⚠️ v3.53: Top Clients update skipped:', topErr.message);
+                    }
                 } catch(chartErr) { 
                     console.log('⚠️ Chart refresh skipped:', chartErr.message); 
                 }
@@ -34030,9 +34132,9 @@ console.log('✅ Recipients Management (v3.27) loaded!');
     </div>
 </div>
 
-<!-- v3.52: Chart refresh uses selectedClient -->
+<!-- v3.53: Top Clients shows subsidiaries for selected parent -->
 <script>
-console.log('📊 v3.52: Chart refresh uses selected client from dropdown');
+console.log('📊 v3.53: Top Clients table shows group subsidiaries when parent selected');
 </script>
 </body>
 </html>
