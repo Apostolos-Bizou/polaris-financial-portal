@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-07 v3.53 - Top Clients by Revenue shows subsidiaries when parent selected -->
+<!-- VERSION: 2026-02-07 v3.54 - GROUP selection properly handled, Top Clients filtered -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12374,14 +12374,33 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 updateDashboardLoading(80, 'Loading details...', '🏥 Fetching categories & geographic data');
                 try { await loadData(); } catch(e) {}
                 
-                // Step 5: v3.52 - INLINE chart data refresh with SELECTED CLIENT
+                // Step 5: v3.54 - INLINE chart data refresh with GROUP support
                 updateDashboardLoading(90, 'Loading charts...', '📊 Updating hospitals & geographic data');
                 try { 
                     const CHART_API = 'https://script.google.com/macros/s/AKfycbxBnEkHdzvxby_W1RuLpkFtlQ6GScMyF8wqap9v1BhvuncSx0SxAsAG9F11_IYvDYX6/exec';
-                    // Use selected client - convert 'all' to 'ALL' for API
+                    
+                    // v3.54: Handle GROUP selection - always fetch ALL, filter client-side if needed
                     let chartClientId = selectedClient || 'ALL';
                     if (chartClientId === 'all') chartClientId = 'ALL';
-                    console.log('📊 v3.52: Loading chart data for client:', chartClientId);
+                    
+                    // For GROUP selections, we need to fetch ALL and filter
+                    let isGroupSelection = chartClientId.startsWith('GROUP:');
+                    let groupClientIds = [];
+                    
+                    if (isGroupSelection) {
+                        const parentId = chartClientId.replace('GROUP:', '');
+                        const allClients = window.cachedClientsData || [];
+                        groupClientIds = [parentId];
+                        allClients.forEach(c => {
+                            if (c.parent_client_id === parentId) {
+                                groupClientIds.push(c.client_id);
+                            }
+                        });
+                        console.log('📊 v3.54: GROUP selection, IDs:', groupClientIds);
+                        chartClientId = 'ALL'; // Fetch all, filter later
+                    }
+                    
+                    console.log('📊 v3.54: Loading chart data for client:', chartClientId, isGroupSelection ? '(will filter for group)' : '');
                     
                     const [catResp, hospResp, geoResp] = await Promise.all([
                         fetch(CHART_API + '?action=getCategoriesBreakdown&clientId=' + encodeURIComponent(chartClientId)).then(r => r.json()),
@@ -12401,7 +12420,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             <td>$${(h.avg_claim||0).toFixed(0)}</td>
                             <td>${totalCost>0?((h.cost_usd/totalCost)*100).toFixed(1):0}%</td>
                         </tr>`).join('');
-                        console.log('✅ v3.52: Hospital table updated');
+                        console.log('✅ v3.54: Hospital table updated');
                     }
                     
                     // Update City boxes
@@ -12421,7 +12440,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         if(geoEl('geoDavao')) geoEl('geoDavao').textContent = d.toLocaleString();
                         if(geoEl('geoIloilo')) geoEl('geoIloilo').textContent = il.toLocaleString();
                         if(geoEl('geoOther')) geoEl('geoOther').textContent = o.toLocaleString();
-                        console.log('✅ v3.52: City boxes updated');
+                        console.log('✅ v3.54: City boxes updated');
                     }
                     
                     // Update Category boxes
@@ -12435,12 +12454,12 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         if(catEl('catOptical')) catEl('catOptical').textContent = cm['Ophthalmology']||cm['Optical']||0;
                         if(catEl('catLab')) catEl('catLab').textContent = cm['Laboratory & Diagnostics']||cm['Laboratory']||0;
                         if(catEl('catOther')) catEl('catOther').textContent = cm['Other']||0;
-                        console.log('✅ v3.52: Category boxes updated');
+                        console.log('✅ v3.54: Category boxes updated');
                     }
                     
-                    console.log('🎉 v3.52: Chart data loaded for:', chartClientId);
+                    console.log('🎉 v3.54: Chart data loaded');
                     
-                    // v3.53: Update Top Clients by Revenue table
+                    // v3.54: Update Top Clients by Revenue table with GROUP support
                     try {
                         const topClientsBody = document.getElementById('ceoTopClientsBody');
                         if (topClientsBody && window.masterComparisonData && window.masterComparisonData.client_details) {
@@ -12475,40 +12494,28 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 estimated_revenue: c.total_fees || c.members * 20
                             }));
                             
-                            // Filter based on selected client
-                            const currentClient = chartClientId;
-                            if (currentClient && currentClient !== 'ALL' && currentClient !== 'all') {
-                                // Check if it's a GROUP selection
-                                if (currentClient.startsWith('GROUP:')) {
-                                    const parentId = currentClient.replace('GROUP:', '');
-                                    // Show parent + all subsidiaries
-                                    clientsArray = clientsArray.filter(c => 
-                                        c.client_id === parentId || c.parent_client_id === parentId
-                                    );
-                                    console.log('📊 v3.53: Filtered to GROUP:', parentId, '→', clientsArray.length, 'clients');
-                                } else {
-                                    // Find if selected client is a parent with children
-                                    const selectedClientData = clientsArray.find(c => c.client_id === currentClient);
-                                    if (selectedClientData) {
-                                        // Check for children
-                                        const children = clientsArray.filter(c => c.parent_client_id === currentClient);
-                                        if (children.length > 0) {
-                                            // It's a parent - show parent + children
-                                            clientsArray = [selectedClientData, ...children];
-                                            console.log('📊 v3.53: Parent with', children.length, 'children');
+                            // v3.54: Filter based on GROUP or single client selection
+                            const currentClient = selectedClient || 'ALL';
+                            
+                            if (isGroupSelection && groupClientIds.length > 0) {
+                                // GROUP selection - filter to only group members
+                                clientsArray = clientsArray.filter(c => groupClientIds.includes(c.client_id));
+                                console.log('📊 v3.54: Filtered Top Clients to GROUP:', groupClientIds.length, 'IDs →', clientsArray.length, 'clients');
+                            } else if (currentClient && currentClient !== 'ALL' && currentClient !== 'all' && !currentClient.startsWith('GROUP:')) {
+                                // Single client selection
+                                const selectedClientData = clientsArray.find(c => c.client_id === currentClient);
+                                if (selectedClientData) {
+                                    const children = clientsArray.filter(c => c.parent_client_id === currentClient);
+                                    if (children.length > 0) {
+                                        clientsArray = [selectedClientData, ...children];
+                                    } else {
+                                        const parentId = selectedClientData.parent_client_id;
+                                        if (parentId) {
+                                            clientsArray = clientsArray.filter(c => 
+                                                c.client_id === parentId || c.parent_client_id === parentId
+                                            );
                                         } else {
-                                            // Check if it's a child - find siblings
-                                            const parentId = selectedClientData.parent_client_id;
-                                            if (parentId) {
-                                                // Show all siblings (same parent)
-                                                clientsArray = clientsArray.filter(c => 
-                                                    c.client_id === parentId || c.parent_client_id === parentId
-                                                );
-                                                console.log('📊 v3.53: Child of', parentId, '→ showing', clientsArray.length, 'siblings');
-                                            } else {
-                                                // Just show this client
-                                                clientsArray = [selectedClientData];
-                                            }
+                                            clientsArray = [selectedClientData];
                                         }
                                     }
                                 }
@@ -12533,13 +12540,13 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                         <td style="text-align:right;color:${lossRatio <= 70 ? '#4CAF50' : '#f39c12'}">${lossRatio}%</td>
                                     </tr>`;
                                 }).join('');
-                                console.log('✅ v3.53: Top Clients table updated with', topClients.length, 'clients');
+                                console.log('✅ v3.54: Top Clients table updated with', topClients.length, 'clients');
                             } else {
                                 topClientsBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.5);">No client data for selection</td></tr>';
                             }
                         }
                     } catch(topErr) {
-                        console.log('⚠️ v3.53: Top Clients update skipped:', topErr.message);
+                        console.log('⚠️ v3.54: Top Clients update skipped:', topErr.message);
                     }
                 } catch(chartErr) { 
                     console.log('⚠️ Chart refresh skipped:', chartErr.message); 
@@ -34132,9 +34139,9 @@ console.log('✅ Recipients Management (v3.27) loaded!');
     </div>
 </div>
 
-<!-- v3.53: Top Clients shows subsidiaries for selected parent -->
+<!-- v3.54: GROUP selection handled properly -->
 <script>
-console.log('📊 v3.53: Top Clients table shows group subsidiaries when parent selected');
+console.log('📊 v3.54: GROUP selection now properly filters Top Clients and data');
 </script>
 </body>
 </html>
