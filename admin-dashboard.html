@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-07 v3.39 - Fix Charts to show ALL selected quarters from API data -->
+<!-- VERSION: 2026-02-07 v3.40 - Fix Charts quarters + Top Clients filter by selected parent -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -32850,11 +32850,89 @@ function updateCEODashboardUI(data) {
     // PERIOD
     safeSetText('ceoFinancePeriod', data.period || 'Current');
     
-    // TOP CLIENTS TABLE (v3.25 - Use by_revenue ranking)
-    const topByRevenue = topClients.by_revenue || [];
-    console.log('📊 Top clients data:', { topClients, topByRevenue, count: topByRevenue.length });
-    if (topByRevenue.length > 0) {
-        updateTopClientsTableV324(topByRevenue);
+    // TOP CLIENTS TABLE (v3.39 - Filter by selected client using masterComparisonData)
+    let topClientsToShow = [];
+    
+    // Get current selected client
+    const currentSelectedClient = selectedClient || 'all';
+    console.log('📊 Current selected client for Top Clients:', currentSelectedClient);
+    
+    // Use masterComparisonData.client_details if available
+    if (window.masterComparisonData && window.masterComparisonData.client_details) {
+        const allClientDetails = window.masterComparisonData.client_details;
+        
+        // Aggregate by client across all periods
+        const clientAggregates = {};
+        allClientDetails.forEach(cd => {
+            // Filter by selected quarters
+            const periodQ = cd.period.replace('-2025', '').replace('2025-', '').replace('-2026', '').replace('2026-', '');
+            if (!selectedQuarters.includes(periodQ)) return;
+            
+            const cid = cd.client_id;
+            if (!clientAggregates[cid]) {
+                clientAggregates[cid] = {
+                    client_id: cid,
+                    client_name: cd.client_name,
+                    members: 0,
+                    claims: 0,
+                    claims_cost: 0,
+                    total_fees: 0
+                };
+            }
+            clientAggregates[cid].members += (cd.members || 0);
+            clientAggregates[cid].claims += (cd.claims || 0);
+            clientAggregates[cid].claims_cost += (cd.approved_usd || 0);
+            clientAggregates[cid].total_fees += (cd.total_fees || 0);
+        });
+        
+        // Convert to array and calculate revenue
+        let clientsArray = Object.values(clientAggregates).map(c => ({
+            ...c,
+            estimated_revenue: c.total_fees || c.members * 20 // Use fees or estimate
+        }));
+        
+        // Filter based on selected client
+        if (currentSelectedClient && currentSelectedClient !== 'all' && currentSelectedClient !== 'ALL') {
+            // Find if selected is a parent with children (e.g., CROSSWORLD has PIONEER CW, VERITAS CW, etc.)
+            // Check for naming patterns: children often contain parent name or specific suffixes
+            const selectedClientName = clientsArray.find(c => c.client_id === currentSelectedClient)?.client_name || '';
+            const parentKeywords = ['CROSSWORLD', 'DIANA', 'CENTROFIN', 'GOLDEN UNION', 'IONIC', 'ASTRA'];
+            
+            // Find which parent group this belongs to
+            let parentGroup = null;
+            for (const keyword of parentKeywords) {
+                if (selectedClientName.toUpperCase().includes(keyword)) {
+                    parentGroup = keyword;
+                    break;
+                }
+            }
+            
+            if (parentGroup) {
+                // Filter to show only clients from the same parent group
+                clientsArray = clientsArray.filter(c => 
+                    c.client_name.toUpperCase().includes(parentGroup)
+                );
+                console.log('📊 Filtered to', parentGroup, 'group:', clientsArray.length, 'clients');
+            } else {
+                // Just show the selected client itself
+                clientsArray = clientsArray.filter(c => c.client_id === currentSelectedClient);
+            }
+        }
+        
+        // Sort by revenue and take top 5
+        topClientsToShow = clientsArray
+            .sort((a, b) => (b.estimated_revenue || 0) - (a.estimated_revenue || 0))
+            .slice(0, 5);
+        
+        console.log('📊 Top clients from masterComparisonData:', topClientsToShow.length);
+    } else {
+        // Fallback to API data
+        topClientsToShow = topClients.by_revenue || [];
+    }
+    
+    console.log('📊 Top clients data:', { count: topClientsToShow.length, clients: topClientsToShow });
+    if (topClientsToShow.length > 0) {
+        updateTopClientsTableV324(topClientsToShow);
     } else {
         // Show "no data" message in table
         const tbody = document.getElementById('ceoTopClientsBody');
@@ -32863,7 +32941,7 @@ function updateCEODashboardUI(data) {
         }
     }
     
-    console.log('✅ CEO Dashboard UI updated (v3.25) successfully!');
+    console.log('✅ CEO Dashboard UI updated (v3.39) successfully!');
 }
 
 function updateCEOFinancialsUI(data) {
