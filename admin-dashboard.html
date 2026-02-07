@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-07 v3.45 - Delayed chart update (waits 2s for charts to initialize) -->
+<!-- VERSION: 2026-02-07 v3.46 - Auto-updater runs 3s after page load -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -33961,5 +33961,109 @@ console.log('✅ Recipients Management (v3.27) loaded!');
     </div>
 </div>
 
+<!-- v3.46: AUTO-UPDATER - Runs after page loads -->
+<script>
+(function() {
+    // Wait for page to fully load, then update charts
+    window.addEventListener('load', function() {
+        setTimeout(async function() {
+            console.log('🚀 v3.46: Auto-updater starting...');
+            
+            const API = 'https://script.google.com/macros/s/AKfycbxBnEkHdzvxby_W1RuLpkFtlQ6GScMyF8wqap9v1BhvuncSx0SxAsAG9F11_IYvDYX6/exec';
+            
+            try {
+                const [cat, hosp, geo] = await Promise.all([
+                    fetch(API + '?action=getCategoriesBreakdown&clientId=ALL').then(r => r.json()),
+                    fetch(API + '?action=getHospitalsData&clientId=ALL').then(r => r.json()),
+                    fetch(API + '?action=getGeographicData&clientId=ALL').then(r => r.json())
+                ]);
+                
+                // Update Hospital Table
+                const hospTable = document.getElementById('hospitalsTableBody');
+                if (hospTable && hosp.data && hosp.data.length > 0) {
+                    const totalCost = hosp.data.reduce((a,h) => a + (h.cost_usd||0), 0);
+                    hospTable.innerHTML = hosp.data.map((h,i) => `<tr>
+                        <td><span style="background:${i<3?'#D4AF37':'#2E7D32'};color:#000;padding:2px 8px;border-radius:10px;font-weight:bold">${i+1}</span></td>
+                        <td><strong>${h.name}</strong><br><small style="color:#7a8f7a">${h.city||''} ${h.region?'('+h.region+')':''}</small></td>
+                        <td>${(h.claims||0).toLocaleString()}</td>
+                        <td>$${((h.cost_usd||0)/1000).toFixed(1)}K</td>
+                        <td>$${(h.avg_claim||0).toFixed(0)}</td>
+                        <td>${totalCost>0?((h.cost_usd/totalCost)*100).toFixed(1):0}%</td>
+                    </tr>`).join('');
+                    console.log('✅ v3.46: Hospital table updated');
+                }
+                
+                // Update City boxes
+                if (geo.data && geo.data.top_cities) {
+                    let m=0,c=0,d=0,il=0,o=0;
+                    geo.data.top_cities.forEach(x => {
+                        const city = (x.city||'').toLowerCase();
+                        if (city.includes('manila')||city.includes('quezon')||city.includes('makati')||city.includes('pasig')||city.includes('taguig')) m += x.claims;
+                        else if (city.includes('cebu')) c += x.claims;
+                        else if (city.includes('davao')) d += x.claims;
+                        else if (city.includes('iloilo')) il += x.claims;
+                        else o += x.claims;
+                    });
+                    const el = id => document.getElementById(id);
+                    if(el('geoManila')) el('geoManila').textContent = m.toLocaleString();
+                    if(el('geoCebu')) el('geoCebu').textContent = c.toLocaleString();
+                    if(el('geoDavao')) el('geoDavao').textContent = d.toLocaleString();
+                    if(el('geoIloilo')) el('geoIloilo').textContent = il.toLocaleString();
+                    if(el('geoOther')) el('geoOther').textContent = o.toLocaleString();
+                    console.log('✅ v3.46: City boxes updated');
+                }
+                
+                // Update Category boxes
+                if (cat.data) {
+                    const cm = {};
+                    cat.data.forEach(x => cm[x.category] = x.cases);
+                    const el = id => document.getElementById(id);
+                    if(el('catMedical')) el('catMedical').textContent = cm['General Consultation']||cm['Medical']||0;
+                    if(el('catDental')) el('catDental').textContent = cm['Dental']||0;
+                    if(el('catMaternity')) el('catMaternity').textContent = cm['Maternity']||0;
+                    if(el('catOptical')) el('catOptical').textContent = cm['Ophthalmology']||cm['Optical']||0;
+                    if(el('catLab')) el('catLab').textContent = cm['Laboratory & Diagnostics']||cm['Laboratory']||0;
+                    if(el('catOther')) el('catOther').textContent = cm['Other']||0;
+                    console.log('✅ v3.46: Category boxes updated');
+                }
+                
+                // Update charts if they exist
+                if (window.charts) {
+                    if (window.charts.categoryPie && cat.data) {
+                        window.charts.categoryPie.data.labels = cat.data.map(c => c.category);
+                        window.charts.categoryPie.data.datasets[0].data = cat.data.map(c => c.cases);
+                        window.charts.categoryPie.update();
+                    }
+                    if (window.charts.categoryCost && cat.data) {
+                        window.charts.categoryCost.data.labels = cat.data.map(c => c.category);
+                        window.charts.categoryCost.data.datasets[0].data = cat.data.map(c => c.cost_usd);
+                        window.charts.categoryCost.update();
+                    }
+                    if (window.charts.topHospitals && hosp.data) {
+                        window.charts.topHospitals.data.labels = hosp.data.map(h => h.name);
+                        window.charts.topHospitals.data.datasets[0].data = hosp.data.map(h => h.claims);
+                        window.charts.topHospitals.update();
+                    }
+                    if (window.charts.topHospitalsCost && hosp.data) {
+                        window.charts.topHospitalsCost.data.labels = hosp.data.map(h => h.name);
+                        window.charts.topHospitalsCost.data.datasets[0].data = hosp.data.map(h => h.cost_usd);
+                        window.charts.topHospitalsCost.update();
+                    }
+                    if (window.charts.regionPie && geo.data && geo.data.regions) {
+                        window.charts.regionPie.data.labels = geo.data.regions.map(r => r.region);
+                        window.charts.regionPie.data.datasets[0].data = geo.data.regions.map(r => r.claims);
+                        window.charts.regionPie.update();
+                    }
+                    console.log('✅ v3.46: Charts updated');
+                }
+                
+                console.log('🎉 v3.46: Auto-update complete!');
+            } catch(e) {
+                console.error('❌ v3.46 error:', e);
+            }
+        }, 3000); // Wait 3 seconds after page load
+    });
+})();
+</script>
 </body>
 </html>
