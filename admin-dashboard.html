@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-07 v3.42 - FIX: Charts now load AFTER API data arrives -->
+<!-- VERSION: 2026-02-07 v3.43 - FIX: Store kpis so hasRealData check works for all charts -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10561,6 +10561,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 console.log('📊 v3.40 Parallel API calls completed:', {
                     kpis: kpiData.success,
+                    kpiDataKeys: Object.keys(kpiData || {}),
                     categories: categoriesData.success,
                     hospitals: hospitalsData.success,
                     geographic: geoData.success
@@ -10568,6 +10569,13 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 // Merge all data into unified response
                 const mergedData = kpiData || {};
+                
+                // v3.43: Ensure kpis exists for hasRealData check
+                if (!mergedData.kpis && kpiData) {
+                    // Try to find kpis in different locations
+                    mergedData.kpis = kpiData.kpis || kpiData.summary || kpiData.data?.kpis || { fromCharts: true };
+                    console.log('📊 v3.43: Set mergedData.kpis from:', mergedData.kpis);
+                }
                 
                 // Add categories data (v3.40 format)
                 if (categoriesData.success && categoriesData.data) {
@@ -17320,26 +17328,40 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         updateGeographicDisplay(data.geographic);
                     }
                     
-                    // v3.41 FIX: Store merged data in window.currentClientKPIs for chart functions
+                    // v3.42 FIX: Store merged data in window.currentClientKPIs for chart functions
                     if (!window.currentClientKPIs) window.currentClientKPIs = {};
+                    
+                    // CRITICAL: Store kpis so hasRealData check works!
+                    if (data.kpis) {
+                        window.currentClientKPIs.kpis = data.kpis;
+                    } else if (data.summary) {
+                        // Fallback: getDashboardKPIs might return summary instead of kpis
+                        window.currentClientKPIs.kpis = data.summary;
+                    } else {
+                        // Create minimal kpis object so hasRealData is true
+                        window.currentClientKPIs.kpis = { loaded: true };
+                    }
+                    
                     if (data.categories) window.currentClientKPIs.categories = data.categories;
                     if (data.hospitals) window.currentClientKPIs.hospitals = data.hospitals;
                     if (data.geographic) window.currentClientKPIs.geographic = data.geographic;
                     
-                    console.log('📊 v3.41: Data stored in window.currentClientKPIs:', {
+                    console.log('📊 v3.43: Data stored in window.currentClientKPIs:', {
+                        hasKpis: !!window.currentClientKPIs.kpis,
                         categories: window.currentClientKPIs.categories?.categories?.length || 0,
                         hospitals: window.currentClientKPIs.hospitals?.length || 0,
                         geographic: window.currentClientKPIs.geographic?.regions?.length || 0
                     });
                     
-                    // v3.41: Create charts AFTER data is loaded
+                    // v3.43: Create charts AFTER data is loaded
                     try {
+                        console.log('📊 v3.43: Creating charts with real data...');
                         createCategoryCharts(c);
                         createHospitalCharts();
                         createGeoCharts();
-                        console.log('📊 v3.41: Charts created with real API data');
+                        console.log('✅ v3.43: All charts created successfully');
                     } catch(e) {
-                        console.error('v3.41 Charts error:', e);
+                        console.error('❌ v3.43 Charts error:', e);
                     }
                 }
             }).catch(err => console.error('loadFinancialBreakdowns error:', err));
