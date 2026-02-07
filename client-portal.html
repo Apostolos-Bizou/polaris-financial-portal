@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-07-v3 - Cost Per Member Only - All null checks added -->
+    <!-- VERSION: 2026-02-07-v5 - Cost Per Member Only - All syntax fixed -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4337,11 +4337,12 @@
                         maintainAspectRatio: false,
                         plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
                         scales: {
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
+                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
+                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
+                        }
                     }
-                }
-            });
+                });
+            }
         }
         
         function createHospitalCharts() {
@@ -4618,9 +4619,9 @@
                             borderWidth: 3, 
                             hoverOffset: 15 
                         }] 
-                },
-                options: { ...opts, cutout: '55%', plugins: { legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } } }
-            });
+                    },
+                    options: { ...opts, cutout: '55%', plugins: { legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } } }
+                });
             }
             
             // NOTE: Plan Cost chart removed (uses financial data)
