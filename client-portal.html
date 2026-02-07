@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
+    <!-- VERSION: 2026-02-07-v3 - Cost Per Member Only - All null checks added -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1350,6 +1351,12 @@
         let currentUser = null, charts = {};
         let companiesList = [];  // List of parent + subsidiaries
         let selectedCompanyId = null;  // Currently selected company
+        
+        // Safe getContext helper - returns null if element doesn't exist
+        function safeGetContext(id) {
+            const canvas = document.getElementById(id);
+            return canvas ? canvas.getContext('2d') : null;
+        }
         
         // Global Chart.js defaults for larger, more readable fonts
         Chart.defaults.font.size = 14;
@@ -3712,15 +3719,11 @@
             try { createMemberTypeCharts(principalMembers, dependentMembers, c.claims); } catch(e) { console.error('createMemberTypeCharts error:', e); }
             try { createMovementChartsReal(periodsData); } catch(e) { console.error('createMovementCharts error:', e); }
             
-            // Additional charts
-            try {
-                createCategoryCharts(c);
-                createYoYCharts(periodsData);
-                createHospitalCharts();
-                createGeoCharts();
-            } catch(e) {
-                console.error('New charts error:', e);
-            }
+            // Additional charts - each in separate try-catch
+            try { createCategoryCharts(c); } catch(e) { console.error('createCategoryCharts error:', e); }
+            try { createYoYCharts(periodsData); } catch(e) { console.error('createYoYCharts error:', e); }
+            try { createHospitalCharts(); } catch(e) { console.error('createHospitalCharts error:', e); }
+            try { createGeoCharts(); } catch(e) { console.error('createGeoCharts error:', e); }
             
             updateMetrics(util);
             updateInsights(ch);
@@ -3730,213 +3733,219 @@
         // Real movement charts with actual data
         function createMovementChartsReal(periods) {
             // Movement Compare Chart
-            const ctx1 = document.getElementById('movementCompareChart').getContext('2d');
-            if (charts.movementCompare) charts.movementCompare.destroy();
-            
-            const enrollGrad = ctx1.createLinearGradient(0, 0, 0, 250);
-            enrollGrad.addColorStop(0, '#A5D6A7');
-            enrollGrad.addColorStop(0.5, '#66BB6A');
-            enrollGrad.addColorStop(1, '#2E7D32');
-            
-            const cancelGrad = ctx1.createLinearGradient(0, 0, 0, 250);
-            cancelGrad.addColorStop(0, '#EF9A9A');
-            cancelGrad.addColorStop(0.5, '#EF5350');
-            cancelGrad.addColorStop(1, '#C62828');
-            
-            charts.movementCompare = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: periods.map(p => p.period_label),
-                    datasets: [
-                        { 
-                            label: 'New Enrollments',
-                            data: periods.map(p => p.new_enrollments || 0), 
-                            backgroundColor: enrollGrad, 
-                            borderRadius: 6,
-                            borderWidth: 2,
-                            borderColor: '#1B5E20',
-                            barPercentage: 0.8,
-                            categoryPercentage: 0.7
-                        },
-                        { 
-                            label: 'Cancellations',
-                            data: periods.map(p => p.cancellations || 0), 
-                            backgroundColor: cancelGrad,
-                            borderRadius: 6,
-                            borderWidth: 2,
-                            borderColor: '#B71C1C',
-                            barPercentage: 0.8,
-                            categoryPercentage: 0.7
-                        }
-                    ]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { 
-                            display: true, 
-                            position: 'top', 
-                            labels: { 
-                                color: '#b8c9b8', 
-                                font: { size: 13, weight: 'bold' },
-                                usePointStyle: true,
-                                pointStyle: 'rectRounded'
+            const ctx1 = safeGetContext('movementCompareChart');
+            if (ctx1) {
+                if (charts.movementCompare) charts.movementCompare.destroy();
+                
+                const enrollGrad = ctx1.createLinearGradient(0, 0, 0, 250);
+                enrollGrad.addColorStop(0, '#A5D6A7');
+                enrollGrad.addColorStop(0.5, '#66BB6A');
+                enrollGrad.addColorStop(1, '#2E7D32');
+                
+                const cancelGrad = ctx1.createLinearGradient(0, 0, 0, 250);
+                cancelGrad.addColorStop(0, '#EF9A9A');
+                cancelGrad.addColorStop(0.5, '#EF5350');
+                cancelGrad.addColorStop(1, '#C62828');
+                
+                charts.movementCompare = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: periods.map(p => p.period_label),
+                        datasets: [
+                            { 
+                                label: 'New Enrollments',
+                                data: periods.map(p => p.new_enrollments || 0), 
+                                backgroundColor: enrollGrad, 
+                                borderRadius: 6,
+                                borderWidth: 2,
+                                borderColor: '#1B5E20',
+                                barPercentage: 0.8,
+                                categoryPercentage: 0.7
+                            },
+                            { 
+                                label: 'Cancellations',
+                                data: periods.map(p => p.cancellations || 0), 
+                                backgroundColor: cancelGrad,
+                                borderRadius: 6,
+                                borderWidth: 2,
+                                borderColor: '#B71C1C',
+                                barPercentage: 0.8,
+                                categoryPercentage: 0.7
+                            }
+                        ]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { 
+                            legend: { 
+                                display: true, 
+                                position: 'top', 
+                                labels: { 
+                                    color: '#b8c9b8', 
+                                    font: { size: 13, weight: 'bold' },
+                                    usePointStyle: true,
+                                    pointStyle: 'rectRounded'
+                                } 
                             } 
-                        } 
-                    }, 
-                    scales: { 
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 12, weight: 'bold' } } }, 
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
+                        }, 
+                        scales: { 
+                            x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 12, weight: 'bold' } } }, 
+                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
+                        }
                     }
-                }
-            });
+                });
+            }
             
             // Movement Trend Chart
-            const ctx2 = document.getElementById('movementTrendChart').getContext('2d');
-            if (charts.movementTrend) charts.movementTrend.destroy();
-            
-            const netGrad = ctx2.createLinearGradient(0, 0, 0, 250);
-            netGrad.addColorStop(0, 'rgba(212,175,55,0.4)');
-            netGrad.addColorStop(1, 'rgba(212,175,55,0.05)');
-            
-            charts.movementTrend = new Chart(ctx2, {
-                type: 'line',
-                data: {
-                    labels: periods.map(p => p.period_label),
-                    datasets: [
-                        { 
-                            label: 'Enrollments',
-                            data: periods.map(p => p.new_enrollments || 0), 
-                            borderColor: '#4CAF50', 
-                            backgroundColor: 'rgba(76,175,80,0.1)',
-                            fill: false,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#4CAF50',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5,
-                            pointHoverRadius: 8
-                        },
-                        { 
-                            label: 'Cancellations',
-                            data: periods.map(p => p.cancellations || 0), 
-                            borderColor: '#e74c3c', 
-                            backgroundColor: 'rgba(231,76,60,0.1)',
-                            fill: false,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#e74c3c',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5,
-                            pointHoverRadius: 8
-                        },
-                        { 
-                            label: 'Net Change',
-                            data: periods.map(p => (p.new_enrollments || 0) - (p.cancellations || 0)), 
-                            borderColor: '#FFD700', 
-                            backgroundColor: netGrad, 
-                            fill: true, 
-                            tension: 0.4,
-                            borderWidth: 4,
-                            pointBackgroundColor: '#FFD700',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 3,
-                            pointRadius: 6,
-                            pointHoverRadius: 10
-                        }
-                    ]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { 
-                            display: true, 
-                            position: 'top', 
-                            labels: { 
-                                color: '#b8c9b8', 
-                                font: { size: 13, weight: 'bold' },
-                                usePointStyle: true 
+            const ctx2 = safeGetContext('movementTrendChart');
+            if (ctx2) {
+                if (charts.movementTrend) charts.movementTrend.destroy();
+                
+                const netGrad = ctx2.createLinearGradient(0, 0, 0, 250);
+                netGrad.addColorStop(0, 'rgba(212,175,55,0.4)');
+                netGrad.addColorStop(1, 'rgba(212,175,55,0.05)');
+                
+                charts.movementTrend = new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: periods.map(p => p.period_label),
+                        datasets: [
+                            { 
+                                label: 'Enrollments',
+                                data: periods.map(p => p.new_enrollments || 0), 
+                                borderColor: '#4CAF50', 
+                                backgroundColor: 'rgba(76,175,80,0.1)',
+                                fill: false,
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointBackgroundColor: '#4CAF50',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 5,
+                                pointHoverRadius: 8
+                            },
+                            { 
+                                label: 'Cancellations',
+                                data: periods.map(p => p.cancellations || 0), 
+                                borderColor: '#e74c3c', 
+                                backgroundColor: 'rgba(231,76,60,0.1)',
+                                fill: false,
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointBackgroundColor: '#e74c3c',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 5,
+                                pointHoverRadius: 8
+                            },
+                            { 
+                                label: 'Net Change',
+                                data: periods.map(p => (p.new_enrollments || 0) - (p.cancellations || 0)), 
+                                borderColor: '#FFD700', 
+                                backgroundColor: netGrad, 
+                                fill: true, 
+                                tension: 0.4,
+                                borderWidth: 4,
+                                pointBackgroundColor: '#FFD700',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 3,
+                                pointRadius: 6,
+                                pointHoverRadius: 10
+                            }
+                        ]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { 
+                            legend: { 
+                                display: true, 
+                                position: 'top', 
+                                labels: { 
+                                    color: '#b8c9b8', 
+                                    font: { size: 13, weight: 'bold' },
+                                    usePointStyle: true 
+                                } 
                             } 
-                        } 
-                    }, 
-                    scales: { 
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 12, weight: 'bold' } } }, 
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
+                        }, 
+                        scales: { 
+                            x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 12, weight: 'bold' } } }, 
+                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
+                        }
                     }
-                }
-            });
+                });
+            }
             
             // Full Trend Chart
-            const ctx3 = document.getElementById('movementFullTrendChart').getContext('2d');
-            if (charts.movementFullTrend) charts.movementFullTrend.destroy();
-            
-            const fillGreen = ctx3.createLinearGradient(0, 0, 0, 200);
-            fillGreen.addColorStop(0, 'rgba(76,175,80,0.3)');
-            fillGreen.addColorStop(1, 'rgba(76,175,80,0.05)');
-            const fillRed = ctx3.createLinearGradient(0, 0, 0, 200);
-            fillRed.addColorStop(0, 'rgba(231,76,60,0.3)');
-            fillRed.addColorStop(1, 'rgba(231,76,60,0.05)');
-            
-            charts.movementFullTrend = new Chart(ctx3, {
-                type: 'line',
-                data: {
-                    labels: periods.map(p => p.period_label),
-                    datasets: [
-                        { 
-                            label: 'New Enrollments',
-                            data: periods.map(p => p.new_enrollments || 0), 
-                            borderColor: '#4CAF50', 
-                            backgroundColor: fillGreen,
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#4CAF50',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 6,
-                            pointHoverRadius: 10
-                        },
-                        { 
-                            label: 'Cancellations',
-                            data: periods.map(p => p.cancellations || 0), 
-                            borderColor: '#e74c3c', 
-                            backgroundColor: fillRed,
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#e74c3c',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 6,
-                            pointHoverRadius: 10
-                        }
-                    ]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { 
-                            display: true, 
-                            position: 'top', 
-                            labels: { 
-                                color: '#b8c9b8', 
-                                font: { size: 14, weight: 'bold' },
-                                usePointStyle: true,
-                                padding: 25
+            const ctx3 = safeGetContext('movementFullTrendChart');
+            if (ctx3) {
+                if (charts.movementFullTrend) charts.movementFullTrend.destroy();
+                
+                const fillGreen = ctx3.createLinearGradient(0, 0, 0, 200);
+                fillGreen.addColorStop(0, 'rgba(76,175,80,0.3)');
+                fillGreen.addColorStop(1, 'rgba(76,175,80,0.05)');
+                const fillRed = ctx3.createLinearGradient(0, 0, 0, 200);
+                fillRed.addColorStop(0, 'rgba(231,76,60,0.3)');
+                fillRed.addColorStop(1, 'rgba(231,76,60,0.05)');
+                
+                charts.movementFullTrend = new Chart(ctx3, {
+                    type: 'line',
+                    data: {
+                        labels: periods.map(p => p.period_label),
+                        datasets: [
+                            { 
+                                label: 'New Enrollments',
+                                data: periods.map(p => p.new_enrollments || 0), 
+                                borderColor: '#4CAF50', 
+                                backgroundColor: fillGreen,
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointBackgroundColor: '#4CAF50',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 6,
+                                pointHoverRadius: 10
+                            },
+                            { 
+                                label: 'Cancellations',
+                                data: periods.map(p => p.cancellations || 0), 
+                                borderColor: '#e74c3c', 
+                                backgroundColor: fillRed,
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointBackgroundColor: '#e74c3c',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 6,
+                                pointHoverRadius: 10
+                            }
+                        ]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { 
+                            legend: { 
+                                display: true, 
+                                position: 'top', 
+                                labels: { 
+                                    color: '#b8c9b8', 
+                                    font: { size: 14, weight: 'bold' },
+                                    usePointStyle: true,
+                                    padding: 25
+                                } 
                             } 
-                        } 
-                    }, 
-                    scales: { 
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 13, weight: 'bold' } } }, 
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
+                        }, 
+                        scales: { 
+                            x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 13, weight: 'bold' } } }, 
+                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
+                        }
                     }
-                }
-            });
+                });
+            }
         }
         
         // Real table with actual data
@@ -3958,402 +3967,202 @@
         
         function createInOutCharts(periods, inCases, outCases, exGratiaCases) {
             // Inpatient/Outpatient/Ex Gratia Pie
-            const ctx1 = document.getElementById('inOutPieChart').getContext('2d');
-            if (charts.inOutPie) charts.inOutPie.destroy();
-            
-            const redGrad = ctx1.createLinearGradient(0, 0, 0, 300);
-            redGrad.addColorStop(0, '#EF5350');
-            redGrad.addColorStop(1, '#B71C1C');
-            const blueGrad = ctx1.createLinearGradient(0, 0, 0, 300);
-            blueGrad.addColorStop(0, '#42A5F5');
-            blueGrad.addColorStop(1, '#1565C0');
-            const purpleGrad = ctx1.createLinearGradient(0, 0, 0, 300);
-            purpleGrad.addColorStop(0, '#FFD700');
-            purpleGrad.addColorStop(1, '#B8860B');
-            
-            charts.inOutPie = new Chart(ctx1, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Inpatient', 'Outpatient', 'Ex Gratia'],
-                    datasets: [{ 
-                        data: [inCases, outCases, exGratiaCases], 
-                        backgroundColor: [redGrad, blueGrad, purpleGrad], 
-                        borderWidth: 3,
-                        borderColor: ['#B71C1C', '#0D47A1', '#8B7500'],
-                        hoverOffset: 15,
-                        hoverBorderWidth: 4
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    cutout: '55%', 
-                    plugins: { 
-                        legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } }
+            const ctx1 = safeGetContext('inOutPieChart');
+            if (ctx1) {
+                if (charts.inOutPie) charts.inOutPie.destroy();
+                
+                const redGrad = ctx1.createLinearGradient(0, 0, 0, 300);
+                redGrad.addColorStop(0, '#EF5350');
+                redGrad.addColorStop(1, '#B71C1C');
+                const blueGrad = ctx1.createLinearGradient(0, 0, 0, 300);
+                blueGrad.addColorStop(0, '#42A5F5');
+                blueGrad.addColorStop(1, '#1565C0');
+                const purpleGrad = ctx1.createLinearGradient(0, 0, 0, 300);
+                purpleGrad.addColorStop(0, '#FFD700');
+                purpleGrad.addColorStop(1, '#B8860B');
+                
+                charts.inOutPie = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Inpatient', 'Outpatient', 'Ex Gratia'],
+                        datasets: [{ 
+                            data: [inCases, outCases, exGratiaCases], 
+                            backgroundColor: [redGrad, blueGrad, purpleGrad], 
+                            borderWidth: 3,
+                            borderColor: ['#B71C1C', '#0D47A1', '#8B7500'],
+                            hoverOffset: 15,
+                            hoverBorderWidth: 4
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        cutout: '55%', 
+                        plugins: { 
+                            legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } }
+                        }
                     }
-                }
-            });
+                });
+            }
             
             // Trend Chart with Ex Gratia
-            const ctx3 = document.getElementById('inOutTrendChart').getContext('2d');
-            if (charts.inOutTrend) charts.inOutTrend.destroy();
-            
-            const fillRed = ctx3.createLinearGradient(0, 0, 0, 200);
-            fillRed.addColorStop(0, 'rgba(231,76,60,0.4)');
-            fillRed.addColorStop(1, 'rgba(231,76,60,0.05)');
-            const fillBlue = ctx3.createLinearGradient(0, 0, 0, 200);
-            fillBlue.addColorStop(0, 'rgba(52,152,219,0.4)');
-            fillBlue.addColorStop(1, 'rgba(52,152,219,0.05)');
-            const fillGold = ctx3.createLinearGradient(0, 0, 0, 200);
-            fillGold.addColorStop(0, 'rgba(212,175,55,0.4)');
-            fillGold.addColorStop(1, 'rgba(212,175,55,0.05)');
-            
-            charts.inOutTrend = new Chart(ctx3, {
-                type: 'line',
-                data: {
-                    labels: periods.map(p => p.period_label),
-                    datasets: [
-                        { 
-                            label: 'Inpatient', 
-                            data: periods.map(p => Math.round(p.claims * 0.22)), 
-                            borderColor: '#e74c3c', 
-                            backgroundColor: fillRed, 
-                            fill: true, 
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#e74c3c',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 7
-                        },
-                        { 
-                            label: 'Outpatient', 
-                            data: periods.map(p => Math.round(p.claims * 0.70)), 
-                            borderColor: '#3498db', 
-                            backgroundColor: fillBlue, 
-                            fill: true, 
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#3498db',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 7
-                        },
-                        { 
-                            label: 'Ex Gratia', 
-                            data: periods.map(p => Math.round(p.claims * 0.08)), 
-                            borderColor: '#D4AF37', 
-                            backgroundColor: fillGold, 
-                            fill: true, 
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#D4AF37',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 7
+            const ctx3 = safeGetContext('inOutTrendChart');
+            if (ctx3) {
+                if (charts.inOutTrend) charts.inOutTrend.destroy();
+                
+                const fillRed = ctx3.createLinearGradient(0, 0, 0, 200);
+                fillRed.addColorStop(0, 'rgba(231,76,60,0.4)');
+                fillRed.addColorStop(1, 'rgba(231,76,60,0.05)');
+                const fillBlue = ctx3.createLinearGradient(0, 0, 0, 200);
+                fillBlue.addColorStop(0, 'rgba(52,152,219,0.4)');
+                fillBlue.addColorStop(1, 'rgba(52,152,219,0.05)');
+                const fillGold = ctx3.createLinearGradient(0, 0, 0, 200);
+                fillGold.addColorStop(0, 'rgba(212,175,55,0.4)');
+                fillGold.addColorStop(1, 'rgba(212,175,55,0.05)');
+                
+                charts.inOutTrend = new Chart(ctx3, {
+                    type: 'line',
+                    data: {
+                        labels: periods.map(p => p.period_label),
+                        datasets: [
+                            { 
+                                label: 'Inpatient', 
+                                data: periods.map(p => Math.round(p.claims * 0.22)), 
+                                borderColor: '#e74c3c', 
+                                backgroundColor: fillRed, 
+                                fill: true, 
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointBackgroundColor: '#e74c3c',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4,
+                                pointHoverRadius: 7
+                            },
+                            { 
+                                label: 'Outpatient', 
+                                data: periods.map(p => Math.round(p.claims * 0.70)), 
+                                borderColor: '#3498db', 
+                                backgroundColor: fillBlue, 
+                                fill: true, 
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointBackgroundColor: '#3498db',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4,
+                                pointHoverRadius: 7
+                            },
+                            { 
+                                label: 'Ex Gratia', 
+                                data: periods.map(p => Math.round(p.claims * 0.08)), 
+                                borderColor: '#D4AF37', 
+                                backgroundColor: fillGold, 
+                                fill: true, 
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointBackgroundColor: '#D4AF37',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4,
+                                pointHoverRadius: 7
+                            }
+                        ]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { 
+                            legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { weight: 'bold', size: 11 } } }
+                        }, 
+                        scales: { 
+                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, 
+                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } 
                         }
-                    ]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { weight: 'bold', size: 11 } } }
-                    }, 
-                    scales: { 
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, 
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } 
                     }
-                }
-            });
+                });
+            }
         }
         
         function createMemberTypeCharts(principal, dependent, claims) {
             // Member Type Pie - Doughnut
-            const ctx1 = document.getElementById('memberTypePieChart').getContext('2d');
-            if (charts.memberPie) charts.memberPie.destroy();
-            
-            // Create gradient for 3D effect
-            const greenGrad = ctx1.createLinearGradient(0, 0, 0, 300);
-            greenGrad.addColorStop(0, '#4CAF50');
-            greenGrad.addColorStop(1, '#1B5E20');
-            const goldGrad = ctx1.createLinearGradient(0, 0, 0, 300);
-            goldGrad.addColorStop(0, '#FFD700');
-            goldGrad.addColorStop(1, '#B8860B');
-            
-            charts.memberPie = new Chart(ctx1, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Seafarers', 'Dependents'],
-                    datasets: [{ 
-                        data: [principal, dependent], 
-                        backgroundColor: [greenGrad, goldGrad], 
-                        borderWidth: 3,
-                        borderColor: ['#1B5E20', '#8B7500'],
-                        hoverOffset: 15,
-                        hoverBorderWidth: 4
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    cutout: '55%', 
-                    plugins: { 
-                        legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } }
+            const ctx1 = safeGetContext('memberTypePieChart');
+            if (ctx1) {
+                if (charts.memberPie) charts.memberPie.destroy();
+                
+                // Create gradient for 3D effect
+                const greenGrad = ctx1.createLinearGradient(0, 0, 0, 300);
+                greenGrad.addColorStop(0, '#4CAF50');
+                greenGrad.addColorStop(1, '#1B5E20');
+                const goldGrad = ctx1.createLinearGradient(0, 0, 0, 300);
+                goldGrad.addColorStop(0, '#FFD700');
+                goldGrad.addColorStop(1, '#B8860B');
+                
+                charts.memberPie = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Seafarers', 'Dependents'],
+                        datasets: [{ 
+                            data: [principal, dependent], 
+                            backgroundColor: [greenGrad, goldGrad], 
+                            borderWidth: 3,
+                            borderColor: ['#1B5E20', '#8B7500'],
+                            hoverOffset: 15,
+                            hoverBorderWidth: 4
+                        }]
                     },
-                    animation: { animateRotate: true, animateScale: true }
-                }
-            });
-            
-            // Claims by Member Type - Bar Chart
-            const ctx2 = document.getElementById('memberTypeClaimsChart').getContext('2d');
-            if (charts.memberClaims) charts.memberClaims.destroy();
-            
-            const principalClaims = Math.round(claims * 0.55);
-            const dependentClaims = claims - principalClaims;
-            
-            // Update stat values
-            document.getElementById('principalClaims').textContent = fmt(principalClaims);
-            document.getElementById('dependentClaims').textContent = fmt(dependentClaims);
-            
-            charts.memberClaims = new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Seafarer Claims', 'Dependent Claims'],
-                    datasets: [{ 
-                        data: [principalClaims, dependentClaims], 
-                        backgroundColor: [greenGrad, goldGrad], 
-                        borderWidth: 3,
-                        borderColor: ['#1B5E20', '#8B7500'],
-                        hoverOffset: 15
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    cutout: '55%', 
-                    plugins: { 
-                        legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } }
-                    }
-                }
-            });
-        }
-        
-        function createMovementCharts(periods) {
-            // Movement Compare Chart - Side by side bars (Enrollments vs Cancellations)
-            const ctx1 = document.getElementById('movementCompareChart').getContext('2d');
-            if (charts.movementCompare) charts.movementCompare.destroy();
-            
-            const enrollGrad = ctx1.createLinearGradient(0, 0, 0, 250);
-            enrollGrad.addColorStop(0, '#A5D6A7');
-            enrollGrad.addColorStop(0.5, '#66BB6A');
-            enrollGrad.addColorStop(1, '#2E7D32');
-            
-            const cancelGrad = ctx1.createLinearGradient(0, 0, 0, 250);
-            cancelGrad.addColorStop(0, '#EF9A9A');
-            cancelGrad.addColorStop(0.5, '#EF5350');
-            cancelGrad.addColorStop(1, '#C62828');
-            
-            charts.movementCompare = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: periods.map(p => p.period_label),
-                    datasets: [
-                        { 
-                            label: 'New Enrollments',
-                            data: periods.map(p => Math.round(p.members * 0.08)), 
-                            backgroundColor: enrollGrad, 
-                            borderRadius: 6,
-                            borderWidth: 2,
-                            borderColor: '#1B5E20',
-                            barPercentage: 0.8,
-                            categoryPercentage: 0.7
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        cutout: '55%', 
+                        plugins: { 
+                            legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } }
                         },
-                        { 
-                            label: 'Cancellations',
-                            data: periods.map(p => Math.round(p.members * 0.03)), 
-                            backgroundColor: cancelGrad,
-                            borderRadius: 6,
-                            borderWidth: 2,
-                            borderColor: '#B71C1C',
-                            barPercentage: 0.8,
-                            categoryPercentage: 0.7
+                        animation: { animateRotate: true, animateScale: true }
+                    }
+                });
+                
+                // Claims by Member Type - Bar Chart
+                const ctx2 = safeGetContext('memberTypeClaimsChart');
+                if (ctx2) {
+                    if (charts.memberClaims) charts.memberClaims.destroy();
+                    
+                    const principalClaims = Math.round(claims * 0.55);
+                    const dependentClaims = claims - principalClaims;
+                    
+                    // Update stat values
+                    const principalClaimsEl = document.getElementById('principalClaims');
+                    const dependentClaimsEl = document.getElementById('dependentClaims');
+                    if (principalClaimsEl) principalClaimsEl.textContent = fmt(principalClaims);
+                    if (dependentClaimsEl) dependentClaimsEl.textContent = fmt(dependentClaims);
+                    
+                    charts.memberClaims = new Chart(ctx2, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Seafarer Claims', 'Dependent Claims'],
+                            datasets: [{ 
+                                data: [principalClaims, dependentClaims], 
+                                backgroundColor: [greenGrad, goldGrad], 
+                                borderWidth: 3,
+                                borderColor: ['#1B5E20', '#8B7500'],
+                                hoverOffset: 15
+                            }]
+                        },
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false, 
+                            cutout: '55%', 
+                            plugins: { 
+                                legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } }
+                            }
                         }
-                    ]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { 
-                            display: true, 
-                            position: 'top', 
-                            labels: { 
-                                color: '#b8c9b8', 
-                                font: { size: 13, weight: 'bold' },
-                                usePointStyle: true,
-                                pointStyle: 'rectRounded'
-                            } 
-                        } 
-                    }, 
-                    scales: { 
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 12, weight: 'bold' } } }, 
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
-                    }
+                    });
                 }
-            });
-            
-            // Movement Trend Chart - Combined line chart with net change
-            const ctx2 = document.getElementById('movementTrendChart').getContext('2d');
-            if (charts.movementTrend) charts.movementTrend.destroy();
-            
-            const netGrad = ctx2.createLinearGradient(0, 0, 0, 250);
-            netGrad.addColorStop(0, 'rgba(212,175,55,0.4)');
-            netGrad.addColorStop(1, 'rgba(212,175,55,0.05)');
-            
-            charts.movementTrend = new Chart(ctx2, {
-                type: 'line',
-                data: {
-                    labels: periods.map(p => p.period_label),
-                    datasets: [
-                        { 
-                            label: 'Enrollments',
-                            data: periods.map(p => Math.round(p.members * 0.08)), 
-                            borderColor: '#4CAF50', 
-                            backgroundColor: 'rgba(76,175,80,0.1)',
-                            fill: false,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#4CAF50',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5,
-                            pointHoverRadius: 8
-                        },
-                        { 
-                            label: 'Cancellations',
-                            data: periods.map(p => Math.round(p.members * 0.03)), 
-                            borderColor: '#e74c3c', 
-                            backgroundColor: 'rgba(231,76,60,0.1)',
-                            fill: false,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#e74c3c',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5,
-                            pointHoverRadius: 8
-                        },
-                        { 
-                            label: 'Net Change',
-                            data: periods.map(p => Math.round(p.members * 0.05)), 
-                            borderColor: '#FFD700', 
-                            backgroundColor: netGrad, 
-                            fill: true, 
-                            tension: 0.4,
-                            borderWidth: 4,
-                            pointBackgroundColor: '#FFD700',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 3,
-                            pointRadius: 6,
-                            pointHoverRadius: 10
-                        }
-                    ]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { 
-                            display: true, 
-                            position: 'top', 
-                            labels: { 
-                                color: '#b8c9b8', 
-                                font: { size: 13, weight: 'bold' },
-                                usePointStyle: true 
-                            } 
-                        } 
-                    }, 
-                    scales: { 
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 12, weight: 'bold' } } }, 
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
-                    }
-                }
-            });
-            
-            // Full Width Trend Chart
-            const ctx3 = document.getElementById('movementFullTrendChart').getContext('2d');
-            if (charts.movementFullTrend) charts.movementFullTrend.destroy();
-            
-            const fillGreen = ctx3.createLinearGradient(0, 0, 0, 200);
-            fillGreen.addColorStop(0, 'rgba(76,175,80,0.3)');
-            fillGreen.addColorStop(1, 'rgba(76,175,80,0.05)');
-            const fillRed = ctx3.createLinearGradient(0, 0, 0, 200);
-            fillRed.addColorStop(0, 'rgba(231,76,60,0.3)');
-            fillRed.addColorStop(1, 'rgba(231,76,60,0.05)');
-            
-            charts.movementFullTrend = new Chart(ctx3, {
-                type: 'line',
-                data: {
-                    labels: periods.map(p => p.period_label),
-                    datasets: [
-                        { 
-                            label: 'New Enrollments',
-                            data: periods.map(p => Math.round(p.members * 0.08)), 
-                            borderColor: '#4CAF50', 
-                            backgroundColor: fillGreen,
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#4CAF50',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 6,
-                            pointHoverRadius: 10
-                        },
-                        { 
-                            label: 'Cancellations',
-                            data: periods.map(p => Math.round(p.members * 0.03)), 
-                            borderColor: '#e74c3c', 
-                            backgroundColor: fillRed,
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointBackgroundColor: '#e74c3c',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 6,
-                            pointHoverRadius: 10
-                        }
-                    ]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { 
-                            display: true, 
-                            position: 'top', 
-                            labels: { 
-                                color: '#b8c9b8', 
-                                font: { size: 14, weight: 'bold' },
-                                usePointStyle: true,
-                                padding: 25
-                            } 
-                        } 
-                    }, 
-                    scales: { 
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 13, weight: 'bold' } } }, 
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } } 
-                    }
-                }
-            });
+            }
         }
         
         // NOTE: createCostBreakdownChart function removed (uses financial data)
+        // NOTE: duplicate createMovementCharts function removed (use createMovementChartsReal instead)
         
         // ============ NEW SECTIONS CHARTS ============
         
@@ -4552,43 +4361,48 @@
             
             const totalClaims = hospitals.reduce((a, h) => a + h.claims, 0);
             
-            // Top Hospitals by Claims
-            const ctx1 = document.getElementById('topHospitalsChart').getContext('2d');
-            if (charts.topHospitals) charts.topHospitals.destroy();
-            charts.topHospitals = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: hospitals.map(h => h.name),
-                    datasets: [{
-                        data: hospitals.map(h => h.claims),
-                        backgroundColor: 'rgba(76,175,80,0.7)',
-                        borderColor: '#4CAF50',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } },
-                        y: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 9 } } }
+            // Top Hospitals by Claims (with null check)
+            const canvas1 = document.getElementById('topHospitalsChart');
+            if (canvas1) {
+                const ctx1 = canvas1.getContext('2d');
+                if (charts.topHospitals) charts.topHospitals.destroy();
+                charts.topHospitals = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: hospitals.map(h => h.name),
+                        datasets: [{
+                            data: hospitals.map(h => h.claims),
+                            backgroundColor: 'rgba(76,175,80,0.7)',
+                            borderColor: '#4CAF50',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } },
+                            y: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 9 } } }
+                        }
                     }
-                }
-            });
+                });
+            }
             
             // Hospital Table (NO COST DATA for client portal)
             const tbody = document.getElementById('hospitalsTableBody');
-            tbody.innerHTML = hospitals.map((h, i) => `
-                <tr>
-                    <td><span style="background:${i < 3 ? '#D4AF37' : '#2E7D32'};color:#000;padding:2px 8px;border-radius:10px;font-weight:bold">${i + 1}</span></td>
-                    <td><strong>${h.name}</strong></td>
-                    <td>${h.claims}</td>
-                    <td>${(h.claims / totalClaims * 100).toFixed(1)}%</td>
-                </tr>
-            `).join('');
+            if (tbody) {
+                tbody.innerHTML = hospitals.map((h, i) => `
+                    <tr>
+                        <td><span style="background:${i < 3 ? '#D4AF37' : '#2E7D32'};color:#000;padding:2px 8px;border-radius:10px;font-weight:bold">${i + 1}</span></td>
+                        <td><strong>${h.name}</strong></td>
+                        <td>${h.claims}</td>
+                        <td>${(h.claims / totalClaims * 100).toFixed(1)}%</td>
+                    </tr>
+                `).join('');
+            }
         }
         
         function createGeoCharts() {
@@ -4602,72 +4416,84 @@
                 { name: 'Other Regions', claims: 160, color: '#607D8B' }
             ];
             
-            // Update city stats
-            document.getElementById('geoManila').textContent = '580';
-            document.getElementById('geoCebu').textContent = '185';
-            document.getElementById('geoDavao').textContent = '165';
-            document.getElementById('geoIloilo').textContent = '95';
-            document.getElementById('geoOther').textContent = '345';
+            // Update city stats (with null checks)
+            const geoManila = document.getElementById('geoManila');
+            const geoCebu = document.getElementById('geoCebu');
+            const geoDavao = document.getElementById('geoDavao');
+            const geoIloilo = document.getElementById('geoIloilo');
+            const geoOther = document.getElementById('geoOther');
             
-            // Region Pie Chart
-            const ctx1 = document.getElementById('geoRegionChart').getContext('2d');
-            if (charts.geoRegion) charts.geoRegion.destroy();
-            charts.geoRegion = new Chart(ctx1, {
-                type: 'doughnut',
-                data: {
-                    labels: regions.map(r => r.name),
-                    datasets: [{
-                        data: regions.map(r => r.claims),
-                        backgroundColor: regions.map(r => r.color),
-                        borderWidth: 2,
-                        borderColor: '#0a1a0a',
-                        hoverOffset: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '55%',
-                    plugins: { legend: { display: true, position: 'right', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } }
-                }
-            });
+            if (geoManila) geoManila.textContent = '580';
+            if (geoCebu) geoCebu.textContent = '185';
+            if (geoDavao) geoDavao.textContent = '165';
+            if (geoIloilo) geoIloilo.textContent = '95';
+            if (geoOther) geoOther.textContent = '345';
             
-            // Cities Bar Chart
-            const ctx3 = document.getElementById('geoCitiesChart').getContext('2d');
-            if (charts.geoCities) charts.geoCities.destroy();
-            const cities = [
-                { name: 'Manila', claims: 285 },
-                { name: 'Quezon City', claims: 165 },
-                { name: 'Cebu City', claims: 145 },
-                { name: 'Davao City', claims: 125 },
-                { name: 'Makati', claims: 95 },
-                { name: 'Pasig', claims: 85 },
-                { name: 'Iloilo City', claims: 75 },
-                { name: 'Taguig', claims: 65 }
-            ];
-            charts.geoCities = new Chart(ctx3, {
-                type: 'bar',
-                data: {
-                    labels: cities.map(c => c.name),
-                    datasets: [{
-                        data: cities.map(c => c.claims),
-                        backgroundColor: [
-                            '#4CAF50', '#66BB6A', '#2196F3', '#FF9800', 
-                            '#D4AF37', '#E91E63', '#00BCD4', '#607D8B'
-                        ],
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 13, weight: 'bold' } } },
-                        y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } }
+            // Region Pie Chart (with null check)
+            const canvas1 = document.getElementById('geoRegionChart');
+            if (canvas1) {
+                const ctx1 = canvas1.getContext('2d');
+                if (charts.geoRegion) charts.geoRegion.destroy();
+                charts.geoRegion = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: regions.map(r => r.name),
+                        datasets: [{
+                            data: regions.map(r => r.claims),
+                            backgroundColor: regions.map(r => r.color),
+                            borderWidth: 2,
+                            borderColor: '#0a1a0a',
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '55%',
+                        plugins: { legend: { display: true, position: 'right', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } }
                     }
-                }
-            });
+                });
+            }
+            
+            // Cities Bar Chart (with null check)
+            const canvas3 = document.getElementById('geoCitiesChart');
+            if (canvas3) {
+                const ctx3 = canvas3.getContext('2d');
+                if (charts.geoCities) charts.geoCities.destroy();
+                const cities = [
+                    { name: 'Manila', claims: 285 },
+                    { name: 'Quezon City', claims: 165 },
+                    { name: 'Cebu City', claims: 145 },
+                    { name: 'Davao City', claims: 125 },
+                    { name: 'Makati', claims: 95 },
+                    { name: 'Pasig', claims: 85 },
+                    { name: 'Iloilo City', claims: 75 },
+                    { name: 'Taguig', claims: 65 }
+                ];
+                charts.geoCities = new Chart(ctx3, {
+                    type: 'bar',
+                    data: {
+                        labels: cities.map(c => c.name),
+                        datasets: [{
+                            data: cities.map(c => c.claims),
+                            backgroundColor: [
+                                '#4CAF50', '#66BB6A', '#2196F3', '#FF9800', 
+                                '#D4AF37', '#E91E63', '#00BCD4', '#607D8B'
+                            ],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 13, weight: 'bold' } } },
+                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } }
+                        }
+                    }
+                });
+            }
         }
         
         function setTrend(id, ch) {
@@ -4707,115 +4533,127 @@
             
             // NOTE: Cost/Financial charts removed from client portal
             
-            // Claims by Period - 3D Bars
-            const ctx3 = document.getElementById('claimsPeriodChart').getContext('2d');
-            if (charts.claimsPeriod) charts.claimsPeriod.destroy();
-            const claimsGrad = ctx3.createLinearGradient(0, 0, 0, 250);
-            claimsGrad.addColorStop(0, '#FFE082');
-            claimsGrad.addColorStop(0.5, '#FFD54F');
-            claimsGrad.addColorStop(1, '#FFC107');
-            charts.claimsPeriod = new Chart(ctx3, {
-                type: 'bar',
-                plugins: [shadow3D],
-                data: { 
-                    labels, 
-                    datasets: [{ 
-                        data: periods.map(p => p.claims), 
-                        backgroundColor: claimsGrad, 
-                        borderColor: '#F57F17',
-                        borderWidth: 2,
-                        borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 },
-                        barPercentage: 0.6
-                    }] 
-                },
-                options: { ...opts, scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } } }
-            });
+            // Claims by Period - 3D Bars (with null check)
+            const canvas3 = document.getElementById('claimsPeriodChart');
+            if (canvas3) {
+                const ctx3 = canvas3.getContext('2d');
+                if (charts.claimsPeriod) charts.claimsPeriod.destroy();
+                const claimsGrad = ctx3.createLinearGradient(0, 0, 0, 250);
+                claimsGrad.addColorStop(0, '#FFE082');
+                claimsGrad.addColorStop(0.5, '#FFD54F');
+                claimsGrad.addColorStop(1, '#FFC107');
+                charts.claimsPeriod = new Chart(ctx3, {
+                    type: 'bar',
+                    plugins: [shadow3D],
+                    data: { 
+                        labels, 
+                        datasets: [{ 
+                            data: periods.map(p => p.claims), 
+                            backgroundColor: claimsGrad, 
+                            borderColor: '#F57F17',
+                            borderWidth: 2,
+                            borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 },
+                            barPercentage: 0.6
+                        }] 
+                    },
+                    options: { ...opts, scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } } }
+                });
+            }
             
-            // Claims per 1000 - 3D Line
-            const ctx4 = document.getElementById('claims1000Chart').getContext('2d');
-            if (charts.claims1000) charts.claims1000.destroy();
-            const blueGrad = ctx4.createLinearGradient(0, 0, 0, 200);
-            blueGrad.addColorStop(0, 'rgba(66,165,245,0.5)');
-            blueGrad.addColorStop(1, 'rgba(66,165,245,0.02)');
-            charts.claims1000 = new Chart(ctx4, {
-                type: 'line',
-                data: { 
-                    labels, 
-                    datasets: [{ 
-                        data: periods.map(p => p.members > 0 ? p.claims / p.members * 1000 : 0), 
-                        borderColor: '#42A5F5', 
-                        backgroundColor: blueGrad, 
-                        fill: true, 
-                        tension: 0.4,
-                        borderWidth: 4,
-                        pointRadius: 5,
-                        pointBackgroundColor: '#42A5F5',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 8
-                    }] 
-                },
-                options: { ...opts, scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } } }
-            });
+            // Claims per 1000 - 3D Line (with null check)
+            const canvas4 = document.getElementById('claims1000Chart');
+            if (canvas4) {
+                const ctx4 = canvas4.getContext('2d');
+                if (charts.claims1000) charts.claims1000.destroy();
+                const blueGrad = ctx4.createLinearGradient(0, 0, 0, 200);
+                blueGrad.addColorStop(0, 'rgba(66,165,245,0.5)');
+                blueGrad.addColorStop(1, 'rgba(66,165,245,0.02)');
+                charts.claims1000 = new Chart(ctx4, {
+                    type: 'line',
+                    data: { 
+                        labels, 
+                        datasets: [{ 
+                            data: periods.map(p => p.members > 0 ? p.claims / p.members * 1000 : 0), 
+                            borderColor: '#42A5F5', 
+                            backgroundColor: blueGrad, 
+                            fill: true, 
+                            tension: 0.4,
+                            borderWidth: 4,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#42A5F5',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 8
+                        }] 
+                    },
+                    options: { ...opts, scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } } }
+                });
+            }
             
             // NOTE: Avg Claim chart removed (uses financial data)
             
-            // Plan Pie - 3D Doughnut
-            const ctx6 = document.getElementById('planPieChart').getContext('2d');
-            if (charts.planPie) charts.planPie.destroy();
-            const goldPlanGrad = ctx6.createLinearGradient(0, 0, 0, 300);
-            goldPlanGrad.addColorStop(0, '#FFE57F');
-            goldPlanGrad.addColorStop(1, '#FFB300');
-            const platGrad = ctx6.createLinearGradient(0, 0, 0, 300);
-            platGrad.addColorStop(0, '#F5F5F5');
-            platGrad.addColorStop(1, '#BDBDBD');
-            const silverGrad = ctx6.createLinearGradient(0, 0, 0, 300);
-            silverGrad.addColorStop(0, '#E0E0E0');
-            silverGrad.addColorStop(1, '#9E9E9E');
-            charts.planPie = new Chart(ctx6, {
-                type: 'doughnut',
-                plugins: [shadow3D],
-                data: { 
-                    labels: ['Gold', 'Platinum', 'Silver'], 
-                    datasets: [{ 
-                        data: [60, 25, 15], 
-                        backgroundColor: [goldPlanGrad, platGrad, silverGrad], 
-                        borderColor: ['#FF8F00', '#757575', '#616161'], 
-                        borderWidth: 3, 
-                        hoverOffset: 15 
-                    }] 
+            // Plan Pie - 3D Doughnut (with null check)
+            const canvas6 = document.getElementById('planPieChart');
+            if (canvas6) {
+                const ctx6 = canvas6.getContext('2d');
+                if (charts.planPie) charts.planPie.destroy();
+                const goldPlanGrad = ctx6.createLinearGradient(0, 0, 0, 300);
+                goldPlanGrad.addColorStop(0, '#FFE57F');
+                goldPlanGrad.addColorStop(1, '#FFB300');
+                const platGrad = ctx6.createLinearGradient(0, 0, 0, 300);
+                platGrad.addColorStop(0, '#F5F5F5');
+                platGrad.addColorStop(1, '#BDBDBD');
+                const silverGrad = ctx6.createLinearGradient(0, 0, 0, 300);
+                silverGrad.addColorStop(0, '#E0E0E0');
+                silverGrad.addColorStop(1, '#9E9E9E');
+                charts.planPie = new Chart(ctx6, {
+                    type: 'doughnut',
+                    plugins: [shadow3D],
+                    data: { 
+                        labels: ['Gold', 'Platinum', 'Silver'], 
+                        datasets: [{ 
+                            data: [60, 25, 15], 
+                            backgroundColor: [goldPlanGrad, platGrad, silverGrad], 
+                            borderColor: ['#FF8F00', '#757575', '#616161'], 
+                            borderWidth: 3, 
+                            hoverOffset: 15 
+                        }] 
                 },
                 options: { ...opts, cutout: '55%', plugins: { legend: { display: true, position: 'bottom', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } } }
             });
+            }
             
             // NOTE: Plan Cost chart removed (uses financial data)
             
-            // Utilization - 3D Line
-            const ctx8 = document.getElementById('utilizationChart').getContext('2d');
-            if (charts.util) charts.util.destroy();
-            const greenGrad = ctx8.createLinearGradient(0, 0, 0, 200);
-            greenGrad.addColorStop(0, 'rgba(76,175,80,0.5)');
-            greenGrad.addColorStop(1, 'rgba(76,175,80,0.02)');
-            charts.util = new Chart(ctx8, {
-                type: 'line',
-                data: { 
-                    labels, 
-                    datasets: [{ 
-                        data: periods.map(p => p.members > 0 ? p.claims / p.members * 100 : 0), 
-                        borderColor: '#4CAF50', 
-                        backgroundColor: greenGrad, 
-                        fill: true, 
-                        tension: 0.4,
-                        borderWidth: 4,
-                        pointRadius: 5,
-                        pointBackgroundColor: '#4CAF50',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 8
-                    }] 
-                },
-                options: { ...opts, scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => v + '%' } } } }
-            });
+            // Utilization - 3D Line (with null check)
+            const canvas8 = document.getElementById('utilizationChart');
+            if (canvas8) {
+                const ctx8 = canvas8.getContext('2d');
+                if (charts.util) charts.util.destroy();
+                const greenGrad = ctx8.createLinearGradient(0, 0, 0, 200);
+                greenGrad.addColorStop(0, 'rgba(76,175,80,0.5)');
+                greenGrad.addColorStop(1, 'rgba(76,175,80,0.02)');
+                charts.util = new Chart(ctx8, {
+                    type: 'line',
+                    data: { 
+                        labels, 
+                        datasets: [{ 
+                            data: periods.map(p => p.members > 0 ? p.claims / p.members * 100 : 0), 
+                            borderColor: '#4CAF50', 
+                            backgroundColor: greenGrad, 
+                            fill: true, 
+                            tension: 0.4,
+                            borderWidth: 4,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#4CAF50',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 8
+                        }] 
+                    },
+                    options: { ...opts, scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', callback: v => v + '%' } } } }
+                });
+            }
         }
         
         function updateMetrics(util) {
