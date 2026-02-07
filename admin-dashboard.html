@@ -11512,7 +11512,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             };
             
             // Build periods data for charts
-            const mockPeriods = hasRealData ? [mockCurrent] : Object.entries(quarterData).map(([key, val]) => {
+            const mockPeriods = hasRealData ? [mockCurrent] : Object.entries(quarterData).filter(([key, val]) => selectedQuarters.includes(key)).map(([key, val]) => {
                 const range = getQuarterDateRange(key, selectedYear);
                 return {
                     period: `${selectedYear}-${key}`,
