@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-07 v3.49 - Manual refresh button (browser blocks auto-fetch) -->
+<!-- VERSION: 2026-02-07 v3.50 - Chart refresh integrated into main Refresh Data button -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12374,7 +12374,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 updateDashboardLoading(80, 'Loading details...', '🏥 Fetching categories & geographic data');
                 try { await loadData(); } catch(e) {}
                 
-                // Step 5: Done
+                // Step 5: v3.50 - Load chart data (hospitals, cities, categories)
+                updateDashboardLoading(90, 'Loading charts...', '📊 Updating hospitals & geographic data');
+                try { 
+                    if (window.refreshChartData) {
+                        await window.refreshChartData(true); // true = silent mode (no button animation)
+                    }
+                } catch(e) { console.log('Chart refresh skipped:', e); }
+                
+                // Step 6: Done
                 updateDashboardLoading(100, '✅ Data loaded successfully!', 'All data is up to date');
                 
                 const lastUpdated = document.getElementById('lastUpdated');
@@ -33961,16 +33969,11 @@ console.log('✅ Recipients Management (v3.27) loaded!');
     </div>
 </div>
 
-<!-- v3.49: MANUAL REFRESH BUTTON (auto-fetch fails due to browser security) -->
+<!-- v3.50: Chart data refresh integrated into main Refresh button -->
 <script>
 // Make the update function globally available
-window.refreshChartData = async function() {
-    console.log('🚀 v3.49: Manual refresh triggered...');
-    const btn = document.getElementById('chartRefreshBtn');
-    if (btn) {
-        btn.textContent = '⏳ Loading...';
-        btn.disabled = true;
-    }
+window.refreshChartData = async function(silent = false) {
+    console.log('🚀 v3.50: Chart data refresh' + (silent ? ' (silent)' : '') + '...');
     
     const API = 'https://script.google.com/macros/s/AKfycbxBnEkHdzvxby_W1RuLpkFtlQ6GScMyF8wqap9v1BhvuncSx0SxAsAG9F11_IYvDYX6/exec';
     
@@ -33993,7 +33996,7 @@ window.refreshChartData = async function() {
                 <td>$${(h.avg_claim||0).toFixed(0)}</td>
                 <td>${totalCost>0?((h.cost_usd/totalCost)*100).toFixed(1):0}%</td>
             </tr>`).join('');
-            console.log('✅ v3.49: Hospital table updated');
+            console.log('✅ v3.50: Hospital table updated');
         }
         
         // Update City boxes
@@ -34013,7 +34016,7 @@ window.refreshChartData = async function() {
             if(el('geoDavao')) el('geoDavao').textContent = d.toLocaleString();
             if(el('geoIloilo')) el('geoIloilo').textContent = il.toLocaleString();
             if(el('geoOther')) el('geoOther').textContent = o.toLocaleString();
-            console.log('✅ v3.49: City boxes updated');
+            console.log('✅ v3.50: City boxes updated');
         }
         
         // Update Category boxes
@@ -34027,43 +34030,18 @@ window.refreshChartData = async function() {
             if(el('catOptical')) el('catOptical').textContent = cm['Ophthalmology']||cm['Optical']||0;
             if(el('catLab')) el('catLab').textContent = cm['Laboratory & Diagnostics']||cm['Laboratory']||0;
             if(el('catOther')) el('catOther').textContent = cm['Other']||0;
-            console.log('✅ v3.49: Category boxes updated');
+            console.log('✅ v3.50: Category boxes updated');
         }
         
-        if (btn) {
-            btn.textContent = '✅ Data Loaded!';
-            btn.style.background = '#4CAF50';
-            setTimeout(() => {
-                btn.textContent = '🔄 Refresh Chart Data';
-                btn.style.background = '#D4AF37';
-                btn.disabled = false;
-            }, 2000);
-        }
-        
-        console.log('🎉 v3.49: Manual refresh complete!');
+        console.log('🎉 v3.50: Chart data refresh complete!');
+        return true;
         
     } catch(e) {
-        console.error('❌ v3.49 error:', e);
-        if (btn) {
-            btn.textContent = '❌ Failed - Click to Retry';
-            btn.style.background = '#f44336';
-            btn.disabled = false;
-        }
+        console.error('❌ v3.50 error:', e);
+        return false;
     }
 };
-
-// Add floating refresh button
-document.addEventListener('DOMContentLoaded', function() {
-    const btn = document.createElement('button');
-    btn.id = 'chartRefreshBtn';
-    btn.textContent = '🔄 Load Chart Data';
-    btn.onclick = window.refreshChartData;
-    btn.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;padding:15px 25px;background:#D4AF37;color:#000;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.3);';
-    document.body.appendChild(btn);
-    console.log('🔘 v3.49: Refresh button added');
-});
+console.log('🔧 v3.50: refreshChartData function registered');
 </script>
 </body>
 </html>
-
-    
