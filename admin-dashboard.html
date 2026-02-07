@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-07 v3.41 - Frontend calls new v3.40 chart endpoints (Categories, Hospitals, Geographic) -->
+<!-- VERSION: 2026-02-07 v3.42 - FIX: Charts now load AFTER API data arrives -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17319,17 +17319,36 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     if (data.geographic) {
                         updateGeographicDisplay(data.geographic);
                     }
+                    
+                    // v3.41 FIX: Store merged data in window.currentClientKPIs for chart functions
+                    if (!window.currentClientKPIs) window.currentClientKPIs = {};
+                    if (data.categories) window.currentClientKPIs.categories = data.categories;
+                    if (data.hospitals) window.currentClientKPIs.hospitals = data.hospitals;
+                    if (data.geographic) window.currentClientKPIs.geographic = data.geographic;
+                    
+                    console.log('📊 v3.41: Data stored in window.currentClientKPIs:', {
+                        categories: window.currentClientKPIs.categories?.categories?.length || 0,
+                        hospitals: window.currentClientKPIs.hospitals?.length || 0,
+                        geographic: window.currentClientKPIs.geographic?.regions?.length || 0
+                    });
+                    
+                    // v3.41: Create charts AFTER data is loaded
+                    try {
+                        createCategoryCharts(c);
+                        createHospitalCharts();
+                        createGeoCharts();
+                        console.log('📊 v3.41: Charts created with real API data');
+                    } catch(e) {
+                        console.error('v3.41 Charts error:', e);
+                    }
                 }
             }).catch(err => console.error('loadFinancialBreakdowns error:', err));
             
-            // NEW: Additional charts - temporarily disabled for debugging
+            // Initial chart creation with empty/placeholder data (will be updated when API responds)
             try {
-                createCategoryCharts(c);
                 createYoYCharts(periods);
-                createHospitalCharts();
-                createGeoCharts();
             } catch(e) {
-                console.error('New charts error:', e);
+                console.error('YoY charts error:', e);
             }
             
             updateMetrics(util);
