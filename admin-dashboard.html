@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-07 v3.44 - Direct chart updates from API data (bypass broken chart functions) -->
+<!-- VERSION: 2026-02-07 v3.45 - Delayed chart update (waits 2s for charts to initialize) -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17439,8 +17439,193 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     }
                     
                     console.log('🎉 v3.44: All chart updates complete!');
+                    
+                    // v3.45: DELAYED UPDATE - Wait for charts to be created, then update again
+                    setTimeout(() => {
+                        console.log('⏰ v3.45: Delayed chart update starting...');
+                        if (window.charts) {
+                            // Update Category Charts
+                            if (data.categories && data.categories.categories && window.charts.categoryPie) {
+                                const cats = data.categories.categories;
+                                window.charts.categoryPie.data.labels = cats.map(c => c.category);
+                                window.charts.categoryPie.data.datasets[0].data = cats.map(c => c.cases);
+                                window.charts.categoryPie.update();
+                                console.log('✅ v3.45: Category pie updated');
+                            }
+                            if (data.categories && data.categories.categories && window.charts.categoryCost) {
+                                const cats = data.categories.categories;
+                                window.charts.categoryCost.data.labels = cats.map(c => c.category);
+                                window.charts.categoryCost.data.datasets[0].data = cats.map(c => c.cost_usd);
+                                window.charts.categoryCost.update();
+                                console.log('✅ v3.45: Category cost chart updated');
+                            }
+                            // Update Hospital Charts
+                            if (data.hospitals && window.charts.topHospitals) {
+                                window.charts.topHospitals.data.labels = data.hospitals.map(h => h.name);
+                                window.charts.topHospitals.data.datasets[0].data = data.hospitals.map(h => h.claims);
+                                window.charts.topHospitals.update();
+                                console.log('✅ v3.45: Hospital claims chart updated');
+                            }
+                            if (data.hospitals && window.charts.topHospitalsCost) {
+                                window.charts.topHospitalsCost.data.labels = data.hospitals.map(h => h.name);
+                                window.charts.topHospitalsCost.data.datasets[0].data = data.hospitals.map(h => h.cost);
+                                window.charts.topHospitalsCost.update();
+                                console.log('✅ v3.45: Hospital cost chart updated');
+                            }
+                            // Update Region Charts
+                            if (data.geographic && data.geographic.regions && window.charts.regionPie) {
+                                const regions = data.geographic.regions;
+                                window.charts.regionPie.data.labels = regions.map(r => r.region);
+                                window.charts.regionPie.data.datasets[0].data = regions.map(r => r.claims);
+                                window.charts.regionPie.update();
+                                console.log('✅ v3.45: Region pie updated');
+                            }
+                            if (data.geographic && data.geographic.regions && window.charts.regionCost) {
+                                const regions = data.geographic.regions;
+                                window.charts.regionCost.data.labels = regions.map(r => r.region);
+                                window.charts.regionCost.data.datasets[0].data = regions.map(r => r.cost_usd);
+                                window.charts.regionCost.update();
+                                console.log('✅ v3.45: Region cost chart updated');
+                            }
+                        }
+                        
+                        // Also update tables again (in case they were overwritten)
+                        if (data.hospitals && data.hospitals.length > 0) {
+                            const hospTable = document.getElementById('hospitalsTableBody');
+                            if (hospTable) {
+                                const totalCost = data.hospitals.reduce((a, h) => a + (h.cost || 0), 0);
+                                hospTable.innerHTML = data.hospitals.map((h, i) => `
+                                    <tr>
+                                        <td><span style="background:${i < 3 ? '#D4AF37' : '#2E7D32'};color:#000;padding:2px 8px;border-radius:10px;font-weight:bold">${i + 1}</span></td>
+                                        <td><strong>${h.name}</strong><br><small style="color:#7a8f7a">${h.city || ''} ${h.region ? '(' + h.region + ')' : ''}</small></td>
+                                        <td>${(h.claims || 0).toLocaleString()}</td>
+                                        <td>$${((h.cost || 0)/1000).toFixed(1)}K</td>
+                                        <td>$${(h.avg_claim || 0).toFixed(0)}</td>
+                                        <td>${totalCost > 0 ? ((h.cost / totalCost) * 100).toFixed(1) : 0}%</td>
+                                    </tr>
+                                `).join('');
+                                console.log('✅ v3.45: Hospital table updated (delayed)');
+                            }
+                        }
+                        console.log('🎉 v3.45: Delayed update complete!');
+                    }, 2000); // Wait 2 seconds for charts to initialize
                 }
             }).catch(err => console.error('loadFinancialBreakdowns error:', err));
+            
+            // ═══════════════════════════════════════════════════════════════════
+            // v3.45 FIX: Retry chart updates after a delay (charts may not exist yet)
+            // ═══════════════════════════════════════════════════════════════════
+            setTimeout(async function() {
+                console.log('📊 v3.45: Delayed chart update starting...');
+                
+                const API_URL_RETRY = 'https://script.google.com/macros/s/AKfycbxBnEkHdzvxby_W1RuLpkFtlQ6GScMyF8wqap9v1BhvuncSx0SxAsAG9F11_IYvDYX6/exec';
+                
+                try {
+                    // Fetch fresh data
+                    const [catResp, hospResp, geoResp] = await Promise.all([
+                        fetch(API_URL_RETRY + '?action=getCategoriesBreakdown&clientId=ALL').then(r => r.json()),
+                        fetch(API_URL_RETRY + '?action=getHospitalsData&clientId=ALL').then(r => r.json()),
+                        fetch(API_URL_RETRY + '?action=getGeographicData&clientId=ALL').then(r => r.json())
+                    ]);
+                    
+                    console.log('📊 v3.45: Data fetched:', { 
+                        categories: catResp.data?.length, 
+                        hospitals: hospResp.data?.length, 
+                        regions: geoResp.data?.regions?.length 
+                    });
+                    
+                    // Update Hospital Table directly
+                    if (hospResp.success && hospResp.data) {
+                        const hospTable = document.getElementById('hospitalsTableBody');
+                        if (hospTable) {
+                            const totalCost = hospResp.data.reduce((a, h) => a + (h.cost_usd || 0), 0);
+                            hospTable.innerHTML = hospResp.data.map((h, i) => `
+                                <tr>
+                                    <td><span style="background:${i < 3 ? '#D4AF37' : '#2E7D32'};color:#000;padding:2px 8px;border-radius:10px;font-weight:bold">${i + 1}</span></td>
+                                    <td><strong>${h.name}</strong><br><small style="color:#7a8f7a">${h.city || ''} ${h.region ? '(' + h.region + ')' : ''}</small></td>
+                                    <td>${(h.claims || 0).toLocaleString()}</td>
+                                    <td>$${((h.cost_usd || 0)/1000).toFixed(1)}K</td>
+                                    <td>$${(h.avg_claim || 0).toFixed(0)}</td>
+                                    <td>${totalCost > 0 ? ((h.cost_usd / totalCost) * 100).toFixed(1) : 0}%</td>
+                                </tr>
+                            `).join('');
+                            console.log('✅ v3.45: Hospital table updated with', hospResp.data.length, 'rows');
+                        }
+                    }
+                    
+                    // Update Category boxes
+                    if (catResp.success && catResp.data) {
+                        const catMap = {};
+                        catResp.data.forEach(c => { catMap[c.category] = c.cases; });
+                        const el = (id) => document.getElementById(id);
+                        if (el('catMedical')) el('catMedical').textContent = catMap['General Consultation'] || catMap['Medical'] || 0;
+                        if (el('catDental')) el('catDental').textContent = catMap['Dental'] || 0;
+                        if (el('catMaternity')) el('catMaternity').textContent = catMap['Maternity'] || 0;
+                        if (el('catOptical')) el('catOptical').textContent = catMap['Ophthalmology'] || catMap['Optical'] || 0;
+                        if (el('catLab')) el('catLab').textContent = catMap['Laboratory & Diagnostics'] || catMap['Laboratory'] || 0;
+                        if (el('catOther')) el('catOther').textContent = catMap['Other'] || 0;
+                        console.log('✅ v3.45: Category boxes updated');
+                    }
+                    
+                    // Update City boxes
+                    if (geoResp.success && geoResp.data && geoResp.data.top_cities) {
+                        const cityTotals = { manila: 0, cebu: 0, davao: 0, iloilo: 0, other: 0 };
+                        geoResp.data.top_cities.forEach(c => {
+                            const city = (c.city || '').toLowerCase();
+                            if (city.includes('manila') || city.includes('quezon') || city.includes('makati') || city.includes('pasig') || city.includes('taguig')) {
+                                cityTotals.manila += c.claims;
+                            } else if (city.includes('cebu')) {
+                                cityTotals.cebu += c.claims;
+                            } else if (city.includes('davao')) {
+                                cityTotals.davao += c.claims;
+                            } else if (city.includes('iloilo')) {
+                                cityTotals.iloilo += c.claims;
+                            } else {
+                                cityTotals.other += c.claims;
+                            }
+                        });
+                        const el = (id) => document.getElementById(id);
+                        if (el('geoManila')) el('geoManila').textContent = cityTotals.manila.toLocaleString();
+                        if (el('geoCebu')) el('geoCebu').textContent = cityTotals.cebu.toLocaleString();
+                        if (el('geoDavao')) el('geoDavao').textContent = cityTotals.davao.toLocaleString();
+                        if (el('geoIloilo')) el('geoIloilo').textContent = cityTotals.iloilo.toLocaleString();
+                        if (el('geoOther')) el('geoOther').textContent = cityTotals.other.toLocaleString();
+                        console.log('✅ v3.45: City boxes updated');
+                    }
+                    
+                    // Update charts if they exist now
+                    if (window.charts) {
+                        if (window.charts.categoryPie && catResp.data) {
+                            window.charts.categoryPie.data.labels = catResp.data.map(c => c.category);
+                            window.charts.categoryPie.data.datasets[0].data = catResp.data.map(c => c.cases);
+                            window.charts.categoryPie.update();
+                            console.log('✅ v3.45: Category pie chart updated');
+                        }
+                        if (window.charts.topHospitals && hospResp.data) {
+                            window.charts.topHospitals.data.labels = hospResp.data.map(h => h.name);
+                            window.charts.topHospitals.data.datasets[0].data = hospResp.data.map(h => h.claims);
+                            window.charts.topHospitals.update();
+                        }
+                        if (window.charts.topHospitalsCost && hospResp.data) {
+                            window.charts.topHospitalsCost.data.labels = hospResp.data.map(h => h.name);
+                            window.charts.topHospitalsCost.data.datasets[0].data = hospResp.data.map(h => h.cost_usd);
+                            window.charts.topHospitalsCost.update();
+                        }
+                        if (window.charts.regionPie && geoResp.data?.regions) {
+                            window.charts.regionPie.data.labels = geoResp.data.regions.map(r => r.region);
+                            window.charts.regionPie.data.datasets[0].data = geoResp.data.regions.map(r => r.claims);
+                            window.charts.regionPie.update();
+                        }
+                        console.log('✅ v3.45: All charts updated');
+                    } else {
+                        console.log('⚠️ v3.45: Charts still not available');
+                    }
+                    
+                    console.log('🎉 v3.45: Delayed update complete!');
+                } catch(e) {
+                    console.error('❌ v3.45 error:', e);
+                }
+            }, 3000); // Wait 3 seconds for charts to initialize
             
             // Initial chart creation with empty/placeholder data (will be updated when API responds)
             try {
