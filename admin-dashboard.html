@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-05 v3.38 - Fix Period Comparison, YoY, Member Movement, Plan Performance -->
+<!-- VERSION: 2026-02-07 v3.39 - Fix Charts to show ALL selected quarters from API data -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11511,18 +11511,42 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 cost_per_member: data.cost_per_member
             };
             
-            // Build periods data for charts
-            const mockPeriods = hasRealData ? [mockCurrent] : Object.entries(quarterData).filter(([key, val]) => selectedQuarters.includes(key)).map(([key, val]) => {
-                const range = getQuarterDateRange(key, selectedYear);
-                return {
-                    period: `${selectedYear}-${key}`,
-                    period_label: range.label,
-                    members: val.members,
-                    claims: val.claims,
-                    approved_usd: val.approved_usd,
-                    cost_per_member: val.cost_per_member
-                };
-            }).sort((a, b) => a.period.localeCompare(b.period));
+            // Build periods data for charts - USE API COMPARISON DATA
+            let mockPeriods = [];
+            if (window.masterComparisonData && window.masterComparisonData.comparison && window.masterComparisonData.comparison.length > 0) {
+                // Use real API data from getMasterComparison
+                mockPeriods = window.masterComparisonData.comparison
+                    .filter(p => {
+                        const q = p.period.replace('-2025', '').replace('2025-', '').replace('-2026', '').replace('2026-', '');
+                        return selectedQuarters.includes(q);
+                    })
+                    .map(p => ({
+                        period: p.period,
+                        period_label: p.period.replace('-', ' '),
+                        members: p.members || 0,
+                        claims: p.claims || 0,
+                        approved_usd: p.approved_usd || 0,
+                        cost_per_member: p.cost_per_member || 0
+                    }))
+                    .sort((a, b) => a.period.localeCompare(b.period));
+                console.log('📊 Charts using API comparison data:', mockPeriods.length, 'periods for', selectedQuarters.join(', '));
+            } else if (hasRealData) {
+                mockPeriods = [mockCurrent];
+                console.log('📊 Charts using single current period');
+            } else {
+                mockPeriods = Object.entries(quarterData).filter(([key, val]) => selectedQuarters.includes(key)).map(([key, val]) => {
+                    const range = getQuarterDateRange(key, selectedYear);
+                    return {
+                        period: `${selectedYear}-${key}`,
+                        period_label: range.label,
+                        members: val.members,
+                        claims: val.claims,
+                        approved_usd: val.approved_usd,
+                        cost_per_member: val.cost_per_member
+                    };
+                }).sort((a, b) => a.period.localeCompare(b.period));
+                console.log('📊 Charts using quarterData fallback');
+            }
             
             // Calculate utilization from API data
             const util = mockCurrent.members > 0 ? (mockCurrent.claims / mockCurrent.members * 100) : 0;
@@ -17110,7 +17134,12 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             try {
                 const r = await fetch(`${API_URL}?action=getMasterComparison`);
                 const d = await r.json();
-                if (d.success) updateDashboard(d.data);
+                if (d.success) {
+                    // Store comparison data globally for charts
+                    window.masterComparisonData = d.data;
+                    console.log('📊 Loaded master comparison data:', d.data.comparison?.length, 'periods');
+                    updateDashboard(d.data);
+                }
                 // Handle responsive charts after data loads
                 onChartsRendered();
             } catch(e) { 
