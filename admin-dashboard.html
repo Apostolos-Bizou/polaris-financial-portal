@@ -17704,9 +17704,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 try {
                     // Fetch fresh data
                     const [catResp, hospResp, geoResp] = await Promise.all([
-                        fetch(API_URL_RETRY + '?action=getCategoriesBreakdown&clientId=ALL').then(r => r.json()),
-                        fetch(API_URL_RETRY + '?action=getHospitalsData&clientId=ALL').then(r => r.json()),
-                        fetch(API_URL_RETRY + '?action=getGeographicData&clientId=ALL').then(r => r.json())
+                        fetch(API_URL_RETRY + '?action=getCategoriesBreakdown&clientId=' + (window.selectedClient || 'ALL').replace('GROUP:', '')).then(r => r.json())
+                        fetch(API_URL_RETRY + '?action=getHospitalsData&clientId=' + (window.selectedClient || 'ALL').replace('GROUP:', '')).then(r => r.json()),
+                        fetch(API_URL_RETRY + '?action=getGeographicData&clientId=' + (window.selectedClient || 'ALL').replace('GROUP:', '')).then(r => r.json())
                     ]);
                     
                     console.log('📊 v3.45: Data fetched:', { 
