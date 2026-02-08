@@ -33297,8 +33297,10 @@ async function loadCEODashboardFromAPI() {
     console.log('🔄 Loading CEO Dashboard from API...');
     
     try {
-        const clientParam = selectedClient && selectedClient !== 'all' ? '&clientId=' + selectedClient : '';
-        const periodParam = selectedPeriod ? '&period=' + selectedPeriod : '';
+        const currentClientId = window.selectedClient || 'all';
+        const currentPeriod = (window.selectedQuarters && window.selectedQuarters[0]) ? window.selectedQuarters[0] + '-' + (window.selectedYear || '2025') : '';
+        const clientParam = currentClientId && currentClientId !== 'all' ? '&clientId=' + currentClientId : '';
+        const periodParam = currentPeriod ? '&period=' + currentPeriod : '';
         const response = await fetch(API_URL + '?action=getCEODashboard' + clientParam + periodParam);
         const result = await response.json();
         
