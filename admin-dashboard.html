@@ -33298,7 +33298,10 @@ async function loadCEODashboardFromAPI() {
     console.log('🔄 Loading CEO Dashboard from API...');
     
     try {
-        const currentClientId = window.selectedClient || 'all';
+        let currentClientId = window.selectedClient || 'all';
+        if (currentClientId.startsWith('GROUP:')) {
+            currentClientId = currentClientId.replace('GROUP:', '');
+        }
         const currentPeriod = (window.selectedQuarters && window.selectedQuarters[0]) ? window.selectedQuarters[0] + '-' + (window.selectedYear || '2025') : '';
         const clientParam = currentClientId && currentClientId !== 'all' ? '&clientId=' + currentClientId : '';
         const periodParam = currentPeriod ? '&period=' + currentPeriod : '';
