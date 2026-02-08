@@ -17704,7 +17704,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 try {
                     // Fetch fresh data
                     const [catResp, hospResp, geoResp] = await Promise.all([
-                        fetch(API_URL_RETRY + '?action=getCategoriesBreakdown&clientId=' + (window.selectedClient || 'ALL').replace('GROUP:', '')).then(r => r.json())
+                        fetch(API_URL_RETRY + '?action=getCategoriesBreakdown&clientId=' + (window.selectedClient || 'ALL').replace('GROUP:', '')).then(r => r.json()),
                         fetch(API_URL_RETRY + '?action=getHospitalsData&clientId=' + (window.selectedClient || 'ALL').replace('GROUP:', '')).then(r => r.json()),
                         fetch(API_URL_RETRY + '?action=getGeographicData&clientId=' + (window.selectedClient || 'ALL').replace('GROUP:', '')).then(r => r.json())
                     ]);
