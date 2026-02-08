@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-07 v3.54 - GROUP selection properly handled, Top Clients filtered -->
+<!-- VERSION: 2026-02-08 v3.55 - Added "Add Contact" button to Client Portfolio view -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -9379,6 +9379,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         <div class="client-folder-actions">
                             <button class="client-folder-btn secondary" onclick="openClientGoogleFolder()">📁 Google Drive</button>
                             <button class="client-folder-btn secondary" onclick="emailClient()">📧 Email</button>
+                            <button class="client-folder-btn secondary" onclick="openAddRecipientModal()" style="background: rgba(212,175,55,0.2); border-color: var(--polaris-gold); color: var(--polaris-gold);">👥 Add Contact</button>
                             <button class="client-folder-btn primary" onclick="createNewContractForClient()">➕ New Contract</button>
                         </div>
                     </div>
@@ -34139,9 +34140,9 @@ console.log('✅ Recipients Management (v3.27) loaded!');
     </div>
 </div>
 
-<!-- v3.54: GROUP selection handled properly -->
+<!-- v3.55: Add Contact button restored to Client Portfolio view -->
 <script>
-console.log('📊 v3.54: GROUP selection now properly filters Top Clients and data');
+console.log('📊 v3.55: Add Contact button added to Client Portfolio header');
 </script>
 </body>
 </html>
