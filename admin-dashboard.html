@@ -17452,7 +17452,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             let newEnroll = 0, cancelled = 0;
             
             // Call async function to load real data
-            loadFinancialBreakdowns().then(data => {
+            loadFinancialBreakdowns((window.selectedClient || 'ALL').replace('GROUP:', ''), window.selectedPeriod || '').then(data => {
                 if (data) {
                     // Update Inpatient/Outpatient/Ex Gratia from API
                     if (data.claimTypes) {
