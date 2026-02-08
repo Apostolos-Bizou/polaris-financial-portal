@@ -33297,7 +33297,9 @@ async function loadCEODashboardFromAPI() {
     console.log('🔄 Loading CEO Dashboard from API...');
     
     try {
-        const response = await fetch(API_URL + '?action=getCEODashboard');
+        const clientParam = selectedClient && selectedClient !== 'all' ? '&clientId=' + selectedClient : '';
+        const periodParam = selectedPeriod ? '&period=' + selectedPeriod : '';
+        const response = await fetch(API_URL + '?action=getCEODashboard' + clientParam + periodParam);
         const result = await response.json();
         
         if (!result.success) {
