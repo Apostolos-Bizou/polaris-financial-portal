@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-09-v10 - Fixed company dropdown to load subsidiaries on login -->
+    <!-- VERSION: 2026-02-09-v11 - Fixed API to use getFinancialData which returns proper data array -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4376,8 +4376,8 @@
         
         async function loadData(clientId) {
             try {
-                // Fetch ALL client KPI data - we filter on frontend
-                const apiUrl = `${API_URL}?action=getClientKPISummary&clientId=ALL`;
+                // Fetch ALL financial data - we filter on frontend
+                const apiUrl = `${API_URL}?action=getFinancialData`;
                 
                 const r = await fetch(apiUrl);
                 const d = await r.json();
