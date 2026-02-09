@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-09-v8 - Full Responsive Design for Mobile/Tablet/Desktop -->
+    <!-- VERSION: 2026-02-09-v9 - Fixed API to use getClientKPISummary instead of missing getMasterComparison -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4343,17 +4343,41 @@
         
         async function loadData(clientId) {
             try {
-                // Always fetch ALL data (no client_id filter) - we filter on frontend
-                const apiUrl = `${API_URL}?action=getMasterComparison`;
+                // Fetch ALL client KPI data - we filter on frontend
+                const apiUrl = `${API_URL}?action=getClientKPISummary&clientId=ALL`;
                 
                 const r = await fetch(apiUrl);
                 const d = await r.json();
-                if (d.success) {
-                    rawApiData = d.data;
-                    updateDashboard(d.data, clientId);
+                if (d.success && d.data) {
+                    // Transform API response to expected format
+                    const clientDetails = d.data;
+                    
+                    // Extract unique periods from data
+                    const periodsSet = new Set();
+                    clientDetails.forEach(item => {
+                        if (item.period) periodsSet.add(item.period);
+                    });
+                    const periods = Array.from(periodsSet).sort();
+                    
+                    // Transform period format from "Q1-2025" to "Q1 2025"
+                    const transformedDetails = clientDetails.map(item => ({
+                        ...item,
+                        period: item.period ? item.period.replace('-', ' ') : item.period
+                    }));
+                    const transformedPeriods = periods.map(p => p.replace('-', ' '));
+                    
+                    rawApiData = {
+                        client_details: transformedDetails,
+                        periods: transformedPeriods
+                    };
+                    
+                    console.log('📊 Client Portal: Loaded', transformedDetails.length, 'records,', transformedPeriods.length, 'periods');
+                    updateDashboard(rawApiData, clientId);
+                } else {
+                    console.error('API Error:', d.error || 'Unknown error');
                 }
                 document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error('Load data error:', e); }
         }
         
         // Get list of client_ids to include based on selection
