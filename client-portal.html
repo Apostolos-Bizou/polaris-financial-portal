@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-09-v9 - Fixed API to use getClientKPISummary instead of missing getMasterComparison -->
+    <!-- VERSION: 2026-02-09-v10 - Fixed company dropdown to load subsidiaries on login -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1123,8 +1123,8 @@
             <div class="welcome-user-name" id="welcomeUserName">User</div>
             <div class="welcome-company-line">from</div>
             <div class="welcome-company-name" id="welcomeCompanyName">Your Company</div>
-            <div class="welcome-message">YOUR KPIs are on track</div>
-            <div class="welcome-team">POLARIS TEAM</div>
+            <div class="welcome-message">Enjoy your results</div>
+            <div class="welcome-team">from Polaris Team</div>
             <div class="welcome-tagline">
                 <span>Fast</span>•<span>Fair</span>•<span>Flexible</span>
             </div>
@@ -2090,8 +2090,41 @@
                 
                 if (data.success && data.user) {
                     currentUser = data.user;
-                    companiesList = data.companies || [{ client_id: data.user.client_id, company_name: data.user.company_name || 'My Company', is_parent: true }];
                     selectedCompanyId = currentUser.client_id;
+                    
+                    // Fetch subsidiaries to build full company list
+                    try {
+                        const subsResponse = await fetch(`${API_URL}?action=getClientWithSubsidiaries&clientId=${encodeURIComponent(currentUser.client_id)}`);
+                        const subsData = await subsResponse.json();
+                        
+                        if (subsData.success && subsData.data) {
+                            // Build companies list: parent + subsidiaries
+                            const parent = subsData.data.parent;
+                            const subsidiaries = subsData.data.subsidiaries || [];
+                            
+                            companiesList = [
+                                { 
+                                    client_id: parent.client_id, 
+                                    company_name: parent.client_name, 
+                                    is_parent: true 
+                                },
+                                ...subsidiaries.map(s => ({
+                                    client_id: s.client_id,
+                                    company_name: s.client_name,
+                                    is_parent: false,
+                                    parent_client_id: s.parent_client_id
+                                }))
+                            ];
+                            console.log('📊 Loaded', companiesList.length, 'companies (1 parent +', subsidiaries.length, 'subsidiaries)');
+                        } else {
+                            // Fallback: use user data only
+                            companiesList = [{ client_id: data.user.client_id, company_name: data.user.company_name || 'My Company', is_parent: true }];
+                        }
+                    } catch (subErr) {
+                        console.error('Error loading subsidiaries:', subErr);
+                        companiesList = [{ client_id: data.user.client_id, company_name: data.user.company_name || 'My Company', is_parent: true }];
+                    }
+                    
                     localStorage.setItem('polaris_user', JSON.stringify(currentUser));
                     localStorage.setItem('polaris_companies', JSON.stringify(companiesList));
                     showDashboard();
