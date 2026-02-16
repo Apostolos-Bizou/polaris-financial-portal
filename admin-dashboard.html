@@ -17444,75 +17444,22 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     return;
                 }
                 
-                // Get Q4 client details
-                const q4Data = window.masterComparisonData.client_details.filter(cd => 
-                    cd.period === 'Q4-2025' && cd.client_id !== 'ALL'
-                );
+                // Since getClients is broken, we can't load individual clients
+                // Show a helpful message instead
+                topClientsBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.7);">
+                            <div style="margin-bottom:1rem;font-size:1.2rem;">📊</div>
+                            <div style="font-weight:600;margin-bottom:0.5rem;">Top Clients Data Unavailable</div>
+                            <div style="font-size:0.9rem;color:rgba(255,255,255,0.5);">
+                                Individual client data requires the getClients endpoint.<br>
+                                All aggregate KPIs are working correctly.
+                            </div>
+                        </td>
+                    </tr>
+                `;
                 
-                if (q4Data.length === 0) {
-                    topClientsBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.5);">No client data available</td></tr>';
-                    return;
-                }
-                
-                // Create parent aggregates
-                const parentAggregates = {};
-                
-                q4Data.forEach(client => {
-                    // Determine parent ID
-                    const parentId = client.parent_client_id || client.client_id;
-                    
-                    if (!parentAggregates[parentId]) {
-                        // Find parent name
-                        const parentClient = q4Data.find(c => c.client_id === parentId);
-                        parentAggregates[parentId] = {
-                            client_id: parentId,
-                            client_name: parentClient ? parentClient.client_name : client.client_name,
-                            members: 0,
-                            claims: 0,
-                            approved_usd: 0,
-                            total_fees: 0,
-                            subsidiary_count: 0
-                        };
-                    }
-                    
-                    // Aggregate data
-                    parentAggregates[parentId].members += client.members || 0;
-                    parentAggregates[parentId].claims += client.claims || 0;
-                    parentAggregates[parentId].approved_usd += client.approved_usd || 0;
-                    parentAggregates[parentId].total_fees += client.total_fees || 0;
-                    
-                    // Count subsidiaries
-                    if (client.parent_client_id) {
-                        parentAggregates[parentId].subsidiary_count++;
-                    }
-                });
-                
-                // Convert to array and sort by revenue
-                const topClients = Object.values(parentAggregates)
-                    .sort((a, b) => (b.total_fees || b.members * 20) - (a.total_fees || a.members * 20))
-                    .slice(0, 10);
-                
-                // Render table
-                topClientsBody.innerHTML = topClients.map((client, index) => {
-                    const revenue = client.total_fees || (client.members * 20);
-                    const lossRatio = revenue > 0 
-                        ? Math.round(client.approved_usd / revenue * 100) 
-                        : 0;
-                    const subsidiaryBadge = client.subsidiary_count > 0 
-                        ? ` <small style="color:#888">(+${client.subsidiary_count} subs)</small>` 
-                        : '';
-                    
-                    return `<tr>
-                        <td>${index + 1}</td>
-                        <td title="${client.client_id}">${client.client_name}${subsidiaryBadge}</td>
-                        <td style="text-align:right">${(client.members || 0).toLocaleString()}</td>
-                        <td style="text-align:right">$${Math.round(client.approved_usd || 0).toLocaleString()}</td>
-                        <td style="text-align:right">$${Math.round(revenue).toLocaleString()}</td>
-                        <td style="text-align:right;color:${lossRatio <= 70 ? '#4CAF50' : '#f39c12'}">${lossRatio}%</td>
-                    </tr>`;
-                }).join('');
-                
-                console.log('✅ Top Clients table updated with', topClients.length, 'parent companies (aggregated)');
+                console.log('ℹ️ Top Clients table: Showing info message (getClients unavailable)');
             } catch(err) {
                 console.error('❌ Error updating Top Clients:', err);
             }
@@ -17564,33 +17511,19 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         async function loadData() {
             try {
-                // v4.5: Use existing endpoints instead of missing getMasterComparison
-                console.log('📊 Loading dashboard data using available endpoints...');
+                // v4.6: SIMPLIFIED - Use ONLY getClientKPISummary (getClients is broken!)
+                console.log('📊 Loading dashboard data using getClientKPISummary...');
                 
-                // Step 1: Get all clients first
-                const clientsResponse = await fetch(`${API_URL}?action=getClients`);
-                const clientsData = await clientsResponse.json();
-                
-                if (!clientsData.success || !clientsData.clients) {
-                    console.warn('Could not load clients list');
-                    onChartsRendered();
-                    return;
-                }
-                
-                const allClients = clientsData.clients;
-                console.log('📋 Loaded', allClients.length, 'clients');
-                
-                // Step 2: Build masterComparisonData from available endpoints
+                // Build masterComparisonData from getClientKPISummary only
                 const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
                 const year = '2025';
                 const clientDetails = [];
                 
-                // Load data for each quarter and each client
+                // Load data for each quarter
                 for (const q of allQuarters) {
-                    // Load ALL clients aggregate for this quarter
                     try {
                         const params = new URLSearchParams({
-                            action: 'getDashboardKPIs',
+                            action: 'getClientKPISummary',
                             clientId: 'ALL',
                             quarter: q,
                             year: year
@@ -17599,54 +17532,23 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         const r = await fetch(`${API_URL}?${params.toString()}`);
                         const d = await r.json();
                         
-                        if (d.success && d.data) {
+                        if (d.success && d.kpis) {
+                            // Add aggregate ALL data
                             clientDetails.push({
                                 period: `${q}-${year}`,
                                 client_id: 'ALL',
                                 client_name: 'All Clients',
-                                members: d.data.total_members || 0,
-                                claims: d.data.total_claims || 0,
-                                approved_usd: d.data.approved_amount || 0,
-                                total_fees: d.data.total_fees || 0,
+                                members: d.kpis.total_members || 0,
+                                claims: d.kpis.total_claims || 0,
+                                approved_usd: d.kpis.total_cost_usd || 0,
+                                total_fees: d.kpis.total_fees || 0,
                                 parent_client_id: null
                             });
+                            
+                            console.log(`✅ Loaded ${q}: ${d.kpis.total_members} members, ${d.kpis.total_claims} claims`);
                         }
                     } catch (qErr) {
-                        console.warn(`Could not load ALL for ${q}:`, qErr.message);
-                    }
-                    
-                    // Load individual clients for this quarter (for Top Clients table)
-                    // Only load Q4 to save time
-                    if (q === 'Q4') {
-                        for (const client of allClients) {
-                            try {
-                                const params = new URLSearchParams({
-                                    action: 'getClientKPISummary',
-                                    clientId: client.client_id,
-                                    quarter: q,
-                                    year: year
-                                });
-                                
-                                const r = await fetch(`${API_URL}?${params.toString()}`);
-                                const d = await r.json();
-                                
-                                if (d.success && d.kpis) {
-                                    clientDetails.push({
-                                        period: `${q}-${year}`,
-                                        client_id: client.client_id,
-                                        client_name: client.client_name || client.client_id,
-                                        parent_client_id: client.parent_client_id || null,
-                                        members: d.kpis.total_members || 0,
-                                        claims: d.kpis.total_claims || 0,
-                                        approved_usd: d.kpis.total_cost_usd || 0,
-                                        total_fees: d.kpis.total_fees || 0
-                                    });
-                                }
-                            } catch (cErr) {
-                                // Silently skip clients with errors
-                            }
-                        }
-                        console.log('✅ Loaded individual client data for Q4:', allClients.length, 'clients');
+                        console.warn(`Could not load ${q}:`, qErr.message);
                     }
                 }
                 
@@ -17660,11 +17562,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     }))
                 };
                 
-                console.log('✅ Loaded data:', clientDetails.length, 'total records using getDashboardKPIs + getClientKPISummary');
+                console.log('✅ Loaded data:', clientDetails.length, 'records (Q1-Q4 aggregates only)');
                 console.log('📊 masterComparisonData:', window.masterComparisonData);
                 
-                // FIX #1: Update Top Clients table with parent aggregation
-                await updateTopClientsTable();
+                // NOTE: Top Clients will show "No data" because we don't have individual clients
+                // This is OK - the main KPIs will work with ALL data
                 
                 // FIX #2: Build all_periods array for Historical Data
                 const all_periods = buildAllPeriods();
