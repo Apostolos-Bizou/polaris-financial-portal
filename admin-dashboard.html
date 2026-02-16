@@ -10540,14 +10540,17 @@ html, body { overflow-x: hidden; max-width: 100vw; }
          */
         async function loadFinancialBreakdowns(clientId, period) {
             try {
+                // Remove GROUP: prefix if present
+                const cleanClientId = clientId ? clientId.replace('GROUP:', '') : clientId;
+                
                 // Build common params
                 const baseParams = new URLSearchParams();
-                if (clientId && clientId !== 'ALL') baseParams.append('clientId', clientId);
+                if (cleanClientId && cleanClientId !== 'ALL') baseParams.append('clientId', cleanClientId);
                 if (period) baseParams.append('period', period);
                 
-                // v3.40: Call all endpoints in PARALLEL for speed
+                // v4.5: MIGRATED from getDashboardKPIs to getClientKPISummary for GROUP support
                 const [kpiResponse, categoriesResponse, hospitalsResponse, geoResponse] = await Promise.all([
-                    fetch(`${API_URL}?action=getDashboardKPIs&${baseParams.toString()}`),
+                    fetch(`${API_URL}?action=getClientKPISummary&${baseParams.toString()}`),
                     fetch(`${API_URL}?action=getCategoriesBreakdown&${baseParams.toString()}`),
                     fetch(`${API_URL}?action=getHospitalsData&${baseParams.toString()}`),
                     fetch(`${API_URL}?action=getGeographicData&${baseParams.toString()}`)
@@ -11252,10 +11255,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const exCostUsd = Math.round(aggExCost * phpToUsdRate);
             
             // Update Inpatient/Outpatient with AGGREGATED data
+            // v4.5: Updated paths for getClientKPISummary response
             if (document.getElementById('inpatientCases')) {
-                document.getElementById('inpatientCases').textContent = (isMultiQ ? aggInCases : ((latestResult?.data?.claimTypes?.cases?.inpatient) || 0)).toLocaleString();
-                document.getElementById('outpatientCases').textContent = (isMultiQ ? aggOutCases : ((latestResult?.data?.claimTypes?.cases?.outpatient) || 0)).toLocaleString();
-                document.getElementById('exGratiaCases').textContent = (isMultiQ ? aggExCases : ((latestResult?.data?.claimTypes?.cases?.exgratia) || 0)).toLocaleString();
+                document.getElementById('inpatientCases').textContent = (isMultiQ ? aggInCases : (latestResult?.kpis?.inpatient_cases || latestResult?.claimTypes?.inpatient || 0)).toLocaleString();
+                document.getElementById('outpatientCases').textContent = (isMultiQ ? aggOutCases : (latestResult?.kpis?.outpatient_cases || latestResult?.claimTypes?.outpatient || 0)).toLocaleString();
+                document.getElementById('exGratiaCases').textContent = (isMultiQ ? aggExCases : (latestResult?.kpis?.exgratia_cases || latestResult?.claimTypes?.exgratia || 0)).toLocaleString();
             }
             if (document.getElementById('inpatientCost')) {
                 document.getElementById('inpatientCost').textContent = '$' + inCostUsd.toLocaleString();
@@ -11264,10 +11268,12 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             }
             
             // Update Principal/Dependent from latest quarter (snapshot)
-            if (document.getElementById('principalCount') && latestResult?.data?.memberTypes) {
-                const mt = latestResult.data.memberTypes;
-                document.getElementById('principalCount').textContent = ((mt.members && mt.members.principal) || 0).toLocaleString();
-                document.getElementById('dependentCount').textContent = ((mt.members && mt.members.dependent) || 0).toLocaleString();
+            // v4.5: Updated paths for getClientKPISummary response
+            if (document.getElementById('principalCount') && (latestResult?.memberTypes || latestResult?.kpis)) {
+                const mt = latestResult.memberTypes || {};
+                const kpis = latestResult.kpis || {};
+                document.getElementById('principalCount').textContent = (mt.principal || kpis.principal_members || 0).toLocaleString();
+                document.getElementById('dependentCount').textContent = (mt.dependent || kpis.dependent_members || 0).toLocaleString();
             }
             
             // Update Member Movement with AGGREGATED enrollments/cancellations
@@ -12358,6 +12364,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (btn) btn.disabled = true;
             if (icon) icon.style.animation = 'spin 1s linear infinite';
             
+            // 🔧 SAVE current selection BEFORE refresh
+            const savedSelection = selectedClient || window.selectedClient || 'all';
+            console.log('💾 Saving selection before refresh:', savedSelection);
+            
             showDashboardLoading(true);
             updateDashboardLoading(5, 'Refreshing Dashboard Data...', 'Connecting to server...');
             
@@ -12366,6 +12376,17 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 updateDashboardLoading(15, 'Loading clients...', '📋 Fetching client list');
                 await loadClientsFromAPI();
                 populateClientSelector();
+                
+                // 🔧 RESTORE selection AFTER repopulating dropdown
+                if (savedSelection && savedSelection !== 'all') {
+                    const selector = document.getElementById('clientSelector');
+                    if (selector) {
+                        selector.value = savedSelection;
+                        window.selectedClient = savedSelection;
+                        selectedClient = savedSelection;
+                        console.log('🔄 Restored selection:', savedSelection);
+                    }
+                }
                 
                 // Step 2: Load KPIs
                 updateDashboardLoading(35, 'Loading KPIs...', '📊 Fetching financial data for ' + (selectedQuarters[0] || 'Q1') + ' ' + selectedYear);
