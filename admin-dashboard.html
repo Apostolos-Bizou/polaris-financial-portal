@@ -11073,8 +11073,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     }
                     
                     const params = new URLSearchParams({ action: 'getClientKPISummary' });
-                    if (clientId && clientId !== 'all') {
-                        params.append('clientId', clientId);
+                    // Remove GROUP: prefix if present before sending to API
+                    const cleanClientId = clientId ? clientId.replace('GROUP:', '') : 'ALL';
+                    if (cleanClientId && cleanClientId !== 'all') {
+                        params.append('clientId', cleanClientId);
                     } else {
                         params.append('clientId', 'ALL');
                     }
@@ -12602,7 +12604,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     const promises = quartersToLoad.map((qi, idx) => {
                         const range = getQuarterDateRange(qi, selectedYear);
                         const params = new URLSearchParams({ action: 'getClientKPISummary' });
-                        params.append('clientId', (clientId && clientId !== 'all') ? clientId : 'ALL');
+                        // Remove GROUP: prefix if present before sending to API
+                        const cleanClientId = clientId ? clientId.replace('GROUP:', '') : 'ALL';
+                        params.append('clientId', (cleanClientId && cleanClientId !== 'all') ? cleanClientId : 'ALL');
                         params.append('startDate', range.start);
                         params.append('endDate', range.end);
                         params.append('quarter', qi);
@@ -12707,7 +12711,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 } else {
                     // ═══ SINGLE PERIOD: One API call for selected quarter ═══
                     const params = new URLSearchParams({ action: 'getClientKPISummary' });
-                    params.append('clientId', (clientId && clientId !== 'all') ? clientId : 'ALL');
+                    // Remove GROUP: prefix if present before sending to API
+                    const cleanClientId = clientId ? clientId.replace('GROUP:', '') : 'ALL';
+                    params.append('clientId', (cleanClientId && cleanClientId !== 'all') ? cleanClientId : 'ALL');
                     params.append('startDate', selectedRange.start);
                     params.append('endDate', selectedRange.end);
                     params.append('quarter', q);
