@@ -17837,7 +17837,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         if (window.currentClientKPIs) {
                             window.currentClientKPIs.categories = data.categories;
                         }
-                        try { createCategoryCharts(current); } catch(e) { console.error('createCategoryCharts refresh error:', e); }
+                        try { 
+                            createCategoryCharts(data); 
+                        } catch(e) { 
+                            console.error('createCategoryCharts refresh error:', e); 
+                        }
                     }
                     
                     // Update Geographic from API
