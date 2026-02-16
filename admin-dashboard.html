@@ -12522,31 +12522,55 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 estimated_revenue: c.total_fees || c.members * 20
                             }));
                             
+                            // v4.5: AGGREGATE subsidiaries into parent companies
+                            const parentAggregates = {};
+                            
+                            clientsArray.forEach(client => {
+                                // Determine which parent to aggregate under
+                                const parentId = client.parent_client_id || client.client_id;
+                                
+                                if (!parentAggregates[parentId]) {
+                                    // Find parent name
+                                    const parentClient = clientsArray.find(c => c.client_id === parentId);
+                                    parentAggregates[parentId] = {
+                                        client_id: parentId,
+                                        client_name: parentClient ? parentClient.client_name : client.client_name,
+                                        members: 0,
+                                        claims: 0,
+                                        claims_cost: 0,
+                                        total_fees: 0,
+                                        estimated_revenue: 0,
+                                        subsidiary_count: 0
+                                    };
+                                }
+                                
+                                // Aggregate data
+                                parentAggregates[parentId].members += client.members || 0;
+                                parentAggregates[parentId].claims += client.claims || 0;
+                                parentAggregates[parentId].claims_cost += client.claims_cost || 0;
+                                parentAggregates[parentId].total_fees += client.total_fees || 0;
+                                parentAggregates[parentId].estimated_revenue += client.estimated_revenue || 0;
+                                
+                                // Count subsidiaries (don't count parent itself)
+                                if (client.parent_client_id) {
+                                    parentAggregates[parentId].subsidiary_count++;
+                                }
+                            });
+                            
+                            // Convert to array
+                            clientsArray = Object.values(parentAggregates);
+                            
                             // v3.54: Filter based on GROUP or single client selection
                             const currentClient = selectedClient || 'ALL';
                             
                             if (isGroupSelection && groupClientIds.length > 0) {
                                 // GROUP selection - filter to only group members
                                 clientsArray = clientsArray.filter(c => groupClientIds.includes(c.client_id));
-                                console.log('📊 v3.54: Filtered Top Clients to GROUP:', groupClientIds.length, 'IDs →', clientsArray.length, 'clients');
+                                console.log('📊 v4.5: Filtered Top Clients to GROUP:', groupClientIds.length, 'IDs →', clientsArray.length, 'clients');
                             } else if (currentClient && currentClient !== 'ALL' && currentClient !== 'all' && !currentClient.startsWith('GROUP:')) {
-                                // Single client selection
-                                const selectedClientData = clientsArray.find(c => c.client_id === currentClient);
-                                if (selectedClientData) {
-                                    const children = clientsArray.filter(c => c.parent_client_id === currentClient);
-                                    if (children.length > 0) {
-                                        clientsArray = [selectedClientData, ...children];
-                                    } else {
-                                        const parentId = selectedClientData.parent_client_id;
-                                        if (parentId) {
-                                            clientsArray = clientsArray.filter(c => 
-                                                c.client_id === parentId || c.parent_client_id === parentId
-                                            );
-                                        } else {
-                                            clientsArray = [selectedClientData];
-                                        }
-                                    }
-                                }
+                                // Single client selection - show just that parent
+                                const selectedParentId = currentClient;
+                                clientsArray = clientsArray.filter(c => c.client_id === selectedParentId);
                             }
                             
                             // Sort by revenue and take top 10
@@ -12559,14 +12583,18 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                     const lossRatio = client.estimated_revenue > 0 
                                         ? Math.round(client.claims_cost / client.estimated_revenue * 100) 
                                         : 0;
+                                    const subsidiaryBadge = client.subsidiary_count > 0 
+                                        ? ` <small style="color:#888">(+${client.subsidiary_count} subs)</small>` 
+                                        : '';
                                     return `<tr>
                                         <td>${index + 1}</td>
-                                        <td title="${client.client_id}">${client.client_name || client.client_id}</td>
+                                        <td title="${client.client_id}">${client.client_name || client.client_id}${subsidiaryBadge}</td>
                                         <td style="text-align:right">${(client.members || 0).toLocaleString()}</td>
                                         <td style="text-align:right">$${Math.round(client.claims_cost || 0).toLocaleString()}</td>
                                         <td style="text-align:right">$${Math.round(client.estimated_revenue || 0).toLocaleString()}</td>
                                         <td style="text-align:right;color:${lossRatio <= 70 ? '#4CAF50' : '#f39c12'}">${lossRatio}%</td>
                                     </tr>`;
+                                }).join('');
                                 }).join('');
                                 console.log('✅ v3.54: Top Clients table updated with', topClients.length, 'clients');
                             } else {
