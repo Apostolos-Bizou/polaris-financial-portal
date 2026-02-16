@@ -17766,37 +17766,58 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 if (data) {
                     // Update Inpatient/Outpatient/Ex Gratia from API
                     if (data.claimTypes) {
-                        document.getElementById('inpatientCases').textContent = fmt(data.claimTypes.cases.inpatient);
-                        document.getElementById('outpatientCases').textContent = fmt(data.claimTypes.cases.outpatient);
-                        document.getElementById('exGratiaCases').textContent = fmt(data.claimTypes.cases.exgratia);
-                        document.getElementById('inpatientCost').textContent = '$' + fmt(data.claimTypes.costs.inpatient);
-                        document.getElementById('outpatientCost').textContent = '$' + fmt(data.claimTypes.costs.outpatient);
-                        document.getElementById('exGratiaCost').textContent = '$' + fmt(data.claimTypes.costs.exgratia);
+                        // Safe access to claimTypes structure
+                        const cases = data.claimTypes.cases || data.claimTypes;
+                        const costs = data.claimTypes.costs || data.claimTypes;
+                        
+                        const inpatientCases = cases.inpatient || data.claimTypes.inpatient || 0;
+                        const outpatientCases = cases.outpatient || data.claimTypes.outpatient || 0;
+                        const exGratiaCases = cases.exgratia || data.claimTypes.exgratia || 0;
+                        
+                        const inpatientCost = costs.inpatient_cost || 0;
+                        const outpatientCost = costs.outpatient_cost || 0;
+                        const exGratiaCost = costs.exgratia_cost || 0;
+                        
+                        document.getElementById('inpatientCases').textContent = fmt(inpatientCases);
+                        document.getElementById('outpatientCases').textContent = fmt(outpatientCases);
+                        document.getElementById('exGratiaCases').textContent = fmt(exGratiaCases);
+                        document.getElementById('inpatientCost').textContent = '$' + fmt(inpatientCost);
+                        document.getElementById('outpatientCost').textContent = '$' + fmt(outpatientCost);
+                        document.getElementById('exGratiaCost').textContent = '$' + fmt(exGratiaCost);
                         
                         // Recreate charts with real data
                         try { 
                             createInOutCharts(periods, 
-                                data.claimTypes.cases.inpatient, 
-                                data.claimTypes.cases.outpatient, 
-                                data.claimTypes.cases.exgratia,
-                                data.claimTypes.costs.inpatient,
-                                data.claimTypes.costs.outpatient,
-                                data.claimTypes.costs.exgratia
+                                inpatientCases, 
+                                outpatientCases, 
+                                exGratiaCases,
+                                inpatientCost,
+                                outpatientCost,
+                                exGratiaCost
                             ); 
                         } catch(e) { console.error('createInOutCharts error:', e); }
                     }
                     
                     // Update Principal/Dependent from API
                     if (data.memberTypes) {
-                        document.getElementById('principalCount').textContent = fmt(data.memberTypes.members.principal);
-                        document.getElementById('dependentCount').textContent = fmt(data.memberTypes.members.dependent);
+                        // Safe access to memberTypes structure
+                        const members = data.memberTypes.members || data.memberTypes;
+                        const claims = data.memberTypes.claims || {};
+                        
+                        const principalMembers = members.principal || data.memberTypes.principal || 0;
+                        const dependentMembers = members.dependent || data.memberTypes.dependent || 0;
+                        const principalClaims = claims.principal || 0;
+                        const dependentClaims = claims.dependent || 0;
+                        
+                        document.getElementById('principalCount').textContent = fmt(principalMembers);
+                        document.getElementById('dependentCount').textContent = fmt(dependentMembers);
                         
                         try { 
                             createMemberTypeCharts(
-                                data.memberTypes.members.principal, 
-                                data.memberTypes.members.dependent, 
-                                data.memberTypes.claims.principal,
-                                data.memberTypes.claims.dependent
+                                principalMembers, 
+                                dependentMembers, 
+                                principalClaims,
+                                dependentClaims
                             ); 
                         } catch(e) { console.error('createMemberTypeCharts error:', e); }
                     }
