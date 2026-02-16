@@ -18297,6 +18297,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         
         function createInOutCharts(periods, inCases, outCases, exGratiaCases, inCost, outCost, exGratiaCost) {
+            // AUTO-SWITCH: Line or Bar based on period count
+            const isSinglePeriod = periods.length === 1;
+            const chartType = isSinglePeriod ? 'bar' : 'line';
+            
             // Inpatient/Outpatient/Ex Gratia Pie
             const ctx1 = document.getElementById('inOutPieChart').getContext('2d');
             if (charts.inOutPie) charts.inOutPie.destroy();
@@ -18400,7 +18404,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             fillGold.addColorStop(1, 'rgba(212,175,55,0.05)');
             
             charts.inOutTrend = new Chart(ctx3, {
-                type: 'line',
+                type: chartType,  // AUTO-SWITCH: bar if 1 period, line if 2+
                 data: {
                     labels: periods.map(p => p.period_label),
                     datasets: [
@@ -18408,43 +18412,49 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             label: 'Inpatient', 
                             data: periods.map(p => Math.round(p.claims * 0.22)), 
                             borderColor: '#e74c3c', 
-                            backgroundColor: fillRed, 
-                            fill: true, 
+                            backgroundColor: isSinglePeriod ? barRedGrad : fillRed, 
+                            fill: !isSinglePeriod, 
                             tension: 0.4,
                             borderWidth: 3,
+                            borderRadius: isSinglePeriod ? 8 : 0,
+                            barPercentage: isSinglePeriod ? 0.6 : undefined,
                             pointBackgroundColor: '#e74c3c',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 7
+                            pointRadius: isSinglePeriod ? 0 : 4,
+                            pointHoverRadius: isSinglePeriod ? 0 : 7
                         },
                         { 
                             label: 'Outpatient', 
                             data: periods.map(p => Math.round(p.claims * 0.70)), 
                             borderColor: '#3498db', 
-                            backgroundColor: fillBlue, 
-                            fill: true, 
+                            backgroundColor: isSinglePeriod ? barBlueGrad : fillBlue, 
+                            fill: !isSinglePeriod, 
                             tension: 0.4,
                             borderWidth: 3,
+                            borderRadius: isSinglePeriod ? 8 : 0,
+                            barPercentage: isSinglePeriod ? 0.6 : undefined,
                             pointBackgroundColor: '#3498db',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 7
+                            pointRadius: isSinglePeriod ? 0 : 4,
+                            pointHoverRadius: isSinglePeriod ? 0 : 7
                         },
                         { 
                             label: 'Ex Gratia', 
                             data: periods.map(p => Math.round(p.claims * 0.08)), 
                             borderColor: '#D4AF37', 
-                            backgroundColor: fillGold, 
-                            fill: true, 
+                            backgroundColor: isSinglePeriod ? barPurpleGrad : fillGold, 
+                            fill: !isSinglePeriod, 
                             tension: 0.4,
                             borderWidth: 3,
+                            borderRadius: isSinglePeriod ? 8 : 0,
+                            barPercentage: isSinglePeriod ? 0.6 : undefined,
                             pointBackgroundColor: '#D4AF37',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 7
+                            pointRadius: isSinglePeriod ? 0 : 4,
+                            pointHoverRadius: isSinglePeriod ? 0 : 7
                         }
                     ]
                 },
@@ -18452,7 +18462,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     responsive: true, 
                     maintainAspectRatio: false, 
                     plugins: { 
-                        legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { weight: 'bold', size: 11 } } }
+                        legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { weight: 'bold', size: 11 } } },
+                        datalabels: isSinglePeriod ? {
+                            display: true,
+                            color: '#ffffff',
+                            font: { size: 11, weight: 'bold' },
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: (value) => value.toLocaleString()
+                        } : { display: false }
                     }, 
                     scales: { 
                         x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, 
@@ -18535,6 +18553,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         
         function createMovementCharts(periods) {
+            // AUTO-SWITCH: Line or Bar based on period count
+            const isSinglePeriod = periods.length === 1;
+            const chartType = isSinglePeriod ? 'bar' : 'line';
+            
             // Movement Compare Chart - Side by side bars (Enrollments vs Cancellations)
             const ctx1 = document.getElementById('movementCompareChart').getContext('2d');
             if (charts.movementCompare) charts.movementCompare.destroy();
@@ -18615,7 +18637,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             netGrad.addColorStop(1, 'rgba(212,175,55,0.05)');
             
             charts.movementTrend = new Chart(ctx2, {
-                type: 'line',
+                type: chartType,  // AUTO-SWITCH
                 data: {
                     labels: periods.map(p => p.period_label),
                     datasets: [
@@ -18623,43 +18645,49 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             label: 'Enrollments',
                             data: periods.map(p => Math.round(p.members * 0.08)), 
                             borderColor: '#4CAF50', 
-                            backgroundColor: 'rgba(76,175,80,0.1)',
+                            backgroundColor: isSinglePeriod ? enrollGrad : 'rgba(76,175,80,0.1)',
                             fill: false,
                             tension: 0.4,
                             borderWidth: 3,
+                            borderRadius: isSinglePeriod ? 8 : 0,
+                            barPercentage: isSinglePeriod ? 0.7 : undefined,
                             pointBackgroundColor: '#4CAF50',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
-                            pointRadius: 5,
-                            pointHoverRadius: 8
+                            pointRadius: isSinglePeriod ? 0 : 5,
+                            pointHoverRadius: isSinglePeriod ? 0 : 8
                         },
                         { 
                             label: 'Cancellations',
                             data: periods.map(p => Math.round(p.members * 0.03)), 
                             borderColor: '#e74c3c', 
-                            backgroundColor: 'rgba(231,76,60,0.1)',
+                            backgroundColor: isSinglePeriod ? cancelGrad : 'rgba(231,76,60,0.1)',
                             fill: false,
                             tension: 0.4,
                             borderWidth: 3,
+                            borderRadius: isSinglePeriod ? 8 : 0,
+                            barPercentage: isSinglePeriod ? 0.7 : undefined,
                             pointBackgroundColor: '#e74c3c',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
-                            pointRadius: 5,
-                            pointHoverRadius: 8
+                            pointRadius: isSinglePeriod ? 0 : 5,
+                            pointHoverRadius: isSinglePeriod ? 0 : 8
                         },
                         { 
                             label: 'Net Change',
                             data: periods.map(p => Math.round(p.members * 0.05)), 
                             borderColor: '#FFD700', 
-                            backgroundColor: netGrad, 
-                            fill: true, 
+                            backgroundColor: isSinglePeriod ? netGrad : netGrad, 
+                            fill: !isSinglePeriod, 
                             tension: 0.4,
                             borderWidth: 4,
+                            borderRadius: isSinglePeriod ? 8 : 0,
+                            barPercentage: isSinglePeriod ? 0.7 : undefined,
                             pointBackgroundColor: '#FFD700',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 3,
-                            pointRadius: 6,
-                            pointHoverRadius: 10
+                            pointRadius: isSinglePeriod ? 0 : 6,
+                            pointHoverRadius: isSinglePeriod ? 0 : 10
                         }
                     ]
                 },
@@ -18675,7 +18703,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 font: { size: 13, weight: 'bold' },
                                 usePointStyle: true 
                             } 
-                        } 
+                        },
+                        datalabels: isSinglePeriod ? {
+                            display: true,
+                            color: '#ffffff',
+                            font: { size: 11, weight: 'bold' },
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: (value) => value.toLocaleString()
+                        } : { display: false }
                     }, 
                     scales: { 
                         x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 12, weight: 'bold' } } }, 
@@ -18696,7 +18732,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             fillRed.addColorStop(1, 'rgba(231,76,60,0.05)');
             
             charts.movementFullTrend = new Chart(ctx3, {
-                type: 'line',
+                type: chartType,  // AUTO-SWITCH
                 data: {
                     labels: periods.map(p => p.period_label),
                     datasets: [
@@ -18704,29 +18740,33 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                             label: 'New Enrollments',
                             data: periods.map(p => Math.round(p.members * 0.08)), 
                             borderColor: '#4CAF50', 
-                            backgroundColor: fillGreen,
-                            fill: true,
+                            backgroundColor: isSinglePeriod ? enrollGrad : fillGreen,
+                            fill: !isSinglePeriod,
                             tension: 0.4,
                             borderWidth: 3,
+                            borderRadius: isSinglePeriod ? 8 : 0,
+                            barPercentage: isSinglePeriod ? 0.7 : undefined,
                             pointBackgroundColor: '#4CAF50',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
-                            pointRadius: 6,
-                            pointHoverRadius: 10
+                            pointRadius: isSinglePeriod ? 0 : 6,
+                            pointHoverRadius: isSinglePeriod ? 0 : 10
                         },
                         { 
                             label: 'Cancellations',
                             data: periods.map(p => Math.round(p.members * 0.03)), 
                             borderColor: '#e74c3c', 
-                            backgroundColor: fillRed,
-                            fill: true,
+                            backgroundColor: isSinglePeriod ? cancelGrad : fillRed,
+                            fill: !isSinglePeriod,
                             tension: 0.4,
                             borderWidth: 3,
+                            borderRadius: isSinglePeriod ? 8 : 0,
+                            barPercentage: isSinglePeriod ? 0.7 : undefined,
                             pointBackgroundColor: '#e74c3c',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
-                            pointRadius: 6,
-                            pointHoverRadius: 10
+                            pointRadius: isSinglePeriod ? 0 : 6,
+                            pointHoverRadius: isSinglePeriod ? 0 : 10
                         }
                     ]
                 },
@@ -18743,7 +18783,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 usePointStyle: true,
                                 padding: 25
                             } 
-                        } 
+                        },
+                        datalabels: isSinglePeriod ? {
+                            display: true,
+                            color: '#ffffff',
+                            font: { size: 11, weight: 'bold' },
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: (value) => value.toLocaleString()
+                        } : { display: false }
                     }, 
                     scales: { 
                         x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 13, weight: 'bold' } } }, 
