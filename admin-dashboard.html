@@ -12281,7 +12281,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const resultsDiv = document.getElementById('diagResults');
             const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
             const year = selectedYear || 2025;
-            const clientId = selectedClient || 'ALL';
+            // Remove GROUP: prefix if present
+            const clientId = (selectedClient || 'ALL').replace('GROUP:', '');
             let html = '';
             let totalM = 0, totalC = 0, totalCost = 0;
             
@@ -12368,7 +12369,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 // Step 2: Load KPIs
                 updateDashboardLoading(35, 'Loading KPIs...', '📊 Fetching financial data for ' + (selectedQuarters[0] || 'Q1') + ' ' + selectedYear);
-                const clientId = selectedClient || 'ALL';
+                // Remove GROUP: prefix if present
+                const clientId = (selectedClient || 'ALL').replace('GROUP:', '');
                 await loadMainDashboardKPIs(clientId);
                 
                 // Step 3: Load charts data
