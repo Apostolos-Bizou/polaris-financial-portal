@@ -17444,22 +17444,87 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     return;
                 }
                 
-                // Since getClients is broken, we can't load individual clients
-                // Show a helpful message instead
-                topClientsBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.7);">
-                            <div style="margin-bottom:1rem;font-size:1.2rem;">📊</div>
-                            <div style="font-weight:600;margin-bottom:0.5rem;">Top Clients Data Unavailable</div>
-                            <div style="font-size:0.9rem;color:rgba(255,255,255,0.5);">
-                                Individual client data requires the getClients endpoint.<br>
-                                All aggregate KPIs are working correctly.
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                // Get Q4 client details (excluding ALL)
+                const q4Data = window.masterComparisonData.client_details.filter(cd => 
+                    cd.period === 'Q4-2025' && cd.client_id !== 'ALL'
+                );
                 
-                console.log('ℹ️ Top Clients table: Showing info message (getClients unavailable)');
+                if (q4Data.length === 0) {
+                    topClientsBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.7);">
+                                <div style="margin-bottom:1rem;font-size:1.2rem;">📊</div>
+                                <div style="font-weight:600;margin-bottom:0.5rem;">No Client Data Loaded</div>
+                                <div style="font-size:0.9rem;color:rgba(255,255,255,0.5);">
+                                    Click "Refresh Data" to load client information
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                // Create parent aggregates
+                const parentAggregates = {};
+                
+                q4Data.forEach(client => {
+                    // Determine parent ID
+                    const parentId = client.parent_client_id || client.client_id;
+                    
+                    if (!parentAggregates[parentId]) {
+                        // Find parent info from embedded CLIENTS_DATA
+                        const parentInfo = CLIENTS_DATA.find(c => c.client_id === parentId);
+                        const parentClient = q4Data.find(c => c.client_id === parentId);
+                        
+                        parentAggregates[parentId] = {
+                            client_id: parentId,
+                            client_name: parentInfo ? parentInfo.client_name : (parentClient ? parentClient.client_name : parentId),
+                            members: 0,
+                            claims: 0,
+                            approved_usd: 0,
+                            total_fees: 0,
+                            subsidiary_count: 0
+                        };
+                    }
+                    
+                    // Aggregate data
+                    parentAggregates[parentId].members += client.members || 0;
+                    parentAggregates[parentId].claims += client.claims || 0;
+                    parentAggregates[parentId].approved_usd += client.approved_usd || 0;
+                    parentAggregates[parentId].total_fees += client.total_fees || 0;
+                    
+                    // Count subsidiaries
+                    if (client.parent_client_id) {
+                        parentAggregates[parentId].subsidiary_count++;
+                    }
+                });
+                
+                // Convert to array and sort by members (not revenue, to match your screenshot)
+                const topClients = Object.values(parentAggregates)
+                    .sort((a, b) => b.members - a.members)
+                    .slice(0, 10);
+                
+                // Render table
+                topClientsBody.innerHTML = topClients.map((client, index) => {
+                    const revenue = client.total_fees || (client.members * 20);
+                    const lossRatio = revenue > 0 
+                        ? Math.round(client.approved_usd / revenue * 100) 
+                        : 0;
+                    const subsidiaryBadge = client.subsidiary_count > 0 
+                        ? ` <small style="color:#888">(+${client.subsidiary_count} subs)</small>` 
+                        : '';
+                    
+                    return `<tr>
+                        <td>${index + 1}</td>
+                        <td title="${client.client_id}">${client.client_name}${subsidiaryBadge}</td>
+                        <td style="text-align:right">${(client.members || 0).toLocaleString()}</td>
+                        <td style="text-align:right">$${Math.round(client.approved_usd || 0).toLocaleString()}</td>
+                        <td style="text-align:right">$${Math.round(revenue).toLocaleString()}</td>
+                        <td style="text-align:right;color:${lossRatio <= 70 ? '#4CAF50' : '#f39c12'}">${lossRatio}%</td>
+                    </tr>`;
+                }).join('');
+                
+                console.log('✅ Top Clients table updated with', topClients.length, 'parent companies (aggregated)');
             } catch(err) {
                 console.error('❌ Error updating Top Clients:', err);
             }
@@ -17509,12 +17574,18 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             };
         }
         
+        // ═══════════════════════════════════════════════════════════════
+        // EMBEDDED CLIENTS DATA (from Excel - workaround for broken getClients endpoint)
+        // ═══════════════════════════════════════════════════════════════
+        const CLIENTS_DATA = [{"client_id":"CLI-2026-0001","parent_client_id":null,"client_type":"parent","client_name":"DIANA SHIPPING SERVICES SA"},{"client_id":"CLI-2026-0002","parent_client_id":"CLI-2026-0001","client_type":"subsidiary","client_name":"DIANA GOLD"},{"client_id":"CLI-2026-0003","parent_client_id":"CLI-2026-0001","client_type":"subsidiary","client_name":"DIANA PLATINUM"},{"client_id":"CLI-2026-0004","parent_client_id":"CLI-2026-0001","client_type":"subsidiary","client_name":"DIANA MARINERS INC"},{"client_id":"CLI-2026-0005","parent_client_id":null,"client_type":"parent","client_name":"CENTROFIN"},{"client_id":"CLI-2026-0006","parent_client_id":"CLI-2026-0005","client_type":"subsidiary","client_name":"CENTROFIN GOLD"},{"client_id":"CLI-2026-0007","parent_client_id":"CLI-2026-0005","client_type":"subsidiary","client_name":"CENTROFIN PLATINUM"},{"client_id":"CLI-2026-0008","parent_client_id":"CLI-2026-0005","client_type":"subsidiary","client_name":"CENTROFIN SILVER"},{"client_id":"CLI-2026-0009","parent_client_id":"CLI-2026-0005","client_type":"subsidiary","client_name":"CENTROFIN MARINE TRUST  GOLD"},{"client_id":"CLI-2026-0010","parent_client_id":"CLI-2026-0005","client_type":"subsidiary","client_name":"CENTROFIN MARINE TRUST  PLATINUN"},{"client_id":"CLI-2026-0011","parent_client_id":"CLI-2026-0005","client_type":"subsidiary","client_name":"CENTROFIN MARINE TRUST  SILVER"},{"client_id":"CLI-2026-0012","parent_client_id":"CLI-2026-0005","client_type":"subsidiary","client_name":"CENTROFIN TRUST BULKERS GOLD"},{"client_id":"CLI-2026-0013","parent_client_id":"CLI-2026-0005","client_type":"subsidiary","client_name":"CENTROFIN TRUST  BULKERS PLATINUN"},{"client_id":"CLI-2026-0014","parent_client_id":"CLI-2026-0005","client_type":"subsidiary","client_name":"CENTROFIN TRUST BULKERS SILVER"},{"client_id":"CLI-2026-0015","parent_client_id":null,"client_type":"parent","client_name":"ASTRA SHIPMANAGEMENT INC"},{"client_id":"CLI-2026-0016","parent_client_id":"CLI-2026-0015","client_type":"subsidiary","client_name":"ASTRA SHIPMANAGEMENT GOLD"},{"client_id":"CLI-2026-0017","parent_client_id":"CLI-2026-0015","client_type":"subsidiary","client_name":"ASTRA TANKERS GOLD"},{"client_id":"CLI-2026-0018","parent_client_id":null,"client_type":"parent","client_name":"AIMS ADELE SHIPHOLDING LTD"},{"client_id":"CLI-2026-0019","parent_client_id":"CLI-2026-0018","client_type":"subsidiary","client_name":"AIMS GOLD"},{"client_id":"CLI-2026-0020","parent_client_id":null,"client_type":"parent","client_name":"ANOSIS MARITIME SA"},{"client_id":"CLI-2026-0021","parent_client_id":"CLI-2026-0020","client_type":"subsidiary","client_name":"ANOSIS PLATINUM"},{"client_id":"CLI-2026-0022","parent_client_id":null,"client_type":"parent","client_name":"CROSSWORLD MARINE SERVICES INC"},{"client_id":"CLI-2026-0023","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"CROSSWORLD STAF&FAM GOLD"},{"client_id":"CLI-2026-0024","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"CROSSWORLD STAF&FAM PLATINUN"},{"client_id":"CLI-2026-0025","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"BOURBON GOLD CW"},{"client_id":"CLI-2026-0026","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"BOURBON PLATINUN CW"},{"client_id":"CLI-2026-0027","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"CASSIOPEIA GOLD CW"},{"client_id":"CLI-2026-0028","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"CASSIOPEIA PLATINUM CW"},{"client_id":"CLI-2026-0029","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"PIONEER CW"},{"client_id":"CLI-2026-0030","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"VERITAS GOLD CW"},{"client_id":"CLI-2026-0031","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"VARSHIP GOLD CW"},{"client_id":"CLI-2026-0032","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"POLARIS GOLD CW"},{"client_id":"CLI-2026-0033","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"POLARIS PLATINUM CW"},{"client_id":"CLI-2026-0034","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"CROSSWORLD KADETS "},{"client_id":"CLI-2026-0035","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"CROSSWORLD PROMO GOLD"},{"client_id":"CLI-2026-0036","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"CROSSWORLD SPECIAL PROGRAM"},{"client_id":"CLI-2026-0037","parent_client_id":"CLI-2026-0022","client_type":"subsidiary","client_name":"UNION MARINE GOLD CW"},{"client_id":"CLI-2026-0038","parent_client_id":null,"client_type":"parent","client_name":"EFNAV COMPANY LIMITED"},{"client_id":"CLI-2026-0039","parent_client_id":"CLI-2026-0038","client_type":"subsidiary","client_name":"EFNAV GOLD"},{"client_id":"CLI-2026-0040","parent_client_id":null,"client_type":"parent","client_name":"GOLDEN UNION SHIPPING CO SA"},{"client_id":"CLI-2026-0041","parent_client_id":"CLI-2026-0040","client_type":"subsidiary","client_name":"GOLDEN UNION SHIPPING GOLD"},{"client_id":"CLI-2026-0042","parent_client_id":"CLI-2026-0040","client_type":"subsidiary","client_name":"GOLDEN UNION SHIPPING PALTINUN"},{"client_id":"CLI-2026-0043","parent_client_id":"CLI-2026-0040","client_type":"subsidiary","client_name":"GOLDEN UNION WORLD MANAGEMENT GOLD"},{"client_id":"CLI-2026-0044","parent_client_id":"CLI-2026-0040","client_type":"subsidiary","client_name":"GOLDEN UNION ENTERPRISES GOLD"},{"client_id":"CLI-2026-0045","parent_client_id":null,"client_type":"parent","client_name":"HEALTHPLUS DIAGNOSTIC CLINIC INC"},{"client_id":"CLI-2026-0046","parent_client_id":"CLI-2026-0045","client_type":"subsidiary","client_name":"HEALTHPLUS GOLD"},{"client_id":"CLI-2026-0047","parent_client_id":null,"client_type":"parent","client_name":"OMICRON SHIP MANAGEMENT INC"},{"client_id":"CLI-2026-0048","parent_client_id":"CLI-2026-0047","client_type":"subsidiary","client_name":"OMICRON GOLD"},{"client_id":"CLI-2026-0049","parent_client_id":null,"client_type":"parent","client_name":"KYKLADES MARITIME CORPORATION"},{"client_id":"CLI-2026-0050","parent_client_id":"CLI-2026-0049","client_type":"subsidiary","client_name":"KYKLADES PLATINUM"},{"client_id":"CLI-2026-0051","parent_client_id":null,"client_type":"parent","client_name":"MINOA MARINE LIMITED"},{"client_id":"CLI-2026-0052","parent_client_id":"CLI-2026-0051","client_type":"subsidiary","client_name":"MINOA GOLD"},{"client_id":"CLI-2026-0053","parent_client_id":null,"client_type":"parent","client_name":"LEADER MARINE"},{"client_id":"CLI-2026-0054","parent_client_id":"CLI-2026-0053","client_type":"subsidiary","client_name":"LEADER MARINE AQUILA BULKERS INC GOLD"},{"client_id":"CLI-2026-0055","parent_client_id":"CLI-2026-0053","client_type":"subsidiary","client_name":"LEADER MARINE FALCON SHIPHOLDING INC GOLD"},{"client_id":"CLI-2026-0056","parent_client_id":"CLI-2026-0053","client_type":"subsidiary","client_name":"LEADER MARINE IONIAN UNITED SHIPHOLDING INC GOLD"},{"client_id":"CLI-2026-0057","parent_client_id":"CLI-2026-0053","client_type":"subsidiary","client_name":"LEADER MARINE LEADER BULKERS INC GOLD"},{"client_id":"CLI-2026-0058","parent_client_id":"CLI-2026-0053","client_type":"subsidiary","client_name":"LEADER MARINE MOONSHINE BULKERS INC GOLD"},{"client_id":"CLI-2026-0059","parent_client_id":"CLI-2026-0053","client_type":"subsidiary","client_name":"LEADER MARINE NOMADE HOLDING LTD GOLD"},{"client_id":"CLI-2026-0060","parent_client_id":"CLI-2026-0053","client_type":"subsidiary","client_name":"LEADER MARINE PEGASUS BULKERS INC GOLD"},{"client_id":"CLI-2026-0061","parent_client_id":null,"client_type":"parent","client_name":"IONIC"},{"client_id":"CLI-2026-0062","parent_client_id":"CLI-2026-0061","client_type":"subsidiary","client_name":"IONIC GOLD"},{"client_id":"CLI-2026-0063","parent_client_id":"CLI-2026-0061","client_type":"subsidiary","client_name":"IONIC PLATINUM"}];
+        
+        console.log('✅ Loaded embedded clients data:', CLIENTS_DATA.length, 'clients');
+        
         async function loadData() {
             try {
-                // v4.6: SIMPLIFIED - Use ONLY getClientKPISummary (getClients is broken!)
-                console.log('📊 Loading dashboard data using getClientKPISummary...');
+                // v4.8: Use embedded CLIENTS_DATA + getClientKPISummary
+                console.log('📊 Loading dashboard data using embedded clients + API...');
                 
-                // Build masterComparisonData from getClientKPISummary only
                 const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
                 const year = '2025';
                 const clientDetails = [];
@@ -17552,6 +17623,43 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     }
                 }
                 
+                // Load Q4 individual clients (Top 15 only to save API calls)
+                const top15ClientIds = ['CLI-2026-0002','CLI-2026-0050','CLI-2026-0048','CLI-2026-0029','CLI-2026-0014','CLI-2026-0019','CLI-2026-0011','CLI-2026-0052','CLI-2026-0016','CLI-2026-0041','CLI-2026-0003','CLI-2026-0008','CLI-2026-0036','CLI-2026-0039','CLI-2026-0023'];
+                
+                console.log('📊 Loading top 15 clients for Q4...');
+                for (const clientId of top15ClientIds) {
+                    try {
+                        const params = new URLSearchParams({
+                            action: 'getClientKPISummary',
+                            clientId: clientId,
+                            quarter: 'Q4',
+                            year: year
+                        });
+                        
+                        const r = await fetch(`${API_URL}?${params.toString()}`);
+                        const d = await r.json();
+                        
+                        if (d.success && d.kpis) {
+                            // Find client name from embedded data
+                            const clientInfo = CLIENTS_DATA.find(c => c.client_id === clientId);
+                            
+                            clientDetails.push({
+                                period: 'Q4-' + year,
+                                client_id: clientId,
+                                client_name: clientInfo ? clientInfo.client_name : clientId,
+                                parent_client_id: clientInfo ? clientInfo.parent_client_id : null,
+                                members: d.kpis.total_members || 0,
+                                claims: d.kpis.total_claims || 0,
+                                approved_usd: d.kpis.total_cost_usd || 0,
+                                total_fees: d.kpis.total_fees || 0
+                            });
+                        }
+                    } catch (err) {
+                        console.warn(`Failed to load ${clientId}:`, err.message);
+                    }
+                }
+                console.log('✅ Loaded', top15ClientIds.length, 'individual clients for Q4');
+                
                 // Create masterComparisonData structure
                 window.masterComparisonData = {
                     client_details: clientDetails,
@@ -17562,11 +17670,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     }))
                 };
                 
-                console.log('✅ Loaded data:', clientDetails.length, 'records (Q1-Q4 aggregates only)');
+                console.log('✅ Loaded data:', clientDetails.length, 'records (Q1-Q4 + top 15 clients)');
                 console.log('📊 masterComparisonData:', window.masterComparisonData);
                 
-                // NOTE: Top Clients will show "No data" because we don't have individual clients
-                // This is OK - the main KPIs will work with ALL data
+                // FIX #1: Update Top Clients table with parent aggregation
+                await updateTopClientsTable();
                 
                 // FIX #2: Build all_periods array for Historical Data
                 const all_periods = buildAllPeriods();
