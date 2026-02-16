@@ -12522,59 +12522,63 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                 estimated_revenue: c.total_fees || c.members * 20
                             }));
                             
-                            // v4.5: AGGREGATE subsidiaries into parent companies
-                            const parentAggregates = {};
+                            // v4.5: Create separate array for parent aggregation (don't modify original)
+                            const createParentAggregates = (clients) => {
+                                const parentAggregates = {};
+                                
+                                clients.forEach(client => {
+                                    // Determine which parent to aggregate under
+                                    const parentId = client.parent_client_id || client.client_id;
+                                    
+                                    if (!parentAggregates[parentId]) {
+                                        // Find parent name
+                                        const parentClient = clients.find(c => c.client_id === parentId);
+                                        parentAggregates[parentId] = {
+                                            client_id: parentId,
+                                            client_name: parentClient ? parentClient.client_name : client.client_name,
+                                            members: 0,
+                                            claims: 0,
+                                            claims_cost: 0,
+                                            total_fees: 0,
+                                            estimated_revenue: 0,
+                                            subsidiary_count: 0
+                                        };
+                                    }
+                                    
+                                    // Aggregate data
+                                    parentAggregates[parentId].members += client.members || 0;
+                                    parentAggregates[parentId].claims += client.claims || 0;
+                                    parentAggregates[parentId].claims_cost += client.claims_cost || 0;
+                                    parentAggregates[parentId].total_fees += client.total_fees || 0;
+                                    parentAggregates[parentId].estimated_revenue += client.estimated_revenue || 0;
+                                    
+                                    // Count subsidiaries (don't count parent itself)
+                                    if (client.parent_client_id) {
+                                        parentAggregates[parentId].subsidiary_count++;
+                                    }
+                                });
+                                
+                                return Object.values(parentAggregates);
+                            };
                             
-                            clientsArray.forEach(client => {
-                                // Determine which parent to aggregate under
-                                const parentId = client.parent_client_id || client.client_id;
-                                
-                                if (!parentAggregates[parentId]) {
-                                    // Find parent name
-                                    const parentClient = clientsArray.find(c => c.client_id === parentId);
-                                    parentAggregates[parentId] = {
-                                        client_id: parentId,
-                                        client_name: parentClient ? parentClient.client_name : client.client_name,
-                                        members: 0,
-                                        claims: 0,
-                                        claims_cost: 0,
-                                        total_fees: 0,
-                                        estimated_revenue: 0,
-                                        subsidiary_count: 0
-                                    };
-                                }
-                                
-                                // Aggregate data
-                                parentAggregates[parentId].members += client.members || 0;
-                                parentAggregates[parentId].claims += client.claims || 0;
-                                parentAggregates[parentId].claims_cost += client.claims_cost || 0;
-                                parentAggregates[parentId].total_fees += client.total_fees || 0;
-                                parentAggregates[parentId].estimated_revenue += client.estimated_revenue || 0;
-                                
-                                // Count subsidiaries (don't count parent itself)
-                                if (client.parent_client_id) {
-                                    parentAggregates[parentId].subsidiary_count++;
-                                }
-                            });
-                            
-                            // Convert to array
-                            clientsArray = Object.values(parentAggregates);
+                            // Create aggregated version for display
+                            let displayClientsArray = createParentAggregates(clientsArray);
                             
                             // v3.54: Filter based on GROUP or single client selection
                             const currentClient = selectedClient || 'ALL';
                             
                             if (isGroupSelection && groupClientIds.length > 0) {
                                 // GROUP selection - filter to only group members
-                                clientsArray = clientsArray.filter(c => groupClientIds.includes(c.client_id));
-                                console.log('📊 v4.5: Filtered Top Clients to GROUP:', groupClientIds.length, 'IDs →', clientsArray.length, 'clients');
+                                displayClientsArray = displayClientsArray.filter(c => groupClientIds.includes(c.client_id));
+                                console.log('📊 v4.5: Filtered Top Clients to GROUP:', groupClientIds.length, 'IDs →', displayClientsArray.length, 'clients');
                             } else if (currentClient && currentClient !== 'ALL' && currentClient !== 'all' && !currentClient.startsWith('GROUP:')) {
                                 // Single client selection - show just that parent
                                 const selectedParentId = currentClient;
-                                clientsArray = clientsArray.filter(c => c.client_id === selectedParentId);
+                                displayClientsArray = displayClientsArray.filter(c => c.client_id === selectedParentId);
                             }
                             
                             // Sort by revenue and take top 10
-                            const topClients = clientsArray
+                            const topClients = displayClientsArray
                                 .sort((a, b) => (b.estimated_revenue || 0) - (a.estimated_revenue || 0))
                                 .slice(0, 10);
                             
@@ -12595,8 +12599,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                                         <td style="text-align:right;color:${lossRatio <= 70 ? '#4CAF50' : '#f39c12'}">${lossRatio}%</td>
                                     </tr>`;
                                 }).join('');
-                                }).join('');
-                                console.log('✅ v3.54: Top Clients table updated with', topClients.length, 'clients');
+                                console.log('✅ v4.5: Top Clients table updated with', topClients.length, 'parent companies (aggregated)');
                             } else {
                                 topClientsBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(255,255,255,0.5);">No client data for selection</td></tr>';
                             }
@@ -17431,18 +17434,61 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         async function loadData() {
             try {
-                const r = await fetch(`${API_URL}?action=getMasterComparison`);
-                const d = await r.json();
-                if (d.success) {
-                    // Store comparison data globally for charts
-                    window.masterComparisonData = d.data;
-                    console.log('📊 Loaded master comparison data:', d.data.comparison?.length, 'periods');
-                    updateDashboard(d.data);
+                // v4.5: Use existing endpoints instead of missing getMasterComparison
+                console.log('📊 Loading dashboard data using available endpoints...');
+                
+                // Build masterComparisonData from available endpoints
+                const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+                const year = '2025';
+                const clientDetails = [];
+                
+                // Load data for each quarter
+                for (const q of allQuarters) {
+                    try {
+                        const params = new URLSearchParams({
+                            action: 'getDashboardKPIs',
+                            clientId: 'ALL',
+                            quarter: q,
+                            year: year
+                        });
+                        
+                        const r = await fetch(`${API_URL}?${params.toString()}`);
+                        const d = await r.json();
+                        
+                        if (d.success && d.data) {
+                            // Store in format expected by charts
+                            clientDetails.push({
+                                period: `${q}-${year}`,
+                                client_id: 'ALL',
+                                client_name: 'All Clients',
+                                members: d.data.total_members || 0,
+                                claims: d.data.total_claims || 0,
+                                approved_usd: d.data.approved_amount || 0,
+                                total_fees: d.data.total_fees || 0
+                            });
+                        }
+                    } catch (qErr) {
+                        console.warn(`Could not load ${q}:`, qErr.message);
+                    }
                 }
+                
+                // Create masterComparisonData structure
+                window.masterComparisonData = {
+                    client_details: clientDetails,
+                    comparison: clientDetails.map(cd => ({
+                        period: cd.period,
+                        members: cd.members,
+                        claims: cd.claims
+                    }))
+                };
+                
+                console.log('✅ Loaded data for', clientDetails.length, 'periods using getDashboardKPIs');
+                console.log('📊 masterComparisonData:', window.masterComparisonData);
+                
                 // Handle responsive charts after data loads
                 onChartsRendered();
             } catch(e) { 
-                console.error('API not available, using mock data:', e); 
+                console.error('❌ API not available:', e); 
                 onChartsRendered();
             }
         }
