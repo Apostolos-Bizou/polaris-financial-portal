@@ -18313,7 +18313,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             }
             
             // Update CEO Financial Dashboard
-            try { updateCEOFinancialDashboard(c, periods); } catch(e) { console.error('CEO Dashboard error:', e); }
+            // v4.2j: Skip in compare mode — loadCEODashboardFromAPI handles Cyprus data
+            if (!(window.quarterCompareMode && window.selectedClient && window.selectedClient !== 'all')) {
+                try { updateCEOFinancialDashboard(c, periods); } catch(e) { console.error('CEO Dashboard error:', e); }
+            }
         }
         
         // ═══════════════════════════════════════════════════════════
