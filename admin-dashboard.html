@@ -18376,7 +18376,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
             const lossRatio = premiumRevenue > 0 ? (claimsPaid / premiumRevenue * 100) : 0;
             const expenseRatio = premiumRevenue > 0 ? ((operatingExpenses + bankFees) / premiumRevenue * 100) : 0;
-            const combinedRatio = lossRatio + expenseRatio;
+            const combinedRatio = lossRatio; // = Loss Ratio (Excel method: no separate expense ratio)
             const periodMonths = (selectedQuarters || ['Q1']).length * 3; // Each quarter = 3 months
             const arpm = totalMembers > 0 ? (totalRevenue / totalMembers / periodMonths * 12) : 0; // Annualized ARPM
             
@@ -34064,7 +34064,7 @@ function updateCEODashboardUI(data) {
     // KEY RATIOS (v3.24 - Real Ratios)
     safeSetText('ceoGrossMargin', (summary.gross_margin_pct || 0).toFixed(0) + '%');
     safeSetText('ceoLossRatio', (summary.loss_ratio_pct || 0).toFixed(0) + '%');
-    safeSetText('ceoCombinedRatio', ((summary.loss_ratio_pct || 0) + 16).toFixed(0) + '%');
+    safeSetText('ceoCombinedRatio', (summary.loss_ratio_pct || 0).toFixed(0) + '%');
     safeSetText('ceoARPM', '$' + (summary.arpm || 0).toFixed(0));
     
     // MEMBER MOVEMENT (from KPIs)
@@ -34214,7 +34214,7 @@ function updateCEOFinancialsUI(data) {
     // RATIOS
     safeSetText('ceoGrossMargin', ratios.gross_margin.toFixed(0) + '%');
     safeSetText('ceoLossRatio', ratios.loss_ratio.toFixed(0) + '%');
-    safeSetText('ceoCombinedRatio', ratios.combined_ratio.toFixed(0) + '%');
+    safeSetText('ceoCombinedRatio', ratios.loss_ratio.toFixed(0) + '%');
     const apiPeriodMonths = (selectedQuarters || ['Q1']).length * 3;
     safeSetText('ceoARPM', '$' + ((ratios.arpm_monthly || 0) / apiPeriodMonths * 12).toFixed(0));
     
