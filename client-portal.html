@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v23 - UI: KPI cards styled, YoY empty card replaced with Annual Performance Summary, YTD total fixed. -->
+    <!-- VERSION: 2026-02-17-v24 - Fix: Claims Trend chart now populated with cumulative claims line. -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -5337,6 +5337,50 @@
                         }] 
                     },
                     options: { ...opts, scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } } }
+                });
+            }
+            
+            // Claims Trend - Cumulative line chart
+            const canvasCT = document.getElementById('claimsTrendChart');
+            if (canvasCT) {
+                const ctxCT = canvasCT.getContext('2d');
+                if (charts.claimsTrend) charts.claimsTrend.destroy();
+                const trendGrad = ctxCT.createLinearGradient(0, 0, 0, 250);
+                trendGrad.addColorStop(0, 'rgba(76,175,80,0.5)');
+                trendGrad.addColorStop(1, 'rgba(76,175,80,0.02)');
+                // Build cumulative claims for trend line
+                const cumulativeClaims = [];
+                let runningTotal = 0;
+                periods.forEach(p => {
+                    runningTotal += p.claims || 0;
+                    cumulativeClaims.push(runningTotal);
+                });
+                charts.claimsTrend = new Chart(ctxCT, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Cumulative Claims',
+                            data: cumulativeClaims,
+                            borderColor: '#4CAF50',
+                            backgroundColor: trendGrad,
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#4CAF50',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: { ...opts, 
+                        plugins: { ...opts.plugins, legend: { display: false } },
+                        scales: { 
+                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, 
+                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } 
+                        } 
+                    }
                 });
             }
             
