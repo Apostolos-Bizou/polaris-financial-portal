@@ -33635,9 +33635,20 @@ async function loadCEODashboardFromAPI() {
         if (currentClientId.startsWith('GROUP:')) {
             currentClientId = currentClientId.replace('GROUP:', '');
         }
-        const currentPeriod = (window.selectedQuarters && window.selectedQuarters[0]) ? window.selectedQuarters[0] + '-' + (window.selectedYear || '2025') : '';
+        
+        // v4.1: Build correct period parameter
+        // In cumulative or compare mode (multiple quarters), send NO period filter
+        // so getCEODashboard returns ALL data for the year
+        // In single quarter mode, send the specific quarter
+        const quarters = window.selectedQuarters || ['Q1'];
+        const year = window.selectedYear || '2025';
+        const isCumOrCompare = window.cumulativeMode || quarters.length > 1;
+        const currentPeriod = isCumOrCompare ? '' : quarters[0] + '-' + year;
+        
         const clientParam = currentClientId && currentClientId !== 'all' ? '&clientId=' + currentClientId : '';
         const periodParam = currentPeriod ? '&period=' + currentPeriod : '';
+        
+        console.log(`📊 CEO Dashboard: client=${currentClientId}, period=${currentPeriod}, quarters=${quarters.join(',')}`);
         const response = await fetch(API_URL + '?action=getCEODashboard' + clientParam + periodParam);
         const result = await response.json();
         
