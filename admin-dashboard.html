@@ -17515,7 +17515,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             populateClientSelector();
             
             // Always load mock data first to ensure charts render
-            loadDataForSelectedQuarters();
+            // v4.2h: Skip if compare mode already populated charts
+            if (!(window.quarterCompareMode && window.currentClientKPIs)) {
+                loadDataForSelectedQuarters();
+            }
             
             const lastUpdated = document.getElementById('lastUpdated');
             if (lastUpdated) lastUpdated.textContent = new Date().toLocaleString();
@@ -20255,7 +20258,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             // Initialize quarter selector with current quarter and year
             setTimeout(() => {
                 updateQuarterUI();
-                loadDataForSelectedQuarters();
+                // v4.2h: Don't run if compare mode already loaded data
+                if (!(window.quarterCompareMode && window.currentClientKPIs)) {
+                    loadDataForSelectedQuarters();
+                }
             }, 500);
         });
         
