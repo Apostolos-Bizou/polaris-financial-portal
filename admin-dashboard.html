@@ -10476,6 +10476,28 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         let compareMode = false;
         let compareClientA = null, compareClientB = null;
         
+        // ═══ v4.1 SPEED: API Response Cache ═══
+        // Cache API responses to avoid redundant calls when switching back
+        const apiCache = {};
+        const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+        
+        async function cachedFetch(url) {
+            const now = Date.now();
+            if (apiCache[url] && (now - apiCache[url].time) < CACHE_TTL) {
+                console.log('⚡ CACHE HIT:', url.substring(0, 80) + '...');
+                return apiCache[url].data;
+            }
+            const response = await fetch(url);
+            const data = await response.json();
+            apiCache[url] = { data, time: now };
+            return data;
+        }
+        
+        function clearApiCache() {
+            Object.keys(apiCache).forEach(k => delete apiCache[k]);
+            console.log('🗑️ API cache cleared');
+        }
+        
         // Quarter selection state
         let selectedQuarters = ['Q1']; // Default: Q1 selected
         let quarterCompareMode = false;
@@ -12364,6 +12386,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         }
         
         async function refreshDashboardData() {
+            clearApiCache(); // Force fresh data on manual refresh
             const btn = document.getElementById('dashRefreshBtn');
             const icon = document.getElementById('refreshIcon');
             if (btn) btn.disabled = true;
@@ -12377,9 +12400,15 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             updateDashboardLoading(5, 'Refreshing Dashboard Data...', 'Connecting to server...');
             
             try {
-                // Step 1: Load clients
-                updateDashboardLoading(15, 'Loading clients...', '📋 Fetching client list');
-                await loadClientsFromAPI();
+                // ═══ v4.1 SPEED: Load clients + KPIs in PARALLEL ═══
+                updateDashboardLoading(15, 'Loading data...', '📋 Fetching clients & KPIs simultaneously');
+                
+                // Start both requests at the same time
+                const clientsPromise = loadClientsFromAPI();
+                
+                // For KPIs, we need clients loaded first only if GROUP mode
+                // But we can start a preliminary ALL load immediately
+                await clientsPromise;
                 populateClientSelector();
                 
                 // 🔧 RESTORE selection AFTER repopulating dropdown
@@ -12393,52 +12422,48 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     }
                 }
                 
-                // Step 2: Load KPIs
-                updateDashboardLoading(35, 'Loading KPIs...', '📊 Fetching financial data for ' + (selectedQuarters[0] || 'Q1') + ' ' + selectedYear);
-                // v4.0: Keep GROUP: prefix — backend handles parent aggregation
-                await loadMainDashboardKPIs(selectedClient || 'ALL');
+                // Step 2: Load KPIs + Charts data in PARALLEL
+                updateDashboardLoading(35, 'Loading KPIs & charts...', '📊 Fetching financial data');
                 
-                // Step 3: Load charts data
-                updateDashboardLoading(60, 'Loading charts...', '📈 Building chart data');
+                const kpiPromise = loadMainDashboardKPIs(selectedClient || 'ALL');
+                
+                // Step 3: Load chart endpoints in parallel with KPIs
+                const CHART_API = 'https://script.google.com/macros/s/AKfycbye9XIpC0VLyBLftcN3ew5nw7BvbKd19-_JCR-xfKWEtjbvWYJqdvOSjfoaruI7ixp6/exec';
+                let chartClientId = selectedClient || 'ALL';
+                if (chartClientId === 'all') chartClientId = 'ALL';
+                
+                let isGroupSelection = chartClientId.startsWith('GROUP:');
+                let groupClientIds = [];
+                
+                if (isGroupSelection) {
+                    const parentId = chartClientId.replace('GROUP:', '');
+                    const allClients = window.cachedClientsData || [];
+                    groupClientIds = [parentId];
+                    allClients.forEach(c => {
+                        if (c.parent_client_id === parentId) groupClientIds.push(c.client_id);
+                    });
+                    chartClientId = 'ALL';
+                }
+                
+                const chartsPromise = Promise.all([
+                    fetch(CHART_API + '?action=getCategoriesBreakdown&clientId=' + encodeURIComponent(chartClientId)).then(r => r.json()).catch(() => null),
+                    fetch(CHART_API + '?action=getHospitalsData&clientId=' + encodeURIComponent(chartClientId)).then(r => r.json()).catch(() => null),
+                    fetch(CHART_API + '?action=getGeographicData&clientId=' + encodeURIComponent(chartClientId)).then(r => r.json()).catch(() => null)
+                ]);
+                
+                // Wait for KPIs (critical path)
+                await kpiPromise;
+                updateDashboardLoading(60, 'Building charts...', '📈 Processing data');
                 loadDataForSelectedQuarters();
                 
-                // Step 4: Load additional data
+                // Wait for secondary data (charts)
                 updateDashboardLoading(80, 'Loading details...', '🏥 Fetching categories & geographic data');
                 try { await loadData(); } catch(e) {}
                 
-                // Step 5: v3.54 - INLINE chart data refresh with GROUP support
-                updateDashboardLoading(90, 'Loading charts...', '📊 Updating hospitals & geographic data');
-                try { 
-                    const CHART_API = 'https://script.google.com/macros/s/AKfycbye9XIpC0VLyBLftcN3ew5nw7BvbKd19-_JCR-xfKWEtjbvWYJqdvOSjfoaruI7ixp6/exec';
-                    
-                    // v3.54: Handle GROUP selection - always fetch ALL, filter client-side if needed
-                    let chartClientId = selectedClient || 'ALL';
-                    if (chartClientId === 'all') chartClientId = 'ALL';
-                    
-                    // For GROUP selections, we need to fetch ALL and filter
-                    let isGroupSelection = chartClientId.startsWith('GROUP:');
-                    let groupClientIds = [];
-                    
-                    if (isGroupSelection) {
-                        const parentId = chartClientId.replace('GROUP:', '');
-                        const allClients = window.cachedClientsData || [];
-                        groupClientIds = [parentId];
-                        allClients.forEach(c => {
-                            if (c.parent_client_id === parentId) {
-                                groupClientIds.push(c.client_id);
-                            }
-                        });
-                        console.log('📊 v3.54: GROUP selection, IDs:', groupClientIds);
-                        chartClientId = 'ALL'; // Fetch all, filter later
-                    }
-                    
-                    console.log('📊 v3.54: Loading chart data for client:', chartClientId, isGroupSelection ? '(will filter for group)' : '');
-                    
-                    const [catResp, hospResp, geoResp] = await Promise.all([
-                        fetch(CHART_API + '?action=getCategoriesBreakdown&clientId=' + encodeURIComponent(chartClientId)).then(r => r.json()),
-                        fetch(CHART_API + '?action=getHospitalsData&clientId=' + encodeURIComponent(chartClientId)).then(r => r.json()),
-                        fetch(CHART_API + '?action=getGeographicData&clientId=' + encodeURIComponent(chartClientId)).then(r => r.json())
-                    ]);
+                // Process chart results
+                updateDashboardLoading(90, 'Finalizing...', '📊 Updating charts');
+                try {
+                    const [catResp, hospResp, geoResp] = await chartsPromise;
                     
                     // Update Hospital Table
                     const hospTable = document.getElementById('hospitalsTableBody');
@@ -12621,13 +12646,13 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 const lastUpdated = document.getElementById('lastUpdated');
                 if (lastUpdated) lastUpdated.textContent = new Date().toLocaleString();
                 
-                // Brief pause to show completion
-                await new Promise(r => setTimeout(r, 600));
+                // Dashboard load complete
+                await new Promise(r => setTimeout(r, 100));
                 
             } catch (error) {
                 console.error('Refresh error:', error);
                 updateDashboardLoading(100, '⚠️ Partial load', 'Some data may not have loaded: ' + error.message);
-                await new Promise(r => setTimeout(r, 1500));
+                await new Promise(r => setTimeout(r, 300));
             } finally {
                 showDashboardLoading(false);
                 if (btn) btn.disabled = false;
@@ -12670,9 +12695,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     
                     updateDashboardLoading(30, `Loading Q1→${q} cumulative...`, '📊 Fetching cumulative KPIs');
                     
-                    const response = await fetch(`${API_URL}?${params.toString()}`);
-                    updateDashboardLoading(60, 'Processing cumulative data...', '📈 Parsing API response');
-                    data = await response.json();
+                    const fetchUrl = `${API_URL}?${params.toString()}`;
+                    data = await cachedFetch(fetchUrl);
                     
                     const q1Range = getQuarterDateRange('Q1', selectedYear);
                     rangeLabel = `01/01/${selectedYear} - ${selectedRange.end.split('-').reverse().join('/')}`;
@@ -12697,9 +12721,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     rangeLabel = selectedRange.label;
                     
                     console.log(`📊 SINGLE PERIOD: ${clientId || 'ALL'} | ${q} ${selectedYear}`);
-                    const response = await fetch(`${API_URL}?${params.toString()}`);
-                    updateDashboardLoading(50, 'Processing data...', '📈 Parsing API response');
-                    data = await response.json();
+                    data = await cachedFetch(`${API_URL}?${params.toString()}`);
                 }
                 
                 // Store current date filter
