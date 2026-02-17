@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v18 - Fix: Compare mode uses cumulative=true on last Q (matches admin). Eliminates double-counting of running totals. -->
+    <!-- VERSION: 2026-02-17-v19 - Fix: All API calls now pass startDate/endDate for standalone quarter data (matches admin exactly) -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4315,6 +4315,17 @@
         // Store raw API data for filtering
         let rawApiData = null;
         
+        function getQuarterDateRange(quarter, year) {
+            const y = year || selectedYear;
+            const ranges = {
+                'Q1': { start: `${y}-01-01`, end: `${y}-03-31` },
+                'Q2': { start: `${y}-04-01`, end: `${y}-06-30` },
+                'Q3': { start: `${y}-07-01`, end: `${y}-09-30` },
+                'Q4': { start: `${y}-10-01`, end: `${y}-12-31` }
+            };
+            return ranges[quarter] || ranges['Q1'];
+        }
+        
         async function loadData(clientId) {
             // v16: Match admin logic exactly - single/cumulative/compare modes
             // Debounce: cancel if already loading
@@ -4334,17 +4345,21 @@
                 let results = [];
                 
                 if (cumulativeMode) {
-                    // CUMULATIVE: single call with cumulative=true (backend handles YTD, members=unique)
+                    // CUMULATIVE: Q1 start → activeQ end, same as admin
+                    const q1Range = getQuarterDateRange('Q1', year);
+                    const qRange = getQuarterDateRange(activeQ, year);
                     const params = new URLSearchParams({
                         action: 'getClientKPISummary',
                         clientId: apiClientId,
                         quarter: activeQ,
                         year: year,
+                        startDate: q1Range.start,
+                        endDate: qRange.end,
                         cumulative: 'true'
                     });
                     const d = await fetch(`${API_URL}?${params.toString()}`).then(r => r.json());
                     results = [{ quarter: activeQ, data: d, cumulative: true }];
-                    console.log(`✅ v16 CUMULATIVE: Q1→${activeQ}`, d.kpis?.total_members, 'members');
+                    console.log(`✅ v16 CUMULATIVE: Q1→${activeQ}`, d.kpis?.total_members, 'members', d.kpis?.total_claims, 'claims');
                     
                 } else if (quarterCompareMode && selectedQuarters.length > 1) {
                     // COMPARE MODE: use cumulative=true on last selected quarter (same as admin)
@@ -4357,11 +4372,16 @@
                         year: year,
                         cumulative: 'true'
                     });
-                    // Also load all individual Qs for charts/historical table
+                    // Also load all individual Qs with date ranges for charts/historical table
                     const allPromises = ['Q1','Q2','Q3','Q4'].map(q => {
-                        const p = new URLSearchParams({ action: 'getClientKPISummary', clientId: apiClientId, quarter: q, year: year });
+                        const range = getQuarterDateRange(q, year);
+                        const p = new URLSearchParams({ action: 'getClientKPISummary', clientId: apiClientId, quarter: q, year: year, startDate: range.start, endDate: range.end });
                         return fetch(`${API_URL}?${p.toString()}`).then(r => r.json()).then(d => ({ quarter: q, data: d })).catch(() => ({ quarter: q, data: null }));
                     });
+                    const q1Range = getQuarterDateRange('Q1', year);
+                    const lastRange = getQuarterDateRange(lastQ, year);
+                    params.append('startDate', q1Range.start);
+                    params.append('endDate', lastRange.end);
                     const [cumulResult, ...allResults] = await Promise.all([
                         fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).then(d => ({ quarter: lastQ, data: d, cumulative: true })),
                         ...allPromises
@@ -4370,13 +4390,21 @@
                     console.log(`✅ v16 COMPARE: ${selectedQuarters.join('+')} → cumulative Q1→${lastQ}`, cumulResult.data?.kpis?.total_claims, 'claims');
                     
                 } else {
-                    // SINGLE PERIOD: load all 4 quarters for charts/history, display selected Q
+                    // SINGLE PERIOD: load all 4 quarters with startDate/endDate for standalone data
                     const promises = allQuarters.map(q => {
-                        const params = new URLSearchParams({ action: 'getClientKPISummary', clientId: apiClientId, quarter: q, year: year });
+                        const range = getQuarterDateRange(q, year);
+                        const params = new URLSearchParams({
+                            action: 'getClientKPISummary',
+                            clientId: apiClientId,
+                            quarter: q,
+                            year: year,
+                            startDate: range.start,
+                            endDate: range.end
+                        });
                         return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).then(d => ({ quarter: q, data: d })).catch(() => ({ quarter: q, data: null }));
                     });
                     results = await Promise.all(promises);
-                    console.log(`✅ v16 SINGLE: all 4 quarters loaded, showing ${activeQ}`);
+                    console.log(`✅ v16 SINGLE: all 4 quarters loaded with date ranges, showing ${activeQ}`);
                 }
                 
                 // Build periodsData array from results
