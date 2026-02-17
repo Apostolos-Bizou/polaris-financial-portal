@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v14 - MAJOR: Migrated to getClientKPISummary (same as admin). All KPIs now real data. loadData + updateDashboard fully rewritten -->
+    <!-- VERSION: 2026-02-17-v15 - Fix: Subsidiary selection now fetches fresh data via loadData() instead of refiltering cached parent data -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1872,10 +1872,8 @@
             selectedYear = parseInt(year);
             console.log('📅 Year changed to:', selectedYear);
             updateQuarterUI();
-            // Reload data
-            if (rawApiData) {
-                updateDashboard(rawApiData, selectedCompanyId);
-            }
+            // v14: Reload fresh data for new year
+            loadData(selectedCompanyId);
         }
         
         // Toggle single quarter
@@ -1897,7 +1895,7 @@
             
             updateQuarterUI();
             
-            // Reload data with new quarter filter
+            // v14: updateDashboard reads from window.lastPeriodsData - no refetch needed
             if (rawApiData) {
                 updateDashboard(rawApiData, selectedCompanyId);
             }
@@ -1923,7 +1921,7 @@
             
             updateQuarterUI();
             
-            // Reload data
+            // v14: re-aggregate from memory
             if (rawApiData) {
                 updateDashboard(rawApiData, selectedCompanyId);
             }
@@ -2104,15 +2102,13 @@
             const company = companiesList.find(c => c.client_id === clientId);
             if (company) {
                 const displayName = company.is_parent 
-                    ? `${company.company_name} (All Companies)` 
+                    ? `${company.company_name} (Parent)` 
                     : company.company_name;
                 document.getElementById('pageCompanyName').textContent = displayName;
             }
             
-            // Refilter existing data (no need to refetch)
-            if (rawApiData) {
-                updateDashboard(rawApiData, clientId);
-            }
+            // v14: Always reload fresh data for the selected company
+            loadData(clientId);
         }
         
         // Populate company dropdown
