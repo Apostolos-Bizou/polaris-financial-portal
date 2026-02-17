@@ -17697,74 +17697,79 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 const year = '2025';
                 const clientDetails = [];
                 
-                // Load data for each quarter
-                for (const q of allQuarters) {
-                    try {
-                        const params = new URLSearchParams({
-                            action: 'getClientKPISummary',
-                            clientId: loadClientId === 'all' ? 'ALL' : loadClientId,
-                            quarter: q,
-                            year: year
-                        });
-                        
-                        const r = await fetch(`${API_URL}?${params.toString()}`);
-                        const d = await r.json();
-                        
-                        if (d.success && d.kpis) {
-                            // Add aggregate ALL data
-                            clientDetails.push({
-                                period: `${q}-${year}`,
-                                client_id: 'ALL',
-                                client_name: 'All Clients',
-                                members: d.kpis.total_members || 0,
-                                claims: d.kpis.total_claims || 0,
-                                approved_usd: d.kpis.total_cost_usd || 0,
-                                total_fees: d.kpis.total_fees || 0,
-                                parent_client_id: null
-                            });
-                            
-                            console.log(`✅ Loaded ${q}: ${d.kpis.total_members} members, ${d.kpis.total_claims} claims`);
-                        }
-                    } catch (qErr) {
-                        console.warn(`Could not load ${q}:`, qErr.message);
-                    }
-                }
+                // v4.2f SPEED: Load ALL 4 quarters in PARALLEL instead of sequential
+                const quarterPromises = allQuarters.map(q => {
+                    const params = new URLSearchParams({
+                        action: 'getClientKPISummary',
+                        clientId: 'ALL',
+                        quarter: q,
+                        year: year
+                    });
+                    return fetch(`${API_URL}?${params.toString()}`)
+                        .then(r => r.json())
+                        .then(d => ({ quarter: q, data: d }))
+                        .catch(e => ({ quarter: q, data: null, error: e }));
+                });
                 
-                // Load Q4 individual clients (Top 15 only to save API calls)
+                // v4.2f SPEED: Load top 15 clients in PARALLEL (not sequential!)
                 const top15ClientIds = ['CLI-2026-0002','CLI-2026-0050','CLI-2026-0048','CLI-2026-0029','CLI-2026-0014','CLI-2026-0019','CLI-2026-0011','CLI-2026-0052','CLI-2026-0016','CLI-2026-0041','CLI-2026-0003','CLI-2026-0008','CLI-2026-0036','CLI-2026-0039','CLI-2026-0023'];
                 
-                console.log('📊 Loading top 15 clients for Q4...');
-                for (const clientId of top15ClientIds) {
-                    try {
-                        const params = new URLSearchParams({
-                            action: 'getClientKPISummary',
-                            clientId: clientId,
-                            quarter: 'Q4',
-                            year: year
+                const clientPromises = top15ClientIds.map(clientId => {
+                    const params = new URLSearchParams({
+                        action: 'getClientKPISummary',
+                        clientId: clientId,
+                        quarter: 'Q4',
+                        year: year
+                    });
+                    return fetch(`${API_URL}?${params.toString()}`)
+                        .then(r => r.json())
+                        .then(d => ({ clientId, data: d }))
+                        .catch(e => ({ clientId, data: null, error: e }));
+                });
+                
+                // Fire ALL requests simultaneously - wait for all
+                console.log('📊 v4.2f: Firing 4 quarter + 15 client calls in PARALLEL...');
+                const startTime = Date.now();
+                const [quarterResults, clientResults] = await Promise.all([
+                    Promise.all(quarterPromises),
+                    Promise.all(clientPromises)
+                ]);
+                console.log(`✅ v4.2f: All API calls completed in ${((Date.now()-startTime)/1000).toFixed(1)}s`);
+                
+                // Process quarter results
+                quarterResults.forEach(({quarter: q, data: d}) => {
+                    if (d && d.success && d.kpis) {
+                        clientDetails.push({
+                            period: `${q}-${year}`,
+                            client_id: 'ALL',
+                            client_name: 'All Clients',
+                            members: d.kpis.total_members || 0,
+                            claims: d.kpis.total_claims || 0,
+                            approved_usd: d.kpis.total_cost_usd || 0,
+                            total_fees: d.kpis.total_fees || 0,
+                            parent_client_id: null
                         });
-                        
-                        const r = await fetch(`${API_URL}?${params.toString()}`);
-                        const d = await r.json();
-                        
-                        if (d.success && d.kpis) {
-                            // Find client name from embedded data
-                            const clientInfo = CLIENTS_DATA.find(c => c.client_id === clientId);
-                            
-                            clientDetails.push({
-                                period: 'Q4-' + year,
-                                client_id: clientId,
-                                client_name: clientInfo ? clientInfo.client_name : clientId,
-                                parent_client_id: clientInfo ? clientInfo.parent_client_id : null,
-                                members: d.kpis.total_members || 0,
-                                claims: d.kpis.total_claims || 0,
-                                approved_usd: d.kpis.total_cost_usd || 0,
-                                total_fees: d.kpis.total_fees || 0
-                            });
-                        }
-                    } catch (err) {
-                        console.warn(`Failed to load ${clientId}:`, err.message);
+                        console.log(`✅ Loaded ${q}: ${d.kpis.total_members} members, ${d.kpis.total_claims} claims`);
                     }
-                }
+                });
+                
+                // Process client results
+                console.log('📊 Processing top 15 client results...');
+                clientResults.forEach(({clientId, data: d}) => {
+                    if (d && d.success && d.kpis) {
+                        const clientInfo = CLIENTS_DATA.find(c => c.client_id === clientId);
+                        clientDetails.push({
+                            period: 'Q4-' + year,
+                            client_id: clientId,
+                            client_name: clientInfo ? clientInfo.client_name : clientId,
+                            parent_client_id: clientInfo ? clientInfo.parent_client_id : null,
+                            members: d.kpis.total_members || 0,
+                            claims: d.kpis.total_claims || 0,
+                            approved_usd: d.kpis.total_cost_usd || 0,
+                            total_fees: d.kpis.total_fees || 0
+                        });
+                    }
+                });
                 console.log('✅ Loaded', top15ClientIds.length, 'individual clients for Q4');
                 
                 // Create masterComparisonData structure
