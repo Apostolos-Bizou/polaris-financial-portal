@@ -33930,9 +33930,18 @@ async function loadCEODashboardFromAPI() {
         }
         
         console.log('✅ CEO Dashboard data loaded:', result);
+        console.log('🔴 DEBUG: About to call updateCEODashboardUI. summary.ebit=', result.summary?.ebit, 'summary.cyprus_tax=', result.summary?.cyprus_tax, 'isGroup=', isGroup);
         // v4.2k: Flag that CEO API data is loaded — prevents updateCEOFinancialDashboard overwrite
         window._ceoApiDataLoaded = Date.now();
         updateCEODashboardUI(result);
+        // v4.2k: FORCE write tax from ebit after updateCEODashboardUI
+        const _ebit = result.summary?.ebit || 0;
+        const _taxTotal = Math.round(_ebit * 0.125) + Math.round(_ebit * 0.0265) + Math.round(_ebit * 0.029);
+        console.log('🔴 FORCE TAX: ebit=', _ebit, 'tax=', _taxTotal);
+        const _taxEl = document.getElementById('ceoTaxLiability');
+        if (_taxEl) _taxEl.textContent = '$' + _taxTotal.toLocaleString();
+        const _taxEl2 = document.getElementById('ceoTotalTax');
+        if (_taxEl2) _taxEl2.textContent = '-$' + _taxTotal.toLocaleString();
         
         // v4.2k: Delayed re-apply to survive any late overwrites from loadData/updateDashboard
         const _savedSummary = JSON.parse(JSON.stringify(result.summary || {}));
@@ -33943,16 +33952,20 @@ async function loadCEODashboardFromAPI() {
                     const fmtC = n => '$' + Math.round(n).toLocaleString();
                     const s = _savedSummary;
                     const ebit = s.ebit || 0;
+                    const cit = Math.round(ebit * 0.125);
+                    const sdc = Math.round(ebit * 0.0265);
+                    const ghs = Math.round(ebit * 0.029);
+                    const totalTax = cit + sdc + ghs;
                     const el = id => document.getElementById(id);
-                    if (el('ceoTaxLiability')) el('ceoTaxLiability').textContent = fmtC(s.cyprus_tax || 0);
-                    if (el('ceoTotalTax')) el('ceoTotalTax').textContent = '-' + fmtC(s.cyprus_tax || 0);
+                    if (el('ceoTaxLiability')) el('ceoTaxLiability').textContent = fmtC(totalTax);
+                    if (el('ceoTotalTax')) el('ceoTotalTax').textContent = '-' + fmtC(totalTax);
                     if (el('ceoGrossRevenue')) el('ceoGrossRevenue').textContent = fmtC(s.gross_revenue || 0);
                     if (el('ceoTotalExpenses')) el('ceoTotalExpenses').textContent = fmtC(s.total_claims_cost || 0);
                     if (el('ceoNetProfit')) el('ceoNetProfit').textContent = fmtC(s.net_profit || 0);
                     if (el('ceoTaxableIncome')) el('ceoTaxableIncome').textContent = fmtC(ebit);
-                    if (el('ceoCorporateTax')) el('ceoCorporateTax').textContent = '-' + fmtC(ebit * 0.125);
-                    if (el('ceoSDC')) el('ceoSDC').textContent = '-' + fmtC(ebit * 0.0265);
-                    if (el('ceoGHS')) el('ceoGHS').textContent = '-' + fmtC(ebit * 0.029);
+                    if (el('ceoCorporateTax')) el('ceoCorporateTax').textContent = '-' + fmtC(cit);
+                    if (el('ceoSDC')) el('ceoSDC').textContent = '-' + fmtC(sdc);
+                    if (el('ceoGHS')) el('ceoGHS').textContent = '-' + fmtC(ghs);
                     if (el('ceoGrossMargin')) el('ceoGrossMargin').textContent = (s.gross_margin_pct || 0).toFixed(0) + '%';
                     if (el('ceoLossRatio')) el('ceoLossRatio').textContent = (s.loss_ratio_pct || 0).toFixed(0) + '%';
                     if (el('ceoARPM')) el('ceoARPM').textContent = '$' + (s.arpm || 0);
