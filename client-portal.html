@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v20 - Fix: API returns YTD. Standalone = YTD_Q - YTD_prev_Q. Subtraction logic on frontend. -->
+    <!-- VERSION: 2026-02-17-v21 - Fix: Compare/Cumulative mode use ytdMap directly (no subtraction). Single mode uses subtraction. -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4428,6 +4428,9 @@
                     };
                 });
                 
+                // Save raw YTD map for compare mode (needs YTD totals not standalone)
+                window.lastYtdMap = ytdMap;
+                
                 // Compute STANDALONE values by subtracting previous Q YTD
                 // API returns YTD per quarter: Q2_ytd = Q1+Q2, so Q2_standalone = Q2_ytd - Q1_ytd
                 const periodsData = allQs.filter(q => ytdMap[q]).map((q, idx) => {
@@ -4511,17 +4514,56 @@
             let c = {};
             
             if (cumulativeMode) {
-                // CUMULATIVE: backend returned YTD data directly (members = unique, not sum!)
-                const cur = periodsData[0] || periodsData[periodsData.length - 1];
-                c = { ...cur };
-                c.cost_per_member = cur.cost_per_member || (cur.members > 0 ? cur.approved_usd / cur.members : 0);
+                // CUMULATIVE: use YTD of selected quarter from ytdMap
+                const activeQ = selectedQuarters[0] || 'Q4';
+                const ytdEntry = window.lastYtdMap && window.lastYtdMap[activeQ];
+                if (ytdEntry) {
+                    c = {
+                        members: ytdEntry.members,
+                        claims: ytdEntry.claims,
+                        approved_usd: ytdEntry.approved_usd,
+                        total_fees: ytdEntry.total_fees,
+                        inpatient_cases: ytdEntry.inpatient_cases,
+                        outpatient_cases: ytdEntry.outpatient_cases,
+                        exgratia_cases: ytdEntry.exgratia_cases,
+                        new_enrollments: ytdEntry.new_enrollments,
+                        cancellations: ytdEntry.cancellations,
+                        net_change: ytdEntry.net_change,
+                        principal_members: ytdEntry.principal_members,
+                        dependent_members: ytdEntry.dependent_members,
+                    };
+                    c.cost_per_member = c.members > 0 ? c.approved_usd / c.members : 0;
+                } else {
+                    const cur = periodsData.find(p => p.quarter === activeQ) || periodsData[periodsData.length - 1];
+                    c = { ...cur };
+                }
                 
             } else if (quarterCompareMode && selectedQuarters.length > 1) {
-                // COMPARE: use cumulative result (first in periodsData, flagged cumulative:true)
-                // This matches admin: compare mode = YTD cumulative up to last selected Q
-                const cumulData = periodsData.find(p => p.cumulative) || periodsData[periodsData.length - 1];
-                c = { ...cumulData };
-                c.cost_per_member = cumulData.cost_per_member || (cumulData.members > 0 ? cumulData.approved_usd / cumulData.members : 0);
+                // COMPARE: use YTD values of last selected quarter from ytdRaw
+                // API always returns YTD running totals, so lastQ YTD = full period total
+                const lastSelectedQ = selectedQuarters[selectedQuarters.length - 1];
+                const ytdEntry = window.lastYtdMap && window.lastYtdMap[lastSelectedQ];
+                if (ytdEntry) {
+                    c = {
+                        members: ytdEntry.members,
+                        claims: ytdEntry.claims,
+                        approved_usd: ytdEntry.approved_usd,
+                        total_fees: ytdEntry.total_fees,
+                        inpatient_cases: ytdEntry.inpatient_cases,
+                        outpatient_cases: ytdEntry.outpatient_cases,
+                        exgratia_cases: ytdEntry.exgratia_cases,
+                        new_enrollments: ytdEntry.new_enrollments,
+                        cancellations: ytdEntry.cancellations,
+                        net_change: ytdEntry.net_change,
+                        principal_members: ytdEntry.principal_members,
+                        dependent_members: ytdEntry.dependent_members,
+                    };
+                    c.cost_per_member = c.members > 0 ? c.approved_usd / c.members : 0;
+                } else {
+                    // Fallback to last periodsData entry
+                    const lastP = periodsData[periodsData.length - 1];
+                    c = { ...lastP };
+                }
                 
             } else {
                 // SINGLE PERIOD: show selected quarter only
