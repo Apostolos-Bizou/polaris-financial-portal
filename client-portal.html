@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-09-v11 - Fixed API to use getFinancialData which returns proper data array -->
+    <!-- VERSION: 2026-02-17-v12 - Bug fixes: Principal/Dependent real data, Hospital/Geo mock data replaced with Coming Soon -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1491,32 +1491,11 @@
         <!-- TOP HOSPITALS/PROVIDERS Section -->
         <section class="section">
             <h2 class="section-title">🏥 Top Hospitals & Providers</h2>
-            <div class="chart-grid">
-                <div class="chart-card wide">
-                    <div class="chart-header">
-                        <h3 class="chart-title">🏆 Top 10 by Claims</h3>
-                        <span class="chart-badge">Current Period</span>
-                    </div>
-                    <div class="chart-container tall"><canvas id="topHospitalsChart"></canvas></div>
-                </div>
-                <div class="chart-card wide">
-                    <div class="chart-header">
-                        <h3 class="chart-title">📋 Hospital Details</h3>
-                    </div>
-                    <div class="table-wrapper">
-                        <table class="data-table" id="hospitalsTable">
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Hospital/Provider</th>
-                                    <th>Claims</th>
-                                    <th>% of Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="hospitalsTableBody">
-                            </tbody>
-                        </table>
-                    </div>
+            <div style="display:flex;align-items:center;justify-content:center;padding:3rem 2rem;background:rgba(30,58,30,0.3);border-radius:12px;border:1px dashed rgba(212,175,55,0.3);text-align:center;">
+                <div>
+                    <div style="font-size:3rem;margin-bottom:1rem;">🏗️</div>
+                    <div style="font-size:1.2rem;font-weight:700;color:#D4AF37;margin-bottom:0.5rem;">Coming Soon</div>
+                    <div style="color:var(--text-muted);font-size:0.9rem;">Hospital & Provider data will be available in a future update.</div>
                 </div>
             </div>
         </section>
@@ -1524,41 +1503,11 @@
         <!-- GEOGRAPHIC DISTRIBUTION Section -->
         <section class="section">
             <h2 class="section-title">🌍 Geographic Distribution</h2>
-            <div class="chart-grid">
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3 class="chart-title">📍 Claims by Region</h3>
-                        <span class="chart-badge">Philippines</span>
-                    </div>
-                    <div class="chart-container"><canvas id="geoRegionChart"></canvas></div>
-                </div>
-                <div class="chart-card wide">
-                    <div class="chart-header">
-                        <h3 class="chart-title">🏙️ Top Cities by Claims</h3>
-                    </div>
-                    <div class="stats-mini-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom:1rem;">
-                        <div class="stat-mini" style="border-left:4px solid #4CAF50;">
-                            <div style="font-size:1.8rem;font-weight:700;color:#4CAF50" id="geoManila">-</div>
-                            <div style="font-size:0.9rem;color:var(--text-muted)">Metro Manila</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #2196F3;">
-                            <div style="font-size:1.8rem;font-weight:700;color:#2196F3" id="geoCebu">-</div>
-                            <div style="font-size:0.9rem;color:var(--text-muted)">Cebu</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #FF9800;">
-                            <div style="font-size:1.8rem;font-weight:700;color:#FF9800" id="geoDavao">-</div>
-                            <div style="font-size:0.9rem;color:var(--text-muted)">Davao</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #D4AF37;">
-                            <div style="font-size:1.8rem;font-weight:700;color:#D4AF37" id="geoIloilo">-</div>
-                            <div style="font-size:0.9rem;color:var(--text-muted)">Iloilo</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #607D8B;">
-                            <div style="font-size:1.8rem;font-weight:700;color:#607D8B" id="geoOther">-</div>
-                            <div style="font-size:0.9rem;color:var(--text-muted)">Other</div>
-                        </div>
-                    </div>
-                    <div class="chart-container"><canvas id="geoCitiesChart"></canvas></div>
+            <div style="display:flex;align-items:center;justify-content:center;padding:3rem 2rem;background:rgba(30,58,30,0.3);border-radius:12px;border:1px dashed rgba(212,175,55,0.3);text-align:center;">
+                <div>
+                    <div style="font-size:3rem;margin-bottom:1rem;">🏗️</div>
+                    <div style="font-size:1.2rem;font-weight:700;color:#D4AF37;margin-bottom:0.5rem;">Coming Soon</div>
+                    <div style="color:var(--text-muted);font-size:0.9rem;">Geographic distribution data will be available in a future update.</div>
                 </div>
             </div>
         </section>
@@ -4437,6 +4386,11 @@
         function aggregateClientData(filteredData) {
             const members = filteredData.reduce((sum, d) => sum + (d.members || 0), 0);
             const approved_usd = filteredData.reduce((sum, d) => sum + (d.approved_usd || 0), 0);
+            const principalRaw = filteredData.reduce((sum, d) => sum + (d.principal_members || 0), 0);
+            const dependentRaw = filteredData.reduce((sum, d) => sum + (d.dependent_members || 0), 0);
+            // Use real data if available, otherwise fallback to estimate
+            const principal_members = principalRaw > 0 ? principalRaw : Math.round(members * 0.4);
+            const dependent_members = dependentRaw > 0 ? dependentRaw : (members - Math.round(members * 0.4));
             return {
                 members: members,
                 claims: filteredData.reduce((sum, d) => sum + (d.claims || 0), 0),
@@ -4446,7 +4400,9 @@
                 outpatient_cases: filteredData.reduce((sum, d) => sum + (d.outpatient_cases || 0), 0),
                 exgratia_cases: filteredData.reduce((sum, d) => sum + (d.exgratia_cases || 0), 0),
                 new_enrollments: filteredData.reduce((sum, d) => sum + (d.new_enrollments || 0), 0),
-                cancellations: filteredData.reduce((sum, d) => sum + (d.cancellations || 0), 0)
+                cancellations: filteredData.reduce((sum, d) => sum + (d.cancellations || 0), 0),
+                principal_members: principal_members,
+                dependent_members: dependent_members
             };
         }
         
@@ -4579,8 +4535,8 @@
             document.getElementById('exGratiaCases').textContent = fmt(exGratiaCases);
             
             // Principal/Dependent data (still estimate until CBMS provides)
-            const principalMembers = Math.round(c.members * 0.4);
-            const dependentMembers = c.members - principalMembers;
+            const principalMembers = c.principal_members || Math.round(c.members * 0.4);
+            const dependentMembers = c.dependent_members || (c.members - principalMembers);
             
             document.getElementById('principalCount').textContent = fmt(principalMembers);
             document.getElementById('dependentCount').textContent = fmt(dependentMembers);
@@ -5253,157 +5209,12 @@
         }
         
         function createHospitalCharts() {
-            // Mock hospital data - will come from CBMS (NO COST DATA for client portal)
-            const hospitals = [
-                { name: 'St. Luke\'s BGC', claims: 185 },
-                { name: 'Makati Medical', claims: 156 },
-                { name: 'The Medical City', claims: 142 },
-                { name: 'Asian Hospital', claims: 128 },
-                { name: 'Manila Doctors', claims: 115 },
-                { name: 'Cardinal Santos', claims: 98 },
-                { name: 'Chong Hua Cebu', claims: 87 },
-                { name: 'UERM', claims: 76 },
-                { name: 'PGH', claims: 68 },
-                { name: 'Others', claims: 315 }
-            ];
-            
-            const totalClaims = hospitals.reduce((a, h) => a + h.claims, 0);
-            
-            // Top Hospitals by Claims (with null check)
-            const canvas1 = document.getElementById('topHospitalsChart');
-            if (canvas1) {
-                const ctx1 = canvas1.getContext('2d');
-                if (charts.topHospitals) charts.topHospitals.destroy();
-                charts.topHospitals = new Chart(ctx1, {
-                    type: 'bar',
-                    data: {
-                        labels: hospitals.map(h => h.name),
-                        datasets: [{
-                            data: hospitals.map(h => h.claims),
-                            backgroundColor: 'rgba(76,175,80,0.7)',
-                            borderColor: '#4CAF50',
-                            borderWidth: 1,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        indexAxis: 'y',
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } },
-                            y: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 9 } } }
-                        }
-                    }
-                });
-            }
-            
-            // Hospital Table (NO COST DATA for client portal)
-            const tbody = document.getElementById('hospitalsTableBody');
-            if (tbody) {
-                tbody.innerHTML = hospitals.map((h, i) => `
-                    <tr>
-                        <td><span style="background:${i < 3 ? '#D4AF37' : '#2E7D32'};color:#000;padding:2px 8px;border-radius:10px;font-weight:bold">${i + 1}</span></td>
-                        <td><strong>${h.name}</strong></td>
-                        <td>${h.claims}</td>
-                        <td>${(h.claims / totalClaims * 100).toFixed(1)}%</td>
-                    </tr>
-                `).join('');
-            }
+            // Replaced with Coming Soon section - no mock data
         }
         
         function createGeoCharts() {
-            // Mock geographic data - will come from CBMS (NO COST DATA for client portal)
-            const regions = [
-                { name: 'NCR', claims: 580, color: '#4CAF50' },
-                { name: 'Central Visayas', claims: 245, color: '#2196F3' },
-                { name: 'Davao Region', claims: 165, color: '#FF9800' },
-                { name: 'Western Visayas', claims: 125, color: '#D4AF37' },
-                { name: 'Central Luzon', claims: 95, color: '#E91E63' },
-                { name: 'Other Regions', claims: 160, color: '#607D8B' }
-            ];
-            
-            // Update city stats (with null checks)
-            const geoManila = document.getElementById('geoManila');
-            const geoCebu = document.getElementById('geoCebu');
-            const geoDavao = document.getElementById('geoDavao');
-            const geoIloilo = document.getElementById('geoIloilo');
-            const geoOther = document.getElementById('geoOther');
-            
-            if (geoManila) geoManila.textContent = '580';
-            if (geoCebu) geoCebu.textContent = '185';
-            if (geoDavao) geoDavao.textContent = '165';
-            if (geoIloilo) geoIloilo.textContent = '95';
-            if (geoOther) geoOther.textContent = '345';
-            
-            // Region Pie Chart (with null check)
-            const canvas1 = document.getElementById('geoRegionChart');
-            if (canvas1) {
-                const ctx1 = canvas1.getContext('2d');
-                if (charts.geoRegion) charts.geoRegion.destroy();
-                charts.geoRegion = new Chart(ctx1, {
-                    type: 'doughnut',
-                    data: {
-                        labels: regions.map(r => r.name),
-                        datasets: [{
-                            data: regions.map(r => r.claims),
-                            backgroundColor: regions.map(r => r.color),
-                            borderWidth: 2,
-                            borderColor: '#0a1a0a',
-                            hoverOffset: 10
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '55%',
-                        plugins: { legend: { display: true, position: 'right', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } }
-                    }
-                });
-            }
-            
-            // Cities Bar Chart (with null check)
-            const canvas3 = document.getElementById('geoCitiesChart');
-            if (canvas3) {
-                const ctx3 = canvas3.getContext('2d');
-                if (charts.geoCities) charts.geoCities.destroy();
-                const cities = [
-                    { name: 'Manila', claims: 285 },
-                    { name: 'Quezon City', claims: 165 },
-                    { name: 'Cebu City', claims: 145 },
-                    { name: 'Davao City', claims: 125 },
-                    { name: 'Makati', claims: 95 },
-                    { name: 'Pasig', claims: 85 },
-                    { name: 'Iloilo City', claims: 75 },
-                    { name: 'Taguig', claims: 65 }
-                ];
-                charts.geoCities = new Chart(ctx3, {
-                    type: 'bar',
-                    data: {
-                        labels: cities.map(c => c.name),
-                        datasets: [{
-                            data: cities.map(c => c.claims),
-                            backgroundColor: [
-                                '#4CAF50', '#66BB6A', '#2196F3', '#FF9800', 
-                                '#D4AF37', '#E91E63', '#00BCD4', '#607D8B'
-                            ],
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 13, weight: 'bold' } } },
-                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } }
-                        }
-                    }
-                });
-            }
+            // Replaced with Coming Soon section - no mock data
         }
-        
         function setTrend(id, ch) {
             const el = document.getElementById(id);
             if (!ch || ch.percentage === null) { el.textContent = 'N/A'; return; }
