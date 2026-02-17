@@ -33887,7 +33887,9 @@ async function loadCEODashboardFromAPI() {
         
         // v4.2d: If GROUP mode and getCEODashboard returned empty KPIs,
         // fallback to window.currentClientKPIs which has correct GROUP aggregated data
-        if (isGroup && result.summary && (result.summary.gross_revenue || 0) === 0 && window.currentClientKPIs && window.currentClientKPIs.kpis) {
+        // v4.2k: Use Number() to handle string "0" from API
+        const apiGrossRev = Number(result.summary && result.summary.gross_revenue) || 0;
+        if (isGroup && result.summary && apiGrossRev === 0 && window.currentClientKPIs && window.currentClientKPIs.kpis) {
             const kpis = window.currentClientKPIs.kpis;
             const totalFees = kpis.total_fees || 0;
             const totalCost = kpis.total_cost_usd || 0;
@@ -33998,7 +34000,7 @@ function updateCEODashboardUI(data) {
     safeSetText('ceoGrossRevenue', fmtCurrency(summary.gross_revenue));
     safeSetText('ceoTotalExpenses', fmtCurrency(summary.total_claims_cost));
     safeSetText('ceoNetProfit', fmtCurrency(summary.net_profit));
-    safeSetText('ceoTaxLiability', fmtCurrency(summary.cyprus_tax));
+    // v4.2k: ceoTaxLiability set below from ebit calculation (not summary.cyprus_tax)
     
     // REVENUE BREAKDOWN (v3.24 - Real Data)
     safeSetText('ceoPremiumRevenue', fmtCurrency(summary.premium_revenue));
@@ -34025,10 +34027,16 @@ function updateCEODashboardUI(data) {
     // CYPRUS TAX BREAKDOWN (v3.24 - Real Tax)
     safeSetText('ceoTaxableIncome', fmtCurrency(summary.ebit));
     const ebit = summary.ebit || 0;
-    safeSetText('ceoCorporateTax', '-' + fmtCurrency(ebit * 0.125));
-    safeSetText('ceoSDC', '-' + fmtCurrency(ebit * 0.0265));
-    safeSetText('ceoGHS', '-' + fmtCurrency(ebit * 0.029));
-    safeSetText('ceoTotalTax', '-' + fmtCurrency(summary.cyprus_tax));
+    const calcCIT = Math.round(ebit * 0.125);
+    const calcSDC = Math.round(ebit * 0.0265);
+    const calcGHS = Math.round(ebit * 0.029);
+    const calcTotalTax = calcCIT + calcSDC + calcGHS;
+    safeSetText('ceoCorporateTax', '-' + fmtCurrency(calcCIT));
+    safeSetText('ceoSDC', '-' + fmtCurrency(calcSDC));
+    safeSetText('ceoGHS', '-' + fmtCurrency(calcGHS));
+    safeSetText('ceoTotalTax', '-' + fmtCurrency(calcTotalTax));
+    // v4.2k: Also fix the top Tax card to match
+    safeSetText('ceoTaxLiability', fmtCurrency(calcTotalTax));
     
     // CASH FLOW
     const grossRevenue = summary.gross_revenue || 0;
