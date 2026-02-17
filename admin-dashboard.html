@@ -33929,6 +33929,32 @@ async function loadCEODashboardFromAPI() {
         window._ceoApiDataLoaded = Date.now();
         updateCEODashboardUI(result);
         
+        // v4.2k: Delayed re-apply to survive any late overwrites from loadData/updateDashboard
+        const _savedSummary = JSON.parse(JSON.stringify(result.summary || {}));
+        const _savedCT = result.claimTypes ? JSON.parse(JSON.stringify(result.claimTypes)) : null;
+        [3000, 8000, 15000].forEach(delay => {
+            setTimeout(() => {
+                if (window._ceoApiDataLoaded) {
+                    const fmtC = n => '$' + Math.round(n).toLocaleString();
+                    const s = _savedSummary;
+                    const ebit = s.ebit || 0;
+                    const el = id => document.getElementById(id);
+                    if (el('ceoTaxLiability')) el('ceoTaxLiability').textContent = fmtC(s.cyprus_tax || 0);
+                    if (el('ceoTotalTax')) el('ceoTotalTax').textContent = '-' + fmtC(s.cyprus_tax || 0);
+                    if (el('ceoGrossRevenue')) el('ceoGrossRevenue').textContent = fmtC(s.gross_revenue || 0);
+                    if (el('ceoTotalExpenses')) el('ceoTotalExpenses').textContent = fmtC(s.total_claims_cost || 0);
+                    if (el('ceoNetProfit')) el('ceoNetProfit').textContent = fmtC(s.net_profit || 0);
+                    if (el('ceoTaxableIncome')) el('ceoTaxableIncome').textContent = fmtC(ebit);
+                    if (el('ceoCorporateTax')) el('ceoCorporateTax').textContent = '-' + fmtC(ebit * 0.125);
+                    if (el('ceoSDC')) el('ceoSDC').textContent = '-' + fmtC(ebit * 0.0265);
+                    if (el('ceoGHS')) el('ceoGHS').textContent = '-' + fmtC(ebit * 0.029);
+                    if (el('ceoGrossMargin')) el('ceoGrossMargin').textContent = (s.gross_margin_pct || 0).toFixed(0) + '%';
+                    if (el('ceoLossRatio')) el('ceoLossRatio').textContent = (s.loss_ratio_pct || 0).toFixed(0) + '%';
+                    if (el('ceoARPM')) el('ceoARPM').textContent = '$' + (s.arpm || 0);
+                }
+            }, delay);
+        });
+        
     } catch (error) {
         console.error('❌ Error loading CEO Dashboard:', error);
     }
