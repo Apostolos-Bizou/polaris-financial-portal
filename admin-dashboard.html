@@ -33912,7 +33912,8 @@ async function loadCEODashboardFromAPI() {
             
             const grossMargin = grossRevenue > 0 ? ((grossRevenue - totalCost) / grossRevenue * 100) : 0;
             const lossRatio = grossRevenue > 0 ? (totalCost / grossRevenue * 100) : 0;
-            const arpm = totalMembers > 0 ? grossRevenue / totalMembers / 3 : 0;
+            const _apiPeriodMonths = (selectedQuarters || ['Q1']).length * 3;
+            const arpm = totalMembers > 0 ? (grossRevenue / totalMembers / _apiPeriodMonths * 12) : 0; // Annualized ARPM
             
             // Override summary with complete KPI data
             result.summary = result.summary || {};
@@ -33928,7 +33929,7 @@ async function loadCEODashboardFromAPI() {
             result.summary.gross_margin_pct = totalFees > 0 ? ((totalFees - totalCost) / totalFees * 100) : 0;
             result.summary.loss_ratio_pct = totalFees > 0 ? (totalCost / totalFees * 100) : 0;
             result.summary.profit_margin_pct = totalFees > 0 ? ((totalFees - totalCost) / totalFees * 100) : 0;
-            result.summary.arpm = totalMembers > 0 ? Math.round(totalFees / totalMembers / 3) : 0;
+            result.summary.arpm = totalMembers > 0 ? Math.round(totalFees / totalMembers / _apiPeriodMonths * 12) : 0; // Annualized
         }
         
         console.log('✅ CEO Dashboard data loaded:', result);
