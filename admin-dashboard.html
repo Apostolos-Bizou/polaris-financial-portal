@@ -17827,6 +17827,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 }
             }
             
+            // v4.2e: Declare util outside guard so it's accessible in the entire updateDashboard scope
+            const util = c.members > 0 ? (c.claims / c.members * 100) : 0;
+            
             if (!isCompareWithClient) {
                 if (p && document.getElementById('cmpPeriodLabel')) {
                     document.getElementById('cmpPeriodLabel').textContent = `${c.period_label} vs ${p.period_label}`;
@@ -17836,7 +17839,6 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 document.getElementById('kpiClaims').textContent = fmt(c.claims);
                 document.getElementById('kpiApproved').textContent = '$' + fmt(c.approved_usd);
                 document.getElementById('kpiCost').textContent = '$' + c.cost_per_member.toFixed(2);
-                const util = c.members > 0 ? (c.claims / c.members * 100) : 0;
                 document.getElementById('kpiUtilization').textContent = util.toFixed(1) + '%';
                 document.getElementById('totalActive').textContent = fmt(c.members);
             
