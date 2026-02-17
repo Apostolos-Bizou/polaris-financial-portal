@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v15 - Fix: Subsidiary selection now fetches fresh data via loadData() instead of refiltering cached parent data -->
+    <!-- VERSION: 2026-02-17-v16 - Fix: Proper cumulative/compare/single mode logic matching admin dashboard. Default Q4. cumulative=true API flag. -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1837,7 +1837,7 @@
         let selectedCompanyId = null;  // Currently selected company
         
         // Quarter selection state
-        let selectedQuarters = ['Q1']; // Default: Q1 selected
+        let selectedQuarters = ['Q4']; // Default: Q4 selected (latest period)
         let quarterCompareMode = false;
         let cumulativeMode = false; // Toggle between single period and cumulative (YTD)
         let selectedYear = 2025; // Start with 2025
@@ -1895,10 +1895,8 @@
             
             updateQuarterUI();
             
-            // v14: updateDashboard reads from window.lastPeriodsData - no refetch needed
-            if (rawApiData) {
-                updateDashboard(rawApiData, selectedCompanyId);
-            }
+            // v16: reload API with new mode (cumulative needs different API call)
+            loadData(selectedCompanyId);
         }
         
         // Toggle cumulative mode (YTD)
@@ -1921,10 +1919,8 @@
             
             updateQuarterUI();
             
-            // v14: re-aggregate from memory
-            if (rawApiData) {
-                updateDashboard(rawApiData, selectedCompanyId);
-            }
+            // v16: cumulative mode needs fresh API call with cumulative=true
+            loadData(selectedCompanyId);
         }
         
         // Toggle compare quarters mode
@@ -1940,10 +1936,8 @@
                 btn.innerHTML = '<span>⚖️</span> Compare Quarters';
                 // Reset to single selection
                 selectedQuarters = [selectedQuarters[0]];
-                // Reload single quarter
-                if (rawApiData) {
-                    updateDashboard(rawApiData, selectedCompanyId);
-                }
+                // v16: reload with single quarter
+                loadData(selectedCompanyId);
             }
             
             updateQuarterUI();
@@ -4320,31 +4314,48 @@
         let rawApiData = null;
         
         async function loadData(clientId) {
-            // v14: Use getClientKPISummary for ALL quarters (same as admin dashboard)
+            // v16: Match admin logic exactly - single/cumulative/compare modes
             try {
                 const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
                 const year = selectedYear.toString();
-                // Use GROUP: prefix for parent companies so backend aggregates subsidiaries
                 const apiClientId = clientId || selectedCompanyId || 'ALL';
+                const activeQ = selectedQuarters[0] || 'Q4';
                 
-                console.log('📊 v14: Loading', allQuarters.length, 'quarters via getClientKPISummary for', apiClientId);
+                console.log(`📊 v16: Loading for ${apiClientId} | Q=${activeQ} | cumulative=${cumulativeMode} | compare=${quarterCompareMode}`);
                 
-                // Fire all 4 quarter calls in parallel
-                const quarterPromises = allQuarters.map(q => {
+                let results = [];
+                
+                if (cumulativeMode) {
+                    // CUMULATIVE: single call with cumulative=true (backend handles YTD, members=unique)
                     const params = new URLSearchParams({
                         action: 'getClientKPISummary',
                         clientId: apiClientId,
-                        quarter: q,
-                        year: year
+                        quarter: activeQ,
+                        year: year,
+                        cumulative: 'true'
                     });
-                    return fetch(`${API_URL}?${params.toString()}`)
-                        .then(r => r.json())
-                        .then(d => ({ quarter: q, data: d }))
-                        .catch(e => ({ quarter: q, data: null, error: e }));
-                });
-                
-                const results = await Promise.all(quarterPromises);
-                console.log('✅ v14: All quarters loaded');
+                    const d = await fetch(`${API_URL}?${params.toString()}`).then(r => r.json());
+                    results = [{ quarter: activeQ, data: d, cumulative: true }];
+                    console.log(`✅ v16 CUMULATIVE: Q1→${activeQ}`, d.kpis?.total_members, 'members');
+                    
+                } else if (quarterCompareMode && selectedQuarters.length > 1) {
+                    // COMPARE MODE: load each selected quarter separately
+                    const promises = selectedQuarters.map(q => {
+                        const params = new URLSearchParams({ action: 'getClientKPISummary', clientId: apiClientId, quarter: q, year: year });
+                        return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).then(d => ({ quarter: q, data: d })).catch(() => ({ quarter: q, data: null }));
+                    });
+                    results = await Promise.all(promises);
+                    console.log(`✅ v16 COMPARE: ${selectedQuarters.join('+')}`);
+                    
+                } else {
+                    // SINGLE PERIOD: load all 4 quarters for charts/history, display selected Q
+                    const promises = allQuarters.map(q => {
+                        const params = new URLSearchParams({ action: 'getClientKPISummary', clientId: apiClientId, quarter: q, year: year });
+                        return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).then(d => ({ quarter: q, data: d })).catch(() => ({ quarter: q, data: null }));
+                    });
+                    results = await Promise.all(promises);
+                    console.log(`✅ v16 SINGLE: all 4 quarters loaded, showing ${activeQ}`);
+                }
                 
                 // Build periodsData array from results
                 const periodsData = results
@@ -4392,39 +4403,41 @@
             // Get quarters to show based on mode
             const quartersToFilter = getQuartersToFilter();
             
-            // Get current period data
-            let currentPeriods = [];
+            // Get current display data based on mode
+            let c = {};
+            
             if (cumulativeMode) {
-                // YTD: sum Q1 up to selected quarter
-                currentPeriods = periodsData.filter(p => {
-                    const qi = allQuarters.indexOf(p.quarter);
-                    const selQi = allQuarters.indexOf(selectedQuarters[0] || 'Q4');
-                    return qi <= selQi;
-                });
+                // CUMULATIVE: backend returned YTD data directly (members = unique, not sum!)
+                const cur = periodsData[0] || periodsData[periodsData.length - 1];
+                c = { ...cur };
+                c.cost_per_member = cur.cost_per_member || (cur.members > 0 ? cur.approved_usd / cur.members : 0);
+                
             } else if (quarterCompareMode && selectedQuarters.length > 1) {
-                currentPeriods = periodsData.filter(p => selectedQuarters.includes(p.quarter));
+                // COMPARE: sum claims/cases (additive), keep members from LAST selected Q (not additive)
+                const lastQ = selectedQuarters[selectedQuarters.length - 1];
+                const lastQData = periodsData.find(p => p.quarter === lastQ) || periodsData[periodsData.length - 1];
+                c = {
+                    members: lastQData.members, // Members = snapshot of last selected Q
+                    claims: periodsData.reduce((s, p) => s + p.claims, 0),
+                    approved_usd: periodsData.reduce((s, p) => s + p.approved_usd, 0),
+                    total_fees: periodsData.reduce((s, p) => s + p.total_fees, 0),
+                    inpatient_cases: periodsData.reduce((s, p) => s + p.inpatient_cases, 0),
+                    outpatient_cases: periodsData.reduce((s, p) => s + p.outpatient_cases, 0),
+                    exgratia_cases: periodsData.reduce((s, p) => s + p.exgratia_cases, 0),
+                    new_enrollments: periodsData.reduce((s, p) => s + p.new_enrollments, 0),
+                    cancellations: periodsData.reduce((s, p) => s + p.cancellations, 0),
+                    principal_members: lastQData.principal_members,
+                    dependent_members: lastQData.dependent_members,
+                };
+                c.cost_per_member = c.members > 0 ? c.approved_usd / c.members : 0;
+                
             } else {
-                currentPeriods = periodsData.filter(p => p.quarter === (selectedQuarters[0] || 'Q4'));
+                // SINGLE PERIOD: show selected quarter only
+                const activeQ = selectedQuarters[0] || 'Q4';
+                const cur = periodsData.find(p => p.quarter === activeQ) || periodsData[periodsData.length - 1];
+                c = { ...cur };
+                c.cost_per_member = cur.cost_per_member || (cur.members > 0 ? cur.approved_usd / cur.members : 0);
             }
-            
-            if (currentPeriods.length === 0) currentPeriods = [periodsData[periodsData.length - 1]];
-            
-            // Aggregate selected periods
-            const c = {
-                members: currentPeriods.reduce((s, p) => s + p.members, 0),
-                claims: currentPeriods.reduce((s, p) => s + p.claims, 0),
-                approved_usd: currentPeriods.reduce((s, p) => s + p.approved_usd, 0),
-                cost_per_member: 0,
-                total_fees: currentPeriods.reduce((s, p) => s + p.total_fees, 0),
-                inpatient_cases: currentPeriods.reduce((s, p) => s + p.inpatient_cases, 0),
-                outpatient_cases: currentPeriods.reduce((s, p) => s + p.outpatient_cases, 0),
-                exgratia_cases: currentPeriods.reduce((s, p) => s + p.exgratia_cases, 0),
-                new_enrollments: currentPeriods.reduce((s, p) => s + p.new_enrollments, 0),
-                cancellations: currentPeriods.reduce((s, p) => s + p.cancellations, 0),
-                principal_members: currentPeriods.reduce((s, p) => s + p.principal_members, 0),
-                dependent_members: currentPeriods.reduce((s, p) => s + p.dependent_members, 0),
-            };
-            c.cost_per_member = c.members > 0 ? c.approved_usd / c.members : 0;
             
             // Previous period (previous quarter)
             const curQIdx = allQuarters.indexOf(selectedQuarters[0] || 'Q4');
