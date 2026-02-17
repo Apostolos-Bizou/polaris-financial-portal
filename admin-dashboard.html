@@ -18377,7 +18377,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const lossRatio = premiumRevenue > 0 ? (claimsPaid / premiumRevenue * 100) : 0;
             const expenseRatio = premiumRevenue > 0 ? ((operatingExpenses + bankFees) / premiumRevenue * 100) : 0;
             const combinedRatio = lossRatio + expenseRatio;
-            const arpm = totalMembers > 0 ? (totalRevenue / totalMembers / 12) : 0; // Monthly ARPM
+            const periodMonths = (selectedQuarters || ['Q1']).length * 3; // Each quarter = 3 months
+            const arpm = totalMembers > 0 ? (totalRevenue / totalMembers / periodMonths * 12) : 0; // Annualized ARPM
             
             // Cash Flow
             const cashInflow = premiumRevenue + adminFeeRevenue;
@@ -21534,7 +21535,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             // Key Ratios
             const lossRatio = premiumRevenue > 0 ? (claimsAmount / premiumRevenue * 100) : 0;
             const grossMargin = clientRevenue > 0 ? (clientProfit / clientRevenue * 100) : 0;
-            const arpm = members > 0 ? (clientRevenue / members / 12) : 0; // Monthly
+            const clientPeriodMonths = (selectedQuarters || ['Q1']).length * 3;
+            const arpm = members > 0 ? (clientRevenue / members / clientPeriodMonths * 12) : 0; // Annualized ARPM
             const cpm = members > 0 ? (claimsAmount / members) : 0; // Cost per member
             
             // Calculate revenue share (% of total company revenue)
@@ -34212,7 +34214,8 @@ function updateCEOFinancialsUI(data) {
     safeSetText('ceoGrossMargin', ratios.gross_margin.toFixed(0) + '%');
     safeSetText('ceoLossRatio', ratios.loss_ratio.toFixed(0) + '%');
     safeSetText('ceoCombinedRatio', ratios.combined_ratio.toFixed(0) + '%');
-    safeSetText('ceoARPM', '$' + ratios.arpm_monthly.toFixed(0));
+    const apiPeriodMonths = (selectedQuarters || ['Q1']).length * 3;
+    safeSetText('ceoARPM', '$' + ((ratios.arpm_monthly || 0) / apiPeriodMonths * 12).toFixed(0));
     
     safeSetText('ceoFinancePeriod', data.period || 'Current Quarter');
     console.log('✅ CEO Financials UI updated for client:', data.client_id);
