@@ -11907,6 +11907,20 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             console.log('📊 v4.2d updateMetrics call: util=' + util.toFixed(1) + '%, members=' + mockCurrent.members + ', claims=' + mockCurrent.claims);
             try { updateMetrics(util); } catch(e) { console.error('updateMetrics error:', e); }
             try { updateTable(mockPeriods); } catch(e) { console.error('updateTable error:', e); }
+            
+            // v4.2i: Re-apply util after delay to prevent race condition overwrites
+            // loadData()/updateDashboard may finish after this and overwrite utilValue
+            const _savedUtil = util;
+            setTimeout(() => {
+                if (window.quarterCompareMode && window.selectedClient && window.selectedClient !== 'all') {
+                    try { updateMetrics(_savedUtil); } catch(e) {}
+                }
+            }, 5000);
+            setTimeout(() => {
+                if (window.quarterCompareMode && window.selectedClient && window.selectedClient !== 'all') {
+                    try { updateMetrics(_savedUtil); } catch(e) {}
+                }
+            }, 12000);
         }
         
         // Mock clients list (will come from API)
