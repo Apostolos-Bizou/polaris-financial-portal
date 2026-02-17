@@ -11138,7 +11138,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         params.append('cumulative', 'true');
                     }
                     
-                    return fetch(`${API_URL}?${params.toString()}`)
+                    const apiUrl = `${API_URL}?${params.toString()}`;
+                    console.log(`📊 v4.2c COMPARE API call for ${q}: ${apiUrl}`);
+                    return fetch(apiUrl)
                         .then(r => r.json())
                         .then(data => ({ quarter: q, data, startDate, endDate }))
                         .catch(e => ({ quarter: q, data: null, error: e }));
@@ -11173,6 +11175,17 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 console.log('📊 Compare results:', results);
                 console.log('📊 Aggregate data (Q1 to ' + lastQ + '):', aggregateData);
+                
+                // v4.2c: Detailed per-quarter diagnostic
+                results.forEach(r => {
+                    const k = r.data && r.data.kpis ? r.data.kpis : null;
+                    console.log(`📊 v4.2c ${r.quarter}: members=${k ? k.total_members : 'NULL'}, claims=${k ? k.total_claims : 'NULL'}, success=${r.data ? r.data.success : 'NULL'}, error=${r.error || 'none'}`);
+                });
+                if (aggregateData && aggregateData.kpis) {
+                    console.log(`📊 v4.2c AGGREGATE: members=${aggregateData.kpis.total_members}, claims=${aggregateData.kpis.total_claims}`);
+                } else {
+                    console.log('📊 v4.2c AGGREGATE: NULL or no kpis');
+                }
                 
                 // Update badge
                 if (badge) badge.textContent = quarters.join(' vs ') + ` ${selectedYear}`;
@@ -11291,6 +11304,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             document.getElementById('kpiApproved').textContent = '$' + Math.round(displayCost).toLocaleString();
             document.getElementById('kpiCost').textContent = '$' + displayCPM.toFixed(2);
             document.getElementById('kpiUtilization').textContent = displayUtil.toFixed(1) + '%';
+            console.log('📊 v4.2c CARD UPDATE: members=' + displayMembers + ', claims=' + displayClaims + ', cost=' + displayCost + ', cpm=' + displayCPM.toFixed(2) + ', util=' + displayUtil.toFixed(1) + '%, isMultiQ=' + isMultiQ + ', aggMembers=' + aggMembers + ', aggClaims=' + aggClaims);
             if (document.getElementById('totalActive')) {
                 document.getElementById('totalActive').textContent = displayMembers.toLocaleString();
             }
