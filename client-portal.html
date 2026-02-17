@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v16 - Fix: Proper cumulative/compare/single mode logic matching admin dashboard. Default Q4. cumulative=true API flag. -->
+    <!-- VERSION: 2026-02-17-v17 - Fix: Race condition lock on loadData, toggleQuarterCompare reloads on ON+OFF, compare mode keeps last selected Q -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1838,6 +1838,7 @@
         
         // Quarter selection state
         let selectedQuarters = ['Q4']; // Default: Q4 selected (latest period)
+        let _loadDataInProgress = false; // v16: prevent race conditions
         let quarterCompareMode = false;
         let cumulativeMode = false; // Toggle between single period and cumulative (YTD)
         let selectedYear = 2025; // Start with 2025
@@ -1931,16 +1932,17 @@
             if (quarterCompareMode) {
                 btn.classList.add('active');
                 btn.innerHTML = '<span>✓</span> Compare Mode ON';
+                // v16: reload so compare mode fetches correct quarters
+                updateQuarterUI();
+                loadData(selectedCompanyId);
             } else {
                 btn.classList.remove('active');
                 btn.innerHTML = '<span>⚖️</span> Compare Quarters';
-                // Reset to single selection
-                selectedQuarters = [selectedQuarters[0]];
-                // v16: reload with single quarter
+                // Reset to single selection (keep last selected Q)
+                selectedQuarters = [selectedQuarters[selectedQuarters.length - 1] || 'Q4'];
+                updateQuarterUI();
                 loadData(selectedCompanyId);
             }
-            
-            updateQuarterUI();
         }
         
         // Update quarter UI (button states and badge)
@@ -4315,6 +4317,12 @@
         
         async function loadData(clientId) {
             // v16: Match admin logic exactly - single/cumulative/compare modes
+            // Debounce: cancel if already loading
+            if (_loadDataInProgress) {
+                console.log('⏳ loadData already in progress, skipping duplicate call');
+                return;
+            }
+            _loadDataInProgress = true;
             try {
                 const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
                 const year = selectedYear.toString();
@@ -4392,6 +4400,7 @@
                 document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
                 
             } catch(e) { console.error('Load data error:', e); }
+            finally { _loadDataInProgress = false; }
         }
         
         function updateDashboard(data, clientId) {
