@@ -33955,11 +33955,15 @@ function updateCEODashboardUI(data) {
     safeSetText('ceoARPM', '$' + (summary.arpm || 0).toFixed(0));
     
     // MEMBER MOVEMENT (from KPIs)
+    // v4.2g: Don't overwrite movement cards if compare mode has already set them with correct data
     const kpis = data.summary || {};
-    safeSetText('newEnrollments', '+' + fmt(kpis.new_enrollments || 0));
-    safeSetText('cancellations', '-' + fmt(kpis.cancellations || 0));
-    const netChange = kpis.net_change || 0;
-    safeSetText('netChange', (netChange >= 0 ? '+' : '') + netChange);
+    const isCompMode = window.quarterCompareMode && window.selectedClient && window.selectedClient !== 'all';
+    if (!isCompMode) {
+        safeSetText('newEnrollments', '+' + fmt(kpis.new_enrollments || 0));
+        safeSetText('cancellations', '-' + fmt(kpis.cancellations || 0));
+        const netChange = kpis.net_change || 0;
+        safeSetText('netChange', (netChange >= 0 ? '+' : '') + netChange);
+    }
     
     // PERIOD
     safeSetText('ceoFinancePeriod', data.period || 'Current');
