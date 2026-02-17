@@ -11094,6 +11094,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     params.append('endDate', endDate);
                     params.append('quarter', q);
                     params.append('year', selectedYear.toString());
+                    if (cumulativeMode) {
+                        params.append('cumulative', 'true');
+                    }
                     
                     return fetch(`${API_URL}?${params.toString()}`)
                         .then(r => r.json())
@@ -12010,9 +12013,12 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 console.log(`🏢 GROUP selected: ${groupName} — sending GROUP:${parentId} to backend v4.0`);
                 
-                // v4.0: Backend handles GROUP aggregation server-side
-                // Pass the full GROUP:parentId to loadMainDashboardKPIs
-                loadMainDashboardKPIs(selectedClient);
+                // v4.0: Load with GROUP: prefix — same logic as non-group clients
+                if (quarterCompareMode && selectedQuarters.length > 1) {
+                    loadQuarterComparison(selectedClient);
+                } else {
+                    loadMainDashboardKPIs(selectedClient);
+                }
                 loadCEODashboardFromAPI();
                 return;
             }
@@ -12022,7 +12028,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             document.getElementById('clientFilterBadge').textContent = clientName.replace('🏢 ', '').replace('🏛️ ', '').replace('   └─ ', '');
             
             // Load KPIs for selected client (or all clients)
-            loadMainDashboardKPIs(selectedClient);
+            if (quarterCompareMode && selectedQuarters.length > 1) {
+                loadQuarterComparison(selectedClient);
+            } else {
+                loadMainDashboardKPIs(selectedClient);
+            }
             
             // Update CEO Dashboard based on selection
             if (selectedClient === 'all') {
