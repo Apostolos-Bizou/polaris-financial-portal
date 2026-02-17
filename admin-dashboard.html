@@ -18313,8 +18313,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             }
             
             // Update CEO Financial Dashboard
-            // v4.2j: Skip in compare mode — loadCEODashboardFromAPI handles Cyprus data
-            if (!(window.quarterCompareMode && window.selectedClient && window.selectedClient !== 'all')) {
+            // v4.2k: Skip if CEO API already loaded client-specific data (prevents overwrite)
+            const ceoApiRecent = window._ceoApiDataLoaded && (Date.now() - window._ceoApiDataLoaded) < 60000;
+            if (!ceoApiRecent && !(window.quarterCompareMode && window.selectedClient && window.selectedClient !== 'all')) {
                 try { updateCEOFinancialDashboard(c, periods); } catch(e) { console.error('CEO Dashboard error:', e); }
             }
         }
@@ -18324,6 +18325,11 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         // ═══════════════════════════════════════════════════════════
         
         function updateCEOFinancialDashboard(current, periods) {
+            // v4.2k: Don't overwrite if CEO API already provided client-specific data
+            if (window._ceoApiDataLoaded && (Date.now() - window._ceoApiDataLoaded) < 60000) {
+                console.log('⏭️ v4.2k: Skipping updateCEOFinancialDashboard — CEO API data is fresh');
+                return;
+            }
             const fmt = n => n.toLocaleString();
             const fmtCurrency = n => '$' + n.toLocaleString();
             
@@ -33919,6 +33925,8 @@ async function loadCEODashboardFromAPI() {
         }
         
         console.log('✅ CEO Dashboard data loaded:', result);
+        // v4.2k: Flag that CEO API data is loaded — prevents updateCEOFinancialDashboard overwrite
+        window._ceoApiDataLoaded = Date.now();
         updateCEODashboardUI(result);
         
     } catch (error) {
