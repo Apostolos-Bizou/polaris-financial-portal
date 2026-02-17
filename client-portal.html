@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v21 - Fix: Compare/Cumulative mode use ytdMap directly (no subtraction). Single mode uses subtraction. -->
+    <!-- VERSION: 2026-02-17-v22 - Fix: Compare uses HIGHEST selected Q for YTD, not last-added (order matters). -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4364,7 +4364,9 @@
                 } else if (quarterCompareMode && selectedQuarters.length > 1) {
                     // COMPARE MODE: use cumulative=true on last selected quarter (same as admin)
                     // API returns running totals per year, so summing individual Qs double-counts
-                    const lastQ = selectedQuarters[selectedQuarters.length - 1];
+                    // Use highest selected quarter (Q4 > Q3 > Q2 > Q1)
+                    const qOrd = {'Q1':1,'Q2':2,'Q3':3,'Q4':4};
+                    const lastQ = [...selectedQuarters].sort((a,b) => qOrd[a]-qOrd[b]).pop();
                     const params = new URLSearchParams({
                         action: 'getClientKPISummary',
                         clientId: apiClientId,
@@ -4539,9 +4541,11 @@
                 }
                 
             } else if (quarterCompareMode && selectedQuarters.length > 1) {
-                // COMPARE: use YTD values of last selected quarter from ytdRaw
-                // API always returns YTD running totals, so lastQ YTD = full period total
-                const lastSelectedQ = selectedQuarters[selectedQuarters.length - 1];
+                // COMPARE: use YTD of the HIGHEST selected quarter (Q4 > Q3 > Q2 > Q1)
+                // Sort quarters by order and pick the last one
+                const qOrder = {'Q1':1,'Q2':2,'Q3':3,'Q4':4};
+                const sortedSel = [...selectedQuarters].sort((a,b) => qOrder[a] - qOrder[b]);
+                const lastSelectedQ = sortedSel[sortedSel.length - 1];
                 const ytdEntry = window.lastYtdMap && window.lastYtdMap[lastSelectedQ];
                 if (ytdEntry) {
                     c = {
