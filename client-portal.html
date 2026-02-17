@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v12 - Bug fixes: Principal/Dependent real data, Hospital/Geo mock data replaced with Coming Soon -->
+    <!-- VERSION: 2026-02-17-v13 - Bug fixes: Real category data from getCategoriesBreakdown API, real YoY from periodsData, fallback to inpatient/outpatient if API unavailable -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4583,6 +4583,7 @@
             try { createMovementChartsReal(periodsData); } catch(e) { console.error('createMovementCharts error:', e); }
             
             // Additional charts - each in separate try-catch
+            window.lastPeriodsData = periodsData; // v12: needed by createCategoryCharts trend
             try { createCategoryCharts(c); } catch(e) { console.error('createCategoryCharts error:', e); }
             try { createYoYCharts(periodsData); } catch(e) { console.error('createYoYCharts error:', e); }
             try { createHospitalCharts(); } catch(e) { console.error('createHospitalCharts error:', e); }
@@ -5029,33 +5030,60 @@
         
         // ============ NEW SECTIONS CHARTS ============
         
-        function createCategoryCharts(current) {
-            // Mock data - will come from Excel/CBMS (NO COST DATA for client portal)
-            const categories = [
-                { name: 'Medical', cases: 450, color: '#4CAF50' },
-                { name: 'Dental', cases: 180, color: '#2196F3' },
-                { name: 'Maternity', cases: 45, color: '#E91E63' },
-                { name: 'Optical', cases: 120, color: '#FF9800' },
-                { name: 'Laboratory', cases: 280, color: '#D4AF37' },
-                { name: 'Other', cases: 95, color: '#607D8B' }
-            ];
+        async function createCategoryCharts(current) {
+            // v12: Use real getCategoriesBreakdown API data
+            const colors = {
+                'Medical': '#4CAF50', 'Dental': '#2196F3', 'Maternity': '#E91E63',
+                'Optical': '#FF9800', 'Laboratory': '#D4AF37', 'Other': '#607D8B'
+            };
             
-            // Update stat values (with null checks)
-            const catMedical = document.getElementById('catMedical');
-            const catDental = document.getElementById('catDental');
-            const catMaternity = document.getElementById('catMaternity');
-            const catOptical = document.getElementById('catOptical');
-            const catLab = document.getElementById('catLab');
-            const catOther = document.getElementById('catOther');
+            let categories = [];
+            try {
+                const clientId = (selectedCompanyId || 'ALL').replace('GROUP:', '');
+                const quarter = selectedQuarters[0] || 'Q1';
+                const params = new URLSearchParams({
+                    action: 'getCategoriesBreakdown',
+                    clientId: clientId,
+                    quarter: quarter,
+                    year: selectedYear.toString()
+                });
+                const r = await fetch(`${API_URL}?${params.toString()}`);
+                const d = await r.json();
+                if (d.success && d.data && d.data.length > 0) {
+                    categories = d.data.map(c => ({
+                        name: c.category,
+                        cases: c.cases || 0,
+                        color: colors[c.category] || '#607D8B'
+                    }));
+                    console.log('✅ Category data from API:', categories.length, 'categories');
+                } else {
+                    throw new Error('No category data');
+                }
+            } catch(e) {
+                console.warn('⚠️ getCategoriesBreakdown failed, using inpatient/outpatient fallback:', e.message);
+                // Fallback: derive from inpatient/outpatient/exgratia totals
+                const total = (current.inpatient_cases || 0) + (current.outpatient_cases || 0) + (current.exgratia_cases || 0);
+                if (total > 0) {
+                    categories = [
+                        { name: 'Inpatient', cases: current.inpatient_cases || 0, color: '#E91E63' },
+                        { name: 'Outpatient', cases: current.outpatient_cases || 0, color: '#2196F3' },
+                        { name: 'Ex Gratia', cases: current.exgratia_cases || 0, color: '#D4AF37' }
+                    ];
+                }
+            }
             
-            if (catMedical) catMedical.textContent = categories[0].cases;
-            if (catDental) catDental.textContent = categories[1].cases;
-            if (catMaternity) catMaternity.textContent = categories[2].cases;
-            if (catOptical) catOptical.textContent = categories[3].cases;
-            if (catLab) catLab.textContent = categories[4].cases;
-            if (catOther) catOther.textContent = categories[5].cases;
+            if (categories.length === 0) return;
             
-            // Category Pie Chart (with null check)
+            // Update stat values
+            const catMap = { Medical: 'catMedical', Dental: 'catDental', Maternity: 'catMaternity',
+                             Optical: 'catOptical', Laboratory: 'catLab', Other: 'catOther',
+                             Inpatient: 'catMedical', Outpatient: 'catDental', 'Ex Gratia': 'catMaternity' };
+            categories.forEach(cat => {
+                const el = document.getElementById(catMap[cat.name]);
+                if (el) el.textContent = fmt(cat.cases);
+            });
+            
+            // Category Pie Chart
             const canvas1 = document.getElementById('categoryPieChart');
             if (canvas1) {
                 const ctx1 = canvas1.getContext('2d');
@@ -5064,61 +5092,52 @@
                     type: 'doughnut',
                     data: {
                         labels: categories.map(c => c.name),
-                        datasets: [{
-                            data: categories.map(c => c.cases),
+                        datasets: [{ data: categories.map(c => c.cases),
                             backgroundColor: categories.map(c => c.color),
-                            borderWidth: 2,
-                            borderColor: '#0a1a0a',
-                            hoverOffset: 10
-                        }]
+                            borderWidth: 2, borderColor: '#0a1a0a', hoverOffset: 10 }]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '55%',
-                        plugins: { legend: { display: true, position: 'right', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } }
-                    }
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '55%',
+                        plugins: { legend: { display: true, position: 'right',
+                            labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } } }
                 });
             }
             
-            // Category Trend Chart (with null check)
+            // Category Trend Chart - use real quarterly data from periodsData
             const canvas3 = document.getElementById('categoryTrendChart');
             if (canvas3) {
                 const ctx3 = canvas3.getContext('2d');
                 if (charts.categoryTrend) charts.categoryTrend.destroy();
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                // Use actual quarterly periods instead of mock months
+                const periodLabels = (window.lastPeriodsData || []).map(p => p.period_label);
+                const quarterlyInpatient = (window.lastPeriodsData || []).map(p => p.inpatient_cases || 0);
+                const quarterlyOutpatient = (window.lastPeriodsData || []).map(p => p.outpatient_cases || 0);
+                const quarterlyExGratia = (window.lastPeriodsData || []).map(p => p.exgratia_cases || 0);
                 charts.categoryTrend = new Chart(ctx3, {
                     type: 'line',
                     data: {
-                        labels: months,
-                        datasets: categories.slice(0, 4).map(cat => ({
-                            label: cat.name,
-                            data: months.map(() => Math.round(cat.cases / 6 * (0.8 + Math.random() * 0.4))),
-                            borderColor: cat.color,
-                            backgroundColor: cat.color + '20',
-                            fill: false,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointRadius: 4
-                        }))
+                        labels: periodLabels.length > 0 ? periodLabels : ['Q1', 'Q2', 'Q3', 'Q4'],
+                        datasets: [
+                            { label: 'Inpatient', data: quarterlyInpatient, borderColor: '#E91E63', backgroundColor: '#E91E6320', fill: false, tension: 0.4, borderWidth: 3, pointRadius: 4 },
+                            { label: 'Outpatient', data: quarterlyOutpatient, borderColor: '#2196F3', backgroundColor: '#2196F320', fill: false, tension: 0.4, borderWidth: 3, pointRadius: 4 },
+                            { label: 'Ex Gratia', data: quarterlyExGratia, borderColor: '#D4AF37', backgroundColor: '#D4AF3720', fill: false, tension: 0.4, borderWidth: 3, pointRadius: 4 }
+                        ]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                    options: { responsive: true, maintainAspectRatio: false,
                         plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
-                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
-                        }
-                    }
+                        scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
+                                  y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } } }
                 });
             }
         }
         
         function createYoYCharts(periods) {
-            // Mock YoY data (NO COST DATA for client portal)
-            const data2024 = { claims: 3850, members: 980 };
-            const data2025 = { claims: 4320, members: 1127 };
+            // YoY: use real periodsData across years
+            if (!periods || periods.length === 0) return;
+            
+            // Get quarters from actual data
+            const quarterLabels = periods.map(p => p.period_label);
+            const claimsData = periods.map(p => p.claims || 0);
+            const totalClaims2025 = claimsData.reduce((a, b) => a + b, 0);
             
             // Update YoY stats (with null checks)
             const yoyClaims2025 = document.getElementById('yoyClaims2025');
@@ -5126,16 +5145,12 @@
             const yoyClaimsChange = document.getElementById('yoyClaimsChange');
             const yoyMemberChange = document.getElementById('yoyMemberChange');
             
-            if (yoyClaims2025) yoyClaims2025.textContent = fmt(data2025.claims);
-            if (yoyClaims2024) yoyClaims2024.textContent = fmt(data2024.claims);
+            if (yoyClaims2025) yoyClaims2025.textContent = fmt(totalClaims2025);
+            if (yoyClaims2024) yoyClaims2024.textContent = '-';
+            if (yoyClaimsChange) yoyClaimsChange.textContent = 'N/A';
+            if (yoyMemberChange) yoyMemberChange.textContent = 'N/A';
             
-            const claimsChange = ((data2025.claims - data2024.claims) / data2024.claims * 100).toFixed(0);
-            const memberChange = ((data2025.members - data2024.members) / data2024.members * 100).toFixed(0);
-            
-            if (yoyClaimsChange) yoyClaimsChange.textContent = (claimsChange > 0 ? '+' : '') + claimsChange + '%';
-            if (yoyMemberChange) yoyMemberChange.textContent = (memberChange > 0 ? '+' : '') + memberChange + '%';
-            
-            // YoY Claims Chart (with null check)
+            // YoY Claims Chart - use real quarterly claims
             const canvas1 = document.getElementById('yoyClaimsChart');
             if (canvas1) {
                 const ctx1 = canvas1.getContext('2d');
@@ -5143,71 +5158,17 @@
                 charts.yoyClaims = new Chart(ctx1, {
                     type: 'bar',
                     data: {
-                        labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                        labels: quarterLabels,
                         datasets: [
-                            { label: '2024', data: [920, 980, 1050, 900], backgroundColor: 'rgba(122,143,122,0.7)', borderRadius: 4 },
-                            { label: '2025', data: [1080, 1150, 1090, null], backgroundColor: 'rgba(212,175,55,0.8)', borderRadius: 4 }
+                            { label: '2025', data: claimsData, backgroundColor: 'rgba(212,175,55,0.8)', borderRadius: 4 }
                         ]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                    options: { responsive: true, maintainAspectRatio: false,
                         plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
-                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
-                        }
-                    }
+                        scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
+                                  y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } } }
                 });
             }
-            
-            // YoY Trend Chart (with null check)
-            const canvas3 = document.getElementById('yoyTrendChart');
-            if (canvas3) {
-                const ctx3 = canvas3.getContext('2d');
-                if (charts.yoyTrend) charts.yoyTrend.destroy();
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
-                charts.yoyTrend = new Chart(ctx3, {
-                    type: 'line',
-                    data: {
-                        labels: months,
-                        datasets: [
-                            { 
-                                label: '2025', 
-                                data: [320, 380, 410, 350, 420, 380, 390, 410, 360],
-                                borderColor: '#D4AF37',
-                                backgroundColor: 'rgba(212,175,55,0.2)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3,
-                                pointRadius: 5
-                            },
-                            { 
-                                label: '2024', 
-                                data: [280, 320, 350, 310, 380, 340, 360, 390, 320],
-                                borderColor: '#7a8f7a',
-                                backgroundColor: 'rgba(122,143,122,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 2,
-                                borderDash: [5, 5],
-                                pointRadius: 4
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
-                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
-                        }
-                    }
-                });
-            }
-        }
-        
         function createHospitalCharts() {
             // Replaced with Coming Soon section - no mock data
         }
