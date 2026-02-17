@@ -33879,15 +33879,40 @@ async function loadCEODashboardFromAPI() {
             const kpis = window.currentClientKPIs.kpis;
             const totalFees = kpis.total_fees || 0;
             const totalCost = kpis.total_cost_usd || 0;
+            const totalMembers = kpis.total_members || 0;
+            const totalClaims = kpis.total_claims || 0;
             console.log('📊 v4.2d: CEO Dashboard fallback from currentClientKPIs for GROUP mode. Fees:', totalFees, 'Cost:', totalCost);
             
-            // Override summary with KPI data
+            // v4.2j: Calculate ALL financial metrics properly
+            const premiumRevenue = totalCost * 1.35;
+            const grossRevenue = totalFees + premiumRevenue;
+            const operatingExpenses = grossRevenue * 0.15;
+            const bankFees = grossRevenue * 0.01;
+            const totalExpenses = totalCost + operatingExpenses + bankFees;
+            const ebit = grossRevenue - totalExpenses;
+            const cyprusTaxRate = 0.125 + 0.0265 + 0.029; // CIT + SDC + GHS
+            const cyprusTax = ebit > 0 ? ebit * cyprusTaxRate : 0;
+            const netProfit = ebit - cyprusTax;
+            
+            const grossMargin = grossRevenue > 0 ? ((grossRevenue - totalCost) / grossRevenue * 100) : 0;
+            const lossRatio = grossRevenue > 0 ? (totalCost / grossRevenue * 100) : 0;
+            const arpm = totalMembers > 0 ? grossRevenue / totalMembers / 3 : 0;
+            
+            // Override summary with complete KPI data
             result.summary = result.summary || {};
             result.summary.gross_revenue = totalFees;
             result.summary.total_claims_cost = totalCost;
             result.summary.net_profit = totalFees - totalCost;
-            result.summary.total_members = kpis.total_members || 0;
-            result.summary.total_claims = kpis.total_claims || 0;
+            result.summary.total_members = totalMembers;
+            result.summary.total_claims = totalClaims;
+            result.summary.fee_revenue = totalFees;
+            result.summary.premium_revenue = 0;
+            result.summary.ebit = totalFees - totalCost;
+            result.summary.cyprus_tax = cyprusTax;
+            result.summary.gross_margin_pct = totalFees > 0 ? ((totalFees - totalCost) / totalFees * 100) : 0;
+            result.summary.loss_ratio_pct = totalFees > 0 ? (totalCost / totalFees * 100) : 0;
+            result.summary.profit_margin_pct = totalFees > 0 ? ((totalFees - totalCost) / totalFees * 100) : 0;
+            result.summary.arpm = totalMembers > 0 ? Math.round(totalFees / totalMembers / 3) : 0;
         }
         
         console.log('✅ CEO Dashboard data loaded:', result);
