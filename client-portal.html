@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v22 - Fix: Compare uses HIGHEST selected Q for YTD, not last-added (order matters). -->
+    <!-- VERSION: 2026-02-17-v23 - UI: KPI cards styled, YoY empty card replaced with Annual Performance Summary, YTD total fixed. -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1257,23 +1257,23 @@
                     <div class="kpi-value" id="kpiCostPerMember" style="font-size: 4.5rem; color: #4CAF50; text-shadow: 0 0 40px rgba(76,175,80,0.7), 0 4px 20px rgba(0,0,0,0.4); font-weight:800; letter-spacing:-3px; line-height:1;">$0.00</div>
                     <div class="kpi-trend" style="background:rgba(76,175,80,0.25);color:#A5D6A7;font-weight:600;font-size:0.95rem;padding:0.5rem 1rem;border-radius:20px;margin-top:0.5rem">Per Member / Period</div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon">👥</div>
-                    <div class="kpi-label">Total Members</div>
-                    <div class="kpi-value" id="kpiMembers">-</div>
-                    <div class="kpi-trend" id="kpiMembersTrend">-</div>
+                <div class="kpi-card" style="border:2px solid rgba(212,175,55,0.4);background:linear-gradient(135deg,#1a1a0d,#2a2a1a);">
+                    <div class="kpi-icon" style="font-size:1.8rem">👥</div>
+                    <div class="kpi-label" style="color:#D4AF37;font-weight:700;letter-spacing:1px;">Total Members</div>
+                    <div class="kpi-value" id="kpiMembers" style="font-size:2.8rem;font-weight:800;color:#fff;">-</div>
+                    <div class="kpi-trend" id="kpiMembersTrend" style="font-size:0.9rem;">-</div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon">📋</div>
-                    <div class="kpi-label">Total Claims</div>
-                    <div class="kpi-value" id="kpiClaims">-</div>
-                    <div class="kpi-trend" id="kpiClaimsTrend">-</div>
+                <div class="kpi-card" style="border:2px solid rgba(52,152,219,0.4);background:linear-gradient(135deg,#0d1a22,#1a2a35);">
+                    <div class="kpi-icon" style="font-size:1.8rem">📋</div>
+                    <div class="kpi-label" style="color:#5dade2;font-weight:700;letter-spacing:1px;">Total Claims</div>
+                    <div class="kpi-value" id="kpiClaims" style="font-size:2.8rem;font-weight:800;color:#fff;">-</div>
+                    <div class="kpi-trend" id="kpiClaimsTrend" style="font-size:0.9rem;">-</div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon">🎯</div>
-                    <div class="kpi-label">Utilization Rate</div>
-                    <div class="kpi-value" id="kpiUtilization">-</div>
-                    <div class="kpi-trend" style="background:rgba(255,255,255,0.1);color:var(--text-secondary)">Target: 15%</div>
+                <div class="kpi-card" style="border:2px solid rgba(231,76,60,0.4);background:linear-gradient(135deg,#220d0d,#351a1a);">
+                    <div class="kpi-icon" style="font-size:1.8rem">🎯</div>
+                    <div class="kpi-label" style="color:#e74c3c;font-weight:700;letter-spacing:1px;">Utilization Rate</div>
+                    <div class="kpi-value" id="kpiUtilization" style="font-size:2.8rem;font-weight:800;color:#fff;">-</div>
+                    <div class="kpi-trend" style="background:rgba(231,76,60,0.15);color:#e74c3c;font-weight:600;padding:0.4rem 0.8rem;border-radius:15px;">Target: 15%</div>
                 </div>
             </div>
         </section>
@@ -1470,20 +1470,35 @@
                 </div>
                 <div class="chart-card wide">
                     <div class="chart-header">
-                        <h3 class="chart-title">📈 Monthly YoY Trend</h3>
-                        <span class="chart-badge">2025 vs 2024</span>
+                        <h3 class="chart-title">💊 Annual Performance Summary</h3>
+                        <span class="chart-badge">2025 YTD</span>
                     </div>
-                    <div class="yoy-summary" style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1rem;">
-                        <div style="text-align:center;padding:1rem;background:rgba(76,175,80,0.1);border-radius:10px;">
-                            <div style="font-size:0.95rem;color:var(--text-muted)">Claims Change</div>
-                            <div style="font-size:1.8rem;font-weight:700;color:#4CAF50" id="yoyClaimsChange">+12%</div>
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1rem;">
+                        <div style="text-align:center;padding:1.2rem;background:rgba(76,175,80,0.1);border-radius:12px;border:1px solid rgba(76,175,80,0.2);">
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Total Approved (YTD)</div>
+                            <div style="font-size:1.6rem;font-weight:800;color:#4CAF50" id="ytdApproved">-</div>
                         </div>
-                        <div style="text-align:center;padding:1rem;background:rgba(52,152,219,0.1);border-radius:10px;">
-                            <div style="font-size:0.95rem;color:var(--text-muted)">Member Growth</div>
-                            <div style="font-size:1.8rem;font-weight:700;color:#3498db" id="yoyMemberChange">+15%</div>
+                        <div style="text-align:center;padding:1.2rem;background:rgba(52,152,219,0.1);border-radius:12px;border:1px solid rgba(52,152,219,0.2);">
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Avg Cost/Member (YTD)</div>
+                            <div style="font-size:1.6rem;font-weight:800;color:#5dade2" id="ytdCPM">-</div>
+                        </div>
+                        <div style="text-align:center;padding:1.2rem;background:rgba(212,175,55,0.1);border-radius:12px;border:1px solid rgba(212,175,55,0.2);">
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Total Inpatient (YTD)</div>
+                            <div style="font-size:1.6rem;font-weight:800;color:#D4AF37" id="ytdInpatient">-</div>
+                        </div>
+                        <div style="text-align:center;padding:1.2rem;background:rgba(231,76,60,0.1);border-radius:12px;border:1px solid rgba(231,76,60,0.2);">
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Utilization Rate (YTD)</div>
+                            <div style="font-size:1.6rem;font-weight:800;color:#e74c3c" id="ytdUtil">-</div>
                         </div>
                     </div>
-                    <div class="chart-container"><canvas id="yoyTrendChart"></canvas></div>
+                    <div style="padding:1rem;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);">
+                        <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.8rem;">Claims Distribution (YTD)</div>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;">
+                            <div style="text-align:center;"><div style="font-size:0.75rem;color:#e74c3c;">Inpatient</div><div style="font-weight:700;color:#fff" id="ytdInpPct">-</div></div>
+                            <div style="text-align:center;"><div style="font-size:0.75rem;color:#5dade2;">Outpatient</div><div style="font-weight:700;color:#fff" id="ytdOutPct">-</div></div>
+                            <div style="text-align:center;"><div style="font-size:0.75rem;color:#D4AF37;">Ex Gratia</div><div style="font-weight:700;color:#fff" id="ytdExgPct">-</div></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -4468,30 +4483,8 @@
                     return standalone;
                 });
                 
-                // Add cumulative result if present (for compare/cumulative modes)
-                const cumulResult = results.find(r => r.cumulative && r.data && r.data.kpis);
-                if (cumulResult) {
-                    const k = cumulResult.data.kpis;
-                    const mt = cumulResult.data.memberTypes || {};
-                    periodsData.unshift({
-                        period_label: `YTD ${year}`,
-                        quarter: cumulResult.quarter,
-                        cumulative: true,
-                        members: k.total_members || 0,
-                        claims: k.total_claims || 0,
-                        approved_usd: k.total_cost_usd || 0,
-                        cost_per_member: k.cost_per_member || (k.total_members > 0 ? k.total_cost_usd/k.total_members : 0),
-                        total_fees: k.total_fees || 0,
-                        inpatient_cases: k.inpatient_cases || 0,
-                        outpatient_cases: k.outpatient_cases || 0,
-                        exgratia_cases: k.exgratia_cases || 0,
-                        new_enrollments: k.new_enrollments || 0,
-                        cancellations: k.cancellations || 0,
-                        net_change: k.net_change || 0,
-                        principal_members: mt.principal || k.principal_members || 0,
-                        dependent_members: mt.dependent || k.dependent_members || 0,
-                    });
-                }
+                // Note: cumulative/compare KPIs are served from window.lastYtdMap
+                // No need to add YTD entry to periodsData (would create extra chart point)
                 
                 console.log('📊 Client Portal v14: Loaded', periodsData.length, 'periods');
                 
@@ -5191,10 +5184,12 @@
             // YoY: use real periodsData across years
             if (!periods || periods.length === 0) return;
             
-            // Get quarters from actual data
+            // Get quarters from actual data (standalone claims per Q for bar chart)
             const quarterLabels = periods.map(p => p.period_label);
             const claimsData = periods.map(p => p.claims || 0);
-            const totalClaims2025 = claimsData.reduce((a, b) => a + b, 0);
+            // YTD total = use ytdMap[Q4] (true running total), fallback to sum
+            const ytdQ4 = window.lastYtdMap && window.lastYtdMap['Q4'];
+            const totalClaims2025 = ytdQ4 ? ytdQ4.claims : claimsData.reduce((a, b) => a + b, 0);
             
             // Update YoY stats (with null checks)
             const yoyClaims2025 = document.getElementById('yoyClaims2025');
@@ -5206,6 +5201,22 @@
             if (yoyClaims2024) yoyClaims2024.textContent = '-';
             if (yoyClaimsChange) yoyClaimsChange.textContent = 'N/A';
             if (yoyMemberChange) yoyMemberChange.textContent = 'N/A';
+            
+            // Populate Annual Performance Summary cards using YTD data
+            const ytdQ4 = window.lastYtdMap && window.lastYtdMap['Q4'];
+            if (ytdQ4) {
+                const cpm = ytdQ4.members > 0 ? ytdQ4.approved_usd / ytdQ4.members : 0;
+                const util = ytdQ4.members > 0 ? ytdQ4.claims / ytdQ4.members * 100 : 0;
+                const totalCases = (ytdQ4.inpatient_cases||0) + (ytdQ4.outpatient_cases||0) + (ytdQ4.exgratia_cases||0);
+                const el = id => document.getElementById(id);
+                if(el('ytdApproved')) el('ytdApproved').textContent = '$' + (ytdQ4.approved_usd||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+                if(el('ytdCPM')) el('ytdCPM').textContent = '$' + cpm.toFixed(2);
+                if(el('ytdInpatient')) el('ytdInpatient').textContent = fmt(ytdQ4.inpatient_cases||0);
+                if(el('ytdUtil')) el('ytdUtil').textContent = util.toFixed(1) + '%';
+                if(el('ytdInpPct') && totalCases > 0) el('ytdInpPct').textContent = ((ytdQ4.inpatient_cases/totalCases)*100).toFixed(1)+'%';
+                if(el('ytdOutPct') && totalCases > 0) el('ytdOutPct').textContent = ((ytdQ4.outpatient_cases/totalCases)*100).toFixed(1)+'%';
+                if(el('ytdExgPct') && totalCases > 0) el('ytdExgPct').textContent = ((ytdQ4.exgratia_cases/totalCases)*100).toFixed(1)+'%';
+            }
             
             // YoY Claims Chart - use real quarterly claims
             const canvas1 = document.getElementById('yoyClaimsChart');
