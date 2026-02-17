@@ -12210,10 +12210,12 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 // v4.0: Load with GROUP: prefix — same logic as non-group clients
                 if (quarterCompareMode && selectedQuarters.length > 1) {
                     loadQuarterComparison(selectedClient);
+                    // v4.2k: Don't call loadCEODashboardFromAPI here — currentClientKPIs not set yet
+                    // It will be called from showQuarterComparisonResults AFTER correct data is available
                 } else {
                     loadMainDashboardKPIs(selectedClient);
+                    loadCEODashboardFromAPI();
                 }
-                loadCEODashboardFromAPI();
                 return;
             }
             
@@ -12229,12 +12231,13 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             }
             
             // Update CEO Dashboard based on selection
-            if (selectedClient === 'all') {
-                // Load company-wide dashboard
-                loadCEODashboardFromAPI();
-            } else {
-                // Load specific client financials
-                loadCEODashboardFromAPI();
+            // v4.2k: In compare mode, CEO is called from showQuarterComparisonResults after data is ready
+            if (!(quarterCompareMode && selectedQuarters.length > 1)) {
+                if (selectedClient === 'all') {
+                    loadCEODashboardFromAPI();
+                } else {
+                    loadCEODashboardFromAPI();
+                }
             }
         }
         
