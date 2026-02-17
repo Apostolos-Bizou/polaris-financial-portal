@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v19 - Fix: All API calls now pass startDate/endDate for standalone quarter data (matches admin exactly) -->
+    <!-- VERSION: 2026-02-17-v20 - Fix: API returns YTD. Standalone = YTD_Q - YTD_prev_Q. Subtraction logic on frontend. -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4390,51 +4390,103 @@
                     console.log(`✅ v16 COMPARE: ${selectedQuarters.join('+')} → cumulative Q1→${lastQ}`, cumulResult.data?.kpis?.total_claims, 'claims');
                     
                 } else {
-                    // SINGLE PERIOD: load all 4 quarters with startDate/endDate for standalone data
+                    // SINGLE PERIOD: load all 4 quarters (API returns YTD per Q, we subtract to get standalone)
                     const promises = allQuarters.map(q => {
-                        const range = getQuarterDateRange(q, year);
                         const params = new URLSearchParams({
                             action: 'getClientKPISummary',
                             clientId: apiClientId,
                             quarter: q,
-                            year: year,
-                            startDate: range.start,
-                            endDate: range.end
+                            year: year
                         });
                         return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).then(d => ({ quarter: q, data: d })).catch(() => ({ quarter: q, data: null }));
                     });
                     results = await Promise.all(promises);
-                    console.log(`✅ v16 SINGLE: all 4 quarters loaded with date ranges, showing ${activeQ}`);
+                    console.log(`✅ v19 SINGLE: all 4 quarters loaded (YTD), standalone computed by subtraction, showing ${activeQ}`);
                 }
                 
-                // Build periodsData array from results
-                const periodsData = results
-                    .filter(r => r.data && r.data.kpis)
-                    .map(r => {
-                        const k = r.data.kpis;
-                        const mt = r.data.memberTypes || {};
-                        const ct = r.data.claimTypes || {};
-                        return {
-                            period_label: `${r.quarter} ${year}`,
-                            quarter: r.quarter,
-                            cumulative: r.cumulative || false,
-                            members: k.total_members || 0,
-                            claims: k.total_claims || 0,
-                            approved_usd: k.total_cost_usd || 0,
-                            cost_per_member: k.cost_per_member || 0,
-                            total_fees: k.total_fees || 0,
-                            inpatient_cases: k.inpatient_cases || ct.inpatient || 0,
-                            outpatient_cases: k.outpatient_cases || ct.outpatient || 0,
-                            exgratia_cases: k.exgratia_cases || ct.exgratia || 0,
-                            new_enrollments: k.new_enrollments || 0,
-                            cancellations: k.cancellations || 0,
-                            net_change: k.net_change || 0,
-                            principal_members: mt.principal || k.principal_members || 0,
-                            dependent_members: mt.dependent || k.dependent_members || 0,
-                            arpm: k.arpm || 0,
-                            loss_ratio: k.loss_ratio || 0
-                        };
+                // Build YTD data from API results
+                const allQs = ['Q1','Q2','Q3','Q4'];
+                const ytdMap = {};
+                results.filter(r => r.data && r.data.kpis && !r.cumulative).forEach(r => {
+                    const k = r.data.kpis;
+                    const mt = r.data.memberTypes || {};
+                    const ct = r.data.claimTypes || {};
+                    ytdMap[r.quarter] = {
+                        members: k.total_members || 0,
+                        claims: k.total_claims || 0,
+                        approved_usd: k.total_cost_usd || 0,
+                        cost_per_member: k.cost_per_member || 0,
+                        total_fees: k.total_fees || 0,
+                        inpatient_cases: k.inpatient_cases || ct.inpatient || 0,
+                        outpatient_cases: k.outpatient_cases || ct.outpatient || 0,
+                        exgratia_cases: k.exgratia_cases || ct.exgratia || 0,
+                        new_enrollments: k.new_enrollments || 0,
+                        cancellations: k.cancellations || 0,
+                        net_change: k.net_change || 0,
+                        principal_members: mt.principal || k.principal_members || 0,
+                        dependent_members: mt.dependent || k.dependent_members || 0,
+                    };
+                });
+                
+                // Compute STANDALONE values by subtracting previous Q YTD
+                // API returns YTD per quarter: Q2_ytd = Q1+Q2, so Q2_standalone = Q2_ytd - Q1_ytd
+                const periodsData = allQs.filter(q => ytdMap[q]).map((q, idx) => {
+                    const ytd = ytdMap[q];
+                    const prevQ = idx > 0 ? allQs[idx-1] : null;
+                    const prevYtd = prevQ && ytdMap[prevQ] ? ytdMap[prevQ] : null;
+                    const standalone = {
+                        period_label: `${q} ${year}`,
+                        quarter: q,
+                        cumulative: false,
+                        // Members = snapshot (not cumulative) - use as-is
+                        members: ytd.members,
+                        principal_members: ytd.principal_members,
+                        dependent_members: ytd.dependent_members,
+                        // Subtract prev YTD to get standalone quarter values
+                        claims: prevYtd ? ytd.claims - prevYtd.claims : ytd.claims,
+                        approved_usd: prevYtd ? ytd.approved_usd - prevYtd.approved_usd : ytd.approved_usd,
+                        total_fees: prevYtd ? ytd.total_fees - prevYtd.total_fees : ytd.total_fees,
+                        inpatient_cases: prevYtd ? ytd.inpatient_cases - prevYtd.inpatient_cases : ytd.inpatient_cases,
+                        outpatient_cases: prevYtd ? ytd.outpatient_cases - prevYtd.outpatient_cases : ytd.outpatient_cases,
+                        exgratia_cases: prevYtd ? ytd.exgratia_cases - prevYtd.exgratia_cases : ytd.exgratia_cases,
+                        new_enrollments: prevYtd ? ytd.new_enrollments - prevYtd.new_enrollments : ytd.new_enrollments,
+                        cancellations: prevYtd ? ytd.cancellations - prevYtd.cancellations : ytd.cancellations,
+                        net_change: prevYtd ? ytd.net_change - prevYtd.net_change : ytd.net_change,
+                        // Store YTD for cumulative mode
+                        ytd_claims: ytd.claims,
+                        ytd_approved_usd: ytd.approved_usd,
+                        ytd_inpatient: ytd.inpatient_cases,
+                        ytd_outpatient: ytd.outpatient_cases,
+                        ytd_exgratia: ytd.exgratia_cases,
+                    };
+                    standalone.cost_per_member = standalone.members > 0 ? standalone.approved_usd / standalone.members : 0;
+                    return standalone;
+                });
+                
+                // Add cumulative result if present (for compare/cumulative modes)
+                const cumulResult = results.find(r => r.cumulative && r.data && r.data.kpis);
+                if (cumulResult) {
+                    const k = cumulResult.data.kpis;
+                    const mt = cumulResult.data.memberTypes || {};
+                    periodsData.unshift({
+                        period_label: `YTD ${year}`,
+                        quarter: cumulResult.quarter,
+                        cumulative: true,
+                        members: k.total_members || 0,
+                        claims: k.total_claims || 0,
+                        approved_usd: k.total_cost_usd || 0,
+                        cost_per_member: k.cost_per_member || (k.total_members > 0 ? k.total_cost_usd/k.total_members : 0),
+                        total_fees: k.total_fees || 0,
+                        inpatient_cases: k.inpatient_cases || 0,
+                        outpatient_cases: k.outpatient_cases || 0,
+                        exgratia_cases: k.exgratia_cases || 0,
+                        new_enrollments: k.new_enrollments || 0,
+                        cancellations: k.cancellations || 0,
+                        net_change: k.net_change || 0,
+                        principal_members: mt.principal || k.principal_members || 0,
+                        dependent_members: mt.dependent || k.dependent_members || 0,
                     });
+                }
                 
                 console.log('📊 Client Portal v14: Loaded', periodsData.length, 'periods');
                 
