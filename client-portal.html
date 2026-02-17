@@ -5188,8 +5188,8 @@
             const quarterLabels = periods.map(p => p.period_label);
             const claimsData = periods.map(p => p.claims || 0);
             // YTD total = use ytdMap[Q4] (true running total), fallback to sum
-            const ytdQ4 = window.lastYtdMap && window.lastYtdMap['Q4'];
-            const totalClaims2025 = ytdQ4 ? ytdQ4.claims : claimsData.reduce((a, b) => a + b, 0);
+            const ytdQ4data = window.lastYtdMap && window.lastYtdMap['Q4'];
+            const totalClaims2025 = ytdQ4data ? ytdQ4data.claims : claimsData.reduce((a, b) => a + b, 0);
             
             // Update YoY stats (with null checks)
             const yoyClaims2025 = document.getElementById('yoyClaims2025');
@@ -5203,19 +5203,19 @@
             if (yoyMemberChange) yoyMemberChange.textContent = 'N/A';
             
             // Populate Annual Performance Summary cards using YTD data
-            const ytdQ4 = window.lastYtdMap && window.lastYtdMap['Q4'];
-            if (ytdQ4) {
-                const cpm = ytdQ4.members > 0 ? ytdQ4.approved_usd / ytdQ4.members : 0;
-                const util = ytdQ4.members > 0 ? ytdQ4.claims / ytdQ4.members * 100 : 0;
-                const totalCases = (ytdQ4.inpatient_cases||0) + (ytdQ4.outpatient_cases||0) + (ytdQ4.exgratia_cases||0);
+            const ytdQ4perf = window.lastYtdMap && window.lastYtdMap['Q4'];
+            if (ytdQ4perf) {
+                const cpm = ytdQ4perf.members > 0 ? ytdQ4perf.approved_usd / ytdQ4perf.members : 0;
+                const util = ytdQ4perf.members > 0 ? ytdQ4perf.claims / ytdQ4perf.members * 100 : 0;
+                const totalCases = (ytdQ4perf.inpatient_cases||0) + (ytdQ4perf.outpatient_cases||0) + (ytdQ4perf.exgratia_cases||0);
                 const el = id => document.getElementById(id);
-                if(el('ytdApproved')) el('ytdApproved').textContent = '$' + (ytdQ4.approved_usd||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+                if(el('ytdApproved')) el('ytdApproved').textContent = '$' + (ytdQ4perf.approved_usd||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
                 if(el('ytdCPM')) el('ytdCPM').textContent = '$' + cpm.toFixed(2);
-                if(el('ytdInpatient')) el('ytdInpatient').textContent = fmt(ytdQ4.inpatient_cases||0);
+                if(el('ytdInpatient')) el('ytdInpatient').textContent = fmt(ytdQ4perf.inpatient_cases||0);
                 if(el('ytdUtil')) el('ytdUtil').textContent = util.toFixed(1) + '%';
-                if(el('ytdInpPct') && totalCases > 0) el('ytdInpPct').textContent = ((ytdQ4.inpatient_cases/totalCases)*100).toFixed(1)+'%';
-                if(el('ytdOutPct') && totalCases > 0) el('ytdOutPct').textContent = ((ytdQ4.outpatient_cases/totalCases)*100).toFixed(1)+'%';
-                if(el('ytdExgPct') && totalCases > 0) el('ytdExgPct').textContent = ((ytdQ4.exgratia_cases/totalCases)*100).toFixed(1)+'%';
+                if(el('ytdInpPct') && totalCases > 0) el('ytdInpPct').textContent = ((ytdQ4perf.inpatient_cases/totalCases)*100).toFixed(1)+'%';
+                if(el('ytdOutPct') && totalCases > 0) el('ytdOutPct').textContent = ((ytdQ4perf.outpatient_cases/totalCases)*100).toFixed(1)+'%';
+                if(el('ytdExgPct') && totalCases > 0) el('ytdExgPct').textContent = ((ytdQ4perf.exgratia_cases/totalCases)*100).toFixed(1)+'%';
             }
             
             // YoY Claims Chart - use real quarterly claims
