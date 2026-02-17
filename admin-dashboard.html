@@ -11491,6 +11491,84 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             window.currentClientKPIs = mergedData;
             loadDataForSelectedQuarters();
             
+            // v4.2d: Load chart endpoints directly for GROUP selections
+            // This ensures hospitals, categories, geographic data loads correctly
+            try {
+                const sel = selectedClient || window.selectedClient || 'all';
+                let chartCid = sel;
+                if (chartCid.startsWith && chartCid.startsWith('GROUP:')) chartCid = chartCid.replace('GROUP:', '');
+                if (chartCid && chartCid !== 'all' && chartCid !== 'ALL') {
+                    console.log('📊 v4.2d: Loading chart endpoints for client:', chartCid);
+                    const CHART_API = 'https://script.google.com/macros/s/AKfycbye9XIpC0VLyBLftcN3ew5nw7BvbKd19-_JCR-xfKWEtjbvWYJqdvOSjfoaruI7ixp6/exec';
+                    Promise.all([
+                        fetch(CHART_API + '?action=getCategoriesBreakdown&clientId=' + encodeURIComponent(chartCid)).then(r=>r.json()).catch(()=>null),
+                        fetch(CHART_API + '?action=getHospitalsData&clientId=' + encodeURIComponent(chartCid)).then(r=>r.json()).catch(()=>null),
+                        fetch(CHART_API + '?action=getGeographicData&clientId=' + encodeURIComponent(chartCid)).then(r=>r.json()).catch(()=>null)
+                    ]).then(([catResp, hospResp, geoResp]) => {
+                        console.log('📊 v4.2d chart data:', { cat: catResp?.data?.length, hosp: hospResp?.data?.length, geo: geoResp?.data?.regions?.length });
+                        
+                        // Category boxes
+                        if (catResp && catResp.data) {
+                            const cm = {};
+                            catResp.data.forEach(x => cm[x.category] = x.cases);
+                            const el = id => document.getElementById(id);
+                            if(el('catMedical')) el('catMedical').textContent = cm['General Consultation']||cm['Medical']||0;
+                            if(el('catDental')) el('catDental').textContent = cm['Dental']||0;
+                            if(el('catMaternity')) el('catMaternity').textContent = cm['Maternity']||0;
+                            if(el('catOptical')) el('catOptical').textContent = cm['Ophthalmology']||cm['Optical']||0;
+                            if(el('catLab')) el('catLab').textContent = cm['Laboratory & Diagnostics']||cm['Laboratory']||0;
+                            if(el('catOther')) el('catOther').textContent = cm['Other']||0;
+                        }
+                        
+                        // Hospital table
+                        if (hospResp && hospResp.data && hospResp.data.length > 0) {
+                            const hospTable = document.getElementById('hospitalsTableBody');
+                            if (hospTable) {
+                                const totalCost = hospResp.data.reduce((a,h) => a + (h.cost_usd||0), 0);
+                                hospTable.innerHTML = hospResp.data.map((h,i) => `<tr>
+                                    <td><span style="background:${i<3?'#D4AF37':'#2E7D32'};color:#000;padding:2px 8px;border-radius:10px;font-weight:bold">${i+1}</span></td>
+                                    <td><strong>${h.name}</strong><br><small style="color:#7a8f7a">${h.city||''} ${h.region?'('+h.region+')':''}</small></td>
+                                    <td>${(h.claims||0).toLocaleString()}</td>
+                                    <td>$${((h.cost_usd||0)/1000).toFixed(1)}K</td>
+                                    <td>$${(h.avg_claim||0).toFixed(0)}</td>
+                                    <td>${totalCost>0?((h.cost_usd/totalCost)*100).toFixed(1):0}%</td>
+                                </tr>`).join('');
+                            }
+                            // Update charts if they exist
+                            if (window.charts && window.charts.topHospitals) {
+                                window.charts.topHospitals.data.labels = hospResp.data.map(h=>h.name);
+                                window.charts.topHospitals.data.datasets[0].data = hospResp.data.map(h=>h.claims);
+                                window.charts.topHospitals.update();
+                            }
+                            if (window.charts && window.charts.topHospitalsCost) {
+                                window.charts.topHospitalsCost.data.labels = hospResp.data.map(h=>h.name);
+                                window.charts.topHospitalsCost.data.datasets[0].data = hospResp.data.map(h=>h.cost_usd);
+                                window.charts.topHospitalsCost.update();
+                            }
+                        }
+                        
+                        // Geographic
+                        if (geoResp && geoResp.data && geoResp.data.top_cities) {
+                            let m=0,c=0,d=0,il=0,o=0;
+                            geoResp.data.top_cities.forEach(x => {
+                                const city = (x.city||'').toLowerCase();
+                                if (city.includes('manila')||city.includes('quezon')||city.includes('makati')||city.includes('pasig')||city.includes('taguig')) m += x.claims;
+                                else if (city.includes('cebu')) c += x.claims;
+                                else if (city.includes('davao')) d += x.claims;
+                                else if (city.includes('iloilo')) il += x.claims;
+                                else o += x.claims;
+                            });
+                            const el = id => document.getElementById(id);
+                            if(el('geoManila')) el('geoManila').textContent = m.toLocaleString();
+                            if(el('geoCebu')) el('geoCebu').textContent = c.toLocaleString();
+                            if(el('geoDavao')) el('geoDavao').textContent = d.toLocaleString();
+                            if(el('geoIloilo')) el('geoIloilo').textContent = il.toLocaleString();
+                            if(el('geoOther')) el('geoOther').textContent = o.toLocaleString();
+                        }
+                    }).catch(e => console.error('v4.2d chart fetch error:', e));
+                }
+            } catch(chartErr) { console.log('v4.2d chart init error:', chartErr); }
+            
             // Build comparison overlay panel
             const colors = { Q1: '#4CAF50', Q2: '#2196F3', Q3: '#FF9800', Q4: '#E91E63' };
             const metrics = [
@@ -11745,8 +11823,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 inpatientCostVal = (ct.costs && ct.costs.inpatient) || 0;
                 outpatientCostVal = (ct.costs && ct.costs.outpatient) || 0;
                 exGratiaCostVal = (ct.costs && ct.costs.exgratia) || 0;
-                principalMembers = (mt.members && mt.members.principal) || 0;
-                dependentMembers = (mt.members && mt.members.dependent) || 0;
+                // v4.2d: memberTypes is flat {principal, dependent}, NOT nested {members: {principal}}
+                principalMembers = mt.principal || (mt.members && mt.members.principal) || 0;
+                dependentMembers = mt.dependent || (mt.members && mt.members.dependent) || 0;
                 newEnroll = kpis.new_enrollments || kpis.enrollments || 0;
                 cancelled = kpis.cancellations || 0;
                 
@@ -11817,6 +11896,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             try { createGeoCharts(); } catch(e) { console.error('createGeoCharts error:', e); }
             
             // Update metrics and insights
+            console.log('📊 v4.2d updateMetrics call: util=' + util.toFixed(1) + '%, members=' + mockCurrent.members + ', claims=' + mockCurrent.claims);
             try { updateMetrics(util); } catch(e) { console.error('updateMetrics error:', e); }
             try { updateTable(mockPeriods); } catch(e) { console.error('updateTable error:', e); }
         }
@@ -17794,6 +17874,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             let newEnroll = 0, cancelled = 0;
             
             // Call async function to load real data
+            // v4.2d: Skip if compare mode with client already populated these sections
+            if (!isCompareWithClient) {
             loadFinancialBreakdowns((window.selectedClient || 'ALL'), window.selectedPeriod || '').then(data => {
                 if (data) {
                     // Update Inpatient/Outpatient/Ex Gratia from API
@@ -18064,6 +18146,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     }, 2000); // Wait 2 seconds for charts to initialize
                 }
             }).catch(err => console.error('loadFinancialBreakdowns error:', err));
+            } // close isCompareWithClient guard for loadFinancialBreakdowns
             
             // ═══════════════════════════════════════════════════════════════════
             // v3.45 FIX: Retry chart updates after a delay (charts may not exist yet)
@@ -33723,7 +33806,9 @@ async function loadCEODashboardFromAPI() {
     
     try {
         let currentClientId = window.selectedClient || 'all';
-        if (currentClientId.startsWith('GROUP:')) {
+        const isGroup = currentClientId.startsWith && currentClientId.startsWith('GROUP:');
+        // Strip GROUP: prefix - getCEODashboard's getClientHierarchyIds needs clean ID
+        if (isGroup) {
             currentClientId = currentClientId.replace('GROUP:', '');
         }
         
@@ -33748,6 +33833,23 @@ async function loadCEODashboardFromAPI() {
         if (!result.success) {
             console.error('❌ CEO Dashboard API error:', result.error);
             return;
+        }
+        
+        // v4.2d: If GROUP mode and getCEODashboard returned empty KPIs,
+        // fallback to window.currentClientKPIs which has correct GROUP aggregated data
+        if (isGroup && result.summary && (result.summary.gross_revenue || 0) === 0 && window.currentClientKPIs && window.currentClientKPIs.kpis) {
+            const kpis = window.currentClientKPIs.kpis;
+            const totalFees = kpis.total_fees || 0;
+            const totalCost = kpis.total_cost_usd || 0;
+            console.log('📊 v4.2d: CEO Dashboard fallback from currentClientKPIs for GROUP mode. Fees:', totalFees, 'Cost:', totalCost);
+            
+            // Override summary with KPI data
+            result.summary = result.summary || {};
+            result.summary.gross_revenue = totalFees;
+            result.summary.total_claims_cost = totalCost;
+            result.summary.net_profit = totalFees - totalCost;
+            result.summary.total_members = kpis.total_members || 0;
+            result.summary.total_claims = kpis.total_claims || 0;
         }
         
         console.log('✅ CEO Dashboard data loaded:', result);
