@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v17 - Fix: Race condition lock on loadData, toggleQuarterCompare reloads on ON+OFF, compare mode keeps last selected Q -->
+    <!-- VERSION: 2026-02-17-v18 - Fix: Compare mode uses cumulative=true on last Q (matches admin). Eliminates double-counting of running totals. -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4347,13 +4347,27 @@
                     console.log(`✅ v16 CUMULATIVE: Q1→${activeQ}`, d.kpis?.total_members, 'members');
                     
                 } else if (quarterCompareMode && selectedQuarters.length > 1) {
-                    // COMPARE MODE: load each selected quarter separately
-                    const promises = selectedQuarters.map(q => {
-                        const params = new URLSearchParams({ action: 'getClientKPISummary', clientId: apiClientId, quarter: q, year: year });
-                        return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).then(d => ({ quarter: q, data: d })).catch(() => ({ quarter: q, data: null }));
+                    // COMPARE MODE: use cumulative=true on last selected quarter (same as admin)
+                    // API returns running totals per year, so summing individual Qs double-counts
+                    const lastQ = selectedQuarters[selectedQuarters.length - 1];
+                    const params = new URLSearchParams({
+                        action: 'getClientKPISummary',
+                        clientId: apiClientId,
+                        quarter: lastQ,
+                        year: year,
+                        cumulative: 'true'
                     });
-                    results = await Promise.all(promises);
-                    console.log(`✅ v16 COMPARE: ${selectedQuarters.join('+')}`);
+                    // Also load all individual Qs for charts/historical table
+                    const allPromises = ['Q1','Q2','Q3','Q4'].map(q => {
+                        const p = new URLSearchParams({ action: 'getClientKPISummary', clientId: apiClientId, quarter: q, year: year });
+                        return fetch(`${API_URL}?${p.toString()}`).then(r => r.json()).then(d => ({ quarter: q, data: d })).catch(() => ({ quarter: q, data: null }));
+                    });
+                    const [cumulResult, ...allResults] = await Promise.all([
+                        fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).then(d => ({ quarter: lastQ, data: d, cumulative: true })),
+                        ...allPromises
+                    ]);
+                    results = [cumulResult, ...allResults.filter(r => r.data)];
+                    console.log(`✅ v16 COMPARE: ${selectedQuarters.join('+')} → cumulative Q1→${lastQ}`, cumulResult.data?.kpis?.total_claims, 'claims');
                     
                 } else {
                     // SINGLE PERIOD: load all 4 quarters for charts/history, display selected Q
@@ -4375,6 +4389,7 @@
                         return {
                             period_label: `${r.quarter} ${year}`,
                             quarter: r.quarter,
+                            cumulative: r.cumulative || false,
                             members: k.total_members || 0,
                             claims: k.total_claims || 0,
                             approved_usd: k.total_cost_usd || 0,
@@ -4422,23 +4437,11 @@
                 c.cost_per_member = cur.cost_per_member || (cur.members > 0 ? cur.approved_usd / cur.members : 0);
                 
             } else if (quarterCompareMode && selectedQuarters.length > 1) {
-                // COMPARE: sum claims/cases (additive), keep members from LAST selected Q (not additive)
-                const lastQ = selectedQuarters[selectedQuarters.length - 1];
-                const lastQData = periodsData.find(p => p.quarter === lastQ) || periodsData[periodsData.length - 1];
-                c = {
-                    members: lastQData.members, // Members = snapshot of last selected Q
-                    claims: periodsData.reduce((s, p) => s + p.claims, 0),
-                    approved_usd: periodsData.reduce((s, p) => s + p.approved_usd, 0),
-                    total_fees: periodsData.reduce((s, p) => s + p.total_fees, 0),
-                    inpatient_cases: periodsData.reduce((s, p) => s + p.inpatient_cases, 0),
-                    outpatient_cases: periodsData.reduce((s, p) => s + p.outpatient_cases, 0),
-                    exgratia_cases: periodsData.reduce((s, p) => s + p.exgratia_cases, 0),
-                    new_enrollments: periodsData.reduce((s, p) => s + p.new_enrollments, 0),
-                    cancellations: periodsData.reduce((s, p) => s + p.cancellations, 0),
-                    principal_members: lastQData.principal_members,
-                    dependent_members: lastQData.dependent_members,
-                };
-                c.cost_per_member = c.members > 0 ? c.approved_usd / c.members : 0;
+                // COMPARE: use cumulative result (first in periodsData, flagged cumulative:true)
+                // This matches admin: compare mode = YTD cumulative up to last selected Q
+                const cumulData = periodsData.find(p => p.cumulative) || periodsData[periodsData.length - 1];
+                c = { ...cumulData };
+                c.cost_per_member = cumulData.cost_per_member || (cumulData.members > 0 ? cumulData.approved_usd / cumulData.members : 0);
                 
             } else {
                 // SINGLE PERIOD: show selected quarter only
