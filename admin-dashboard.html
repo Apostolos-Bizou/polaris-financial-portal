@@ -33971,6 +33971,7 @@ async function loadCEODashboardFromAPI() {
                     if (el('ceoGHS')) el('ceoGHS').textContent = '-' + fmtC(ghs);
                     if (el('ceoGrossMargin')) el('ceoGrossMargin').textContent = (s.gross_margin_pct || 0).toFixed(0) + '%';
                     if (el('ceoLossRatio')) el('ceoLossRatio').textContent = (s.loss_ratio_pct || 0).toFixed(0) + '%';
+                    if (el('ceoCombinedRatio')) el('ceoCombinedRatio').textContent = (s.loss_ratio_pct || 0).toFixed(0) + '%';
                     if (el('ceoARPM')) el('ceoARPM').textContent = '$' + (s.arpm || 0);
                 }
             }, delay);
@@ -34211,10 +34212,10 @@ function updateCEOFinancialsUI(data) {
     safeSetText('ceoGHS', '-' + fmtCurrency(cyprusTax.ghs));
     safeSetText('ceoTotalTax', '-' + fmtCurrency(cyprusTax.total));
     
-    // RATIOS
-    safeSetText('ceoGrossMargin', ratios.gross_margin.toFixed(0) + '%');
-    safeSetText('ceoLossRatio', ratios.loss_ratio.toFixed(0) + '%');
-    safeSetText('ceoCombinedRatio', ratios.loss_ratio.toFixed(0) + '%');
+    // RATIOS - with safe fallbacks
+    safeSetText('ceoGrossMargin', (ratios.gross_margin || 0).toFixed(0) + '%');
+    safeSetText('ceoLossRatio', (ratios.loss_ratio || 0).toFixed(0) + '%');
+    safeSetText('ceoCombinedRatio', (ratios.loss_ratio || 0).toFixed(0) + '%');
     const apiPeriodMonths = (selectedQuarters || ['Q1']).length * 3;
     safeSetText('ceoARPM', '$' + ((ratios.arpm_monthly || 0) / apiPeriodMonths * 12).toFixed(0));
     
