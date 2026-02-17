@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v13 - Bug fixes: Real category data from getCategoriesBreakdown API, real YoY from periodsData, fallback to inpatient/outpatient if API unavailable -->
+    <!-- VERSION: 2026-02-17-v14 - MAJOR: Migrated to getClientKPISummary (same as admin). All KPIs now real data. loadData + updateDashboard fully rewritten -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4324,277 +4324,187 @@
         let rawApiData = null;
         
         async function loadData(clientId) {
+            // v14: Use getClientKPISummary for ALL quarters (same as admin dashboard)
             try {
-                // Fetch ALL financial data - we filter on frontend
-                const apiUrl = `${API_URL}?action=getFinancialData`;
+                const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+                const year = selectedYear.toString();
+                // Use GROUP: prefix for parent companies so backend aggregates subsidiaries
+                const apiClientId = clientId || selectedCompanyId || 'ALL';
                 
-                const r = await fetch(apiUrl);
-                const d = await r.json();
-                if (d.success && d.data) {
-                    // Transform API response to expected format
-                    const clientDetails = d.data;
-                    
-                    // Extract unique periods from data
-                    const periodsSet = new Set();
-                    clientDetails.forEach(item => {
-                        if (item.period) periodsSet.add(item.period);
+                console.log('📊 v14: Loading', allQuarters.length, 'quarters via getClientKPISummary for', apiClientId);
+                
+                // Fire all 4 quarter calls in parallel
+                const quarterPromises = allQuarters.map(q => {
+                    const params = new URLSearchParams({
+                        action: 'getClientKPISummary',
+                        clientId: apiClientId,
+                        quarter: q,
+                        year: year
                     });
-                    const periods = Array.from(periodsSet).sort();
-                    
-                    // Transform period format from "Q1-2025" to "Q1 2025"
-                    const transformedDetails = clientDetails.map(item => ({
-                        ...item,
-                        period: item.period ? item.period.replace('-', ' ') : item.period
-                    }));
-                    const transformedPeriods = periods.map(p => p.replace('-', ' '));
-                    
-                    rawApiData = {
-                        client_details: transformedDetails,
-                        periods: transformedPeriods
-                    };
-                    
-                    console.log('📊 Client Portal: Loaded', transformedDetails.length, 'records,', transformedPeriods.length, 'periods');
-                    updateDashboard(rawApiData, clientId);
-                } else {
-                    console.error('API Error:', d.error || 'Unknown error');
-                }
+                    return fetch(`${API_URL}?${params.toString()}`)
+                        .then(r => r.json())
+                        .then(d => ({ quarter: q, data: d }))
+                        .catch(e => ({ quarter: q, data: null, error: e }));
+                });
+                
+                const results = await Promise.all(quarterPromises);
+                console.log('✅ v14: All quarters loaded');
+                
+                // Build periodsData array from results
+                const periodsData = results
+                    .filter(r => r.data && r.data.kpis)
+                    .map(r => {
+                        const k = r.data.kpis;
+                        const mt = r.data.memberTypes || {};
+                        const ct = r.data.claimTypes || {};
+                        return {
+                            period_label: `${r.quarter} ${year}`,
+                            quarter: r.quarter,
+                            members: k.total_members || 0,
+                            claims: k.total_claims || 0,
+                            approved_usd: k.total_cost_usd || 0,
+                            cost_per_member: k.cost_per_member || 0,
+                            total_fees: k.total_fees || 0,
+                            inpatient_cases: k.inpatient_cases || ct.inpatient || 0,
+                            outpatient_cases: k.outpatient_cases || ct.outpatient || 0,
+                            exgratia_cases: k.exgratia_cases || ct.exgratia || 0,
+                            new_enrollments: k.new_enrollments || 0,
+                            cancellations: k.cancellations || 0,
+                            net_change: k.net_change || 0,
+                            principal_members: mt.principal || k.principal_members || 0,
+                            dependent_members: mt.dependent || k.dependent_members || 0,
+                            arpm: k.arpm || 0,
+                            loss_ratio: k.loss_ratio || 0
+                        };
+                    });
+                
+                console.log('📊 Client Portal v14: Loaded', periodsData.length, 'periods');
+                
+                rawApiData = { periodsData: periodsData, results: results };
+                updateDashboard(rawApiData, apiClientId);
                 document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+                
             } catch(e) { console.error('Load data error:', e); }
         }
         
-        // Get list of client_ids to include based on selection
-        function getClientIdsToFilter(selectedId) {
-            const selected = companiesList.find(c => c.client_id === selectedId);
-            
-            if (selected && selected.is_parent) {
-                // Parent selected - include ALL companies in the group
-                return companiesList.map(c => c.client_id);
-            } else {
-                // Subsidiary selected - include only that one
-                return [selectedId];
-            }
-        }
-        
-        // Filter and aggregate client_details by period
-        function filterClientData(clientDetails, clientIds, period) {
-            return clientDetails.filter(cd => 
-                clientIds.includes(cd.client_id) && cd.period === period
-            );
-        }
-        
-        // Aggregate data for multiple clients
-        function aggregateClientData(filteredData) {
-            const members = filteredData.reduce((sum, d) => sum + (d.members || 0), 0);
-            const approved_usd = filteredData.reduce((sum, d) => sum + (d.approved_usd || 0), 0);
-            const principalRaw = filteredData.reduce((sum, d) => sum + (d.principal_members || 0), 0);
-            const dependentRaw = filteredData.reduce((sum, d) => sum + (d.dependent_members || 0), 0);
-            // Use real data if available, otherwise fallback to estimate
-            const principal_members = principalRaw > 0 ? principalRaw : Math.round(members * 0.4);
-            const dependent_members = dependentRaw > 0 ? dependentRaw : (members - Math.round(members * 0.4));
-            return {
-                members: members,
-                claims: filteredData.reduce((sum, d) => sum + (d.claims || 0), 0),
-                approved_usd: approved_usd,
-                cost_per_member: members > 0 ? approved_usd / members : 0,
-                inpatient_cases: filteredData.reduce((sum, d) => sum + (d.inpatient_cases || 0), 0),
-                outpatient_cases: filteredData.reduce((sum, d) => sum + (d.outpatient_cases || 0), 0),
-                exgratia_cases: filteredData.reduce((sum, d) => sum + (d.exgratia_cases || 0), 0),
-                new_enrollments: filteredData.reduce((sum, d) => sum + (d.new_enrollments || 0), 0),
-                cancellations: filteredData.reduce((sum, d) => sum + (d.cancellations || 0), 0),
-                principal_members: principal_members,
-                dependent_members: dependent_members
-            };
-        }
-        
         function updateDashboard(data, clientId) {
-            if (!data.client_details || !data.periods) return;
+            if (!data.periodsData || data.periodsData.length === 0) return;
             
-            const clientIds = getClientIdsToFilter(clientId || selectedCompanyId);
-            const allPeriods = data.periods || [];
+            const periodsData = data.periodsData;
+            const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
             
-            // Get quarters to filter based on mode
+            // Get quarters to show based on mode
             const quartersToFilter = getQuartersToFilter();
             
-            // Map quarters to period format (e.g., Q1 2025 -> "2025-Q1" or check actual format)
-            // Assume periods are in format like "Q1 2025", "Q2 2025", etc.
-            const selectedPeriods = quartersToFilter.map(q => `${q} ${selectedYear}`);
-            
-            // Filter periods to only include selected quarters for the selected year
-            const filteredPeriods = allPeriods.filter(p => {
-                // Check if period matches selected year and quarter
-                const yearMatch = p.includes(selectedYear.toString());
-                const quarterMatch = quartersToFilter.some(q => p.includes(q));
-                return yearMatch && quarterMatch;
-            });
-            
-            // If no matching periods, use all periods for that year
-            const periodsForYear = allPeriods.filter(p => p.includes(selectedYear.toString()));
-            const periodsToUse = filteredPeriods.length > 0 ? filteredPeriods : periodsForYear;
-            
-            // Get the current period (selected quarter) or latest available
-            const currentPeriodStr = `${selectedQuarters[0]} ${selectedYear}`;
-            const latestPeriod = periodsToUse.find(p => p === currentPeriodStr) || 
-                                 periodsToUse[periodsToUse.length - 1] ||
-                                 allPeriods[allPeriods.length - 1];
-            
-            // Get filtered data for current period (or cumulative if enabled)
-            let currentData = [];
+            // Get current period data
+            let currentPeriods = [];
             if (cumulativeMode) {
-                // Cumulative: aggregate all quarters from Q1 to selected
-                quartersToFilter.forEach(q => {
-                    const periodStr = `${q} ${selectedYear}`;
-                    const periodData = filterClientData(data.client_details, clientIds, periodStr);
-                    currentData = currentData.concat(periodData);
+                // YTD: sum Q1 up to selected quarter
+                currentPeriods = periodsData.filter(p => {
+                    const qi = allQuarters.indexOf(p.quarter);
+                    const selQi = allQuarters.indexOf(selectedQuarters[0] || 'Q4');
+                    return qi <= selQi;
                 });
             } else if (quarterCompareMode && selectedQuarters.length > 1) {
-                // Compare mode: aggregate selected quarters
-                selectedQuarters.forEach(q => {
-                    const periodStr = `${q} ${selectedYear}`;
-                    const periodData = filterClientData(data.client_details, clientIds, periodStr);
-                    currentData = currentData.concat(periodData);
-                });
+                currentPeriods = periodsData.filter(p => selectedQuarters.includes(p.quarter));
             } else {
-                // Single quarter
-                currentData = filterClientData(data.client_details, clientIds, latestPeriod);
+                currentPeriods = periodsData.filter(p => p.quarter === (selectedQuarters[0] || 'Q4'));
             }
             
-            const c = aggregateClientData(currentData);
+            if (currentPeriods.length === 0) currentPeriods = [periodsData[periodsData.length - 1]];
             
-            // Get filtered data for previous period (previous quarter)
-            let p = null, ch = null;
-            const qIndex = ['Q1', 'Q2', 'Q3', 'Q4'].indexOf(selectedQuarters[0]);
-            let prevPeriod = null;
+            // Aggregate selected periods
+            const c = {
+                members: currentPeriods.reduce((s, p) => s + p.members, 0),
+                claims: currentPeriods.reduce((s, p) => s + p.claims, 0),
+                approved_usd: currentPeriods.reduce((s, p) => s + p.approved_usd, 0),
+                cost_per_member: 0,
+                total_fees: currentPeriods.reduce((s, p) => s + p.total_fees, 0),
+                inpatient_cases: currentPeriods.reduce((s, p) => s + p.inpatient_cases, 0),
+                outpatient_cases: currentPeriods.reduce((s, p) => s + p.outpatient_cases, 0),
+                exgratia_cases: currentPeriods.reduce((s, p) => s + p.exgratia_cases, 0),
+                new_enrollments: currentPeriods.reduce((s, p) => s + p.new_enrollments, 0),
+                cancellations: currentPeriods.reduce((s, p) => s + p.cancellations, 0),
+                principal_members: currentPeriods.reduce((s, p) => s + p.principal_members, 0),
+                dependent_members: currentPeriods.reduce((s, p) => s + p.dependent_members, 0),
+            };
+            c.cost_per_member = c.members > 0 ? c.approved_usd / c.members : 0;
             
-            if (qIndex > 0) {
-                prevPeriod = `Q${qIndex} ${selectedYear}`;
-            } else {
-                prevPeriod = `Q4 ${selectedYear - 1}`;
-            }
+            // Previous period (previous quarter)
+            const curQIdx = allQuarters.indexOf(selectedQuarters[0] || 'Q4');
+            const prevQ = curQIdx > 0 ? allQuarters[curQIdx - 1] : null;
+            const prevPeriod = prevQ ? periodsData.find(p => p.quarter === prevQ) : null;
             
-            const prevData = filterClientData(data.client_details, clientIds, prevPeriod);
-            if (prevData.length > 0) {
-                p = aggregateClientData(prevData);
-                
-                // Calculate changes
-                ch = {
-                    members: { 
-                        percentage: p.members > 0 ? ((c.members - p.members) / p.members * 100) : null 
-                    },
-                    claims: { 
-                        percentage: p.claims > 0 ? ((c.claims - p.claims) / p.claims * 100) : null 
-                    }
-                };
-            }
-            
-            // Update period badge via updateQuarterUI
+            // Period comparison label
             updateQuarterUI();
-            
-            if (p) {
+            if (prevPeriod) {
                 const cmpLabel = document.getElementById('cmpPeriodLabel');
-                if (cmpLabel) {
-                    if (cumulativeMode) {
-                        cmpLabel.textContent = `YTD ${selectedYear} vs Previous`;
-                    } else {
-                        cmpLabel.textContent = `${selectedQuarters[0]} ${selectedYear} vs ${prevPeriod}`;
-                    }
-                }
+                if (cmpLabel) cmpLabel.textContent = `${selectedQuarters[0]} ${selectedYear} vs ${prevQ} ${selectedYear}`;
             }
             
-            // Update KPIs with REAL data
-            // COST PER MEMBER - Big green number
+            // ── TOP KPI CARDS ──
             document.getElementById('kpiCostPerMember').textContent = '$' + c.cost_per_member.toFixed(2);
-            
-            document.getElementById('kpiMembers').textContent = fmt(c.members);
-            document.getElementById('kpiClaims').textContent = fmt(c.claims);
+            document.getElementById('kpiMembers').textContent = c.members.toLocaleString();
+            document.getElementById('kpiClaims').textContent = c.claims.toLocaleString();
             const util = c.members > 0 ? (c.claims / c.members * 100) : 0;
             document.getElementById('kpiUtilization').textContent = util.toFixed(1) + '%';
-            document.getElementById('totalActive').textContent = fmt(c.members);
+            document.getElementById('totalActive').textContent = c.members.toLocaleString();
             
-            if (ch) {
+            // Trends vs previous period
+            if (prevPeriod) {
+                const ch = {
+                    members: { percentage: prevPeriod.members > 0 ? ((c.members - prevPeriod.members) / prevPeriod.members * 100) : null },
+                    claims:  { percentage: prevPeriod.claims > 0  ? ((c.claims  - prevPeriod.claims)  / prevPeriod.claims  * 100) : null }
+                };
                 setTrend('kpiMembersTrend', ch.members);
                 setTrend('kpiClaimsTrend', ch.claims);
-            }
-            
-            // Period comparison
-            if (p && ch) {
-                document.getElementById('cmpClaims').textContent = fmt(c.claims);
-                document.getElementById('cmpClaimsPrev').textContent = fmt(p.claims);
+                
+                // Period comparison
+                document.getElementById('cmpClaims').textContent = c.claims.toLocaleString();
+                document.getElementById('cmpClaimsPrev').textContent = prevPeriod.claims.toLocaleString();
                 setChange('cmpClaimsChange', ch.claims);
-                document.getElementById('cmpMembers').textContent = fmt(c.members);
-                document.getElementById('cmpMembersPrev').textContent = fmt(p.members);
+                document.getElementById('cmpMembers').textContent = c.members.toLocaleString();
+                document.getElementById('cmpMembersPrev').textContent = prevPeriod.members.toLocaleString();
                 setChange('cmpMembersChange', ch.members);
             }
             
-            // REAL Inpatient/Outpatient/Ex Gratia data from API
-            const inpatientCases = c.inpatient_cases || 0;
-            const outpatientCases = c.outpatient_cases || 0;
-            const exGratiaCases = c.exgratia_cases || 0;
+            // ── INPATIENT / OUTPATIENT ──
+            document.getElementById('inpatientCases').textContent = c.inpatient_cases.toLocaleString();
+            document.getElementById('outpatientCases').textContent = c.outpatient_cases.toLocaleString();
+            document.getElementById('exGratiaCases').textContent = c.exgratia_cases.toLocaleString();
             
-            document.getElementById('inpatientCases').textContent = fmt(inpatientCases);
-            document.getElementById('outpatientCases').textContent = fmt(outpatientCases);
-            document.getElementById('exGratiaCases').textContent = fmt(exGratiaCases);
+            // ── PRINCIPAL / DEPENDENT (real from API) ──
+            const principalMembers = c.principal_members > 0 ? c.principal_members : Math.round(c.members * 0.4);
+            const dependentMembers = c.dependent_members > 0 ? c.dependent_members : (c.members - principalMembers);
+            document.getElementById('principalCount').textContent = principalMembers.toLocaleString();
+            document.getElementById('dependentCount').textContent = dependentMembers.toLocaleString();
             
-            // Principal/Dependent data (still estimate until CBMS provides)
-            const principalMembers = c.principal_members || Math.round(c.members * 0.4);
-            const dependentMembers = c.dependent_members || (c.members - principalMembers);
+            // ── MEMBER MOVEMENT ──
+            document.getElementById('newEnrollments').textContent = '+' + c.new_enrollments.toLocaleString();
+            document.getElementById('cancellations').textContent = '-' + c.cancellations.toLocaleString();
+            const net = c.new_enrollments - c.cancellations;
+            document.getElementById('netChange').textContent = (net >= 0 ? '+' : '') + net.toLocaleString();
             
-            document.getElementById('principalCount').textContent = fmt(principalMembers);
-            document.getElementById('dependentCount').textContent = fmt(dependentMembers);
-            
-            // REAL Member Movement from API
-            const newEnroll = c.new_enrollments || 0;
-            const cancelled = c.cancellations || 0;
-            document.getElementById('newEnrollments').textContent = '+' + newEnroll;
-            document.getElementById('cancellations').textContent = '-' + cancelled;
-            document.getElementById('netChange').textContent = (newEnroll - cancelled >= 0 ? '+' : '') + (newEnroll - cancelled);
-            
-            // Build periods data for charts (all periods for the year, for trend charts)
-            const periodsData = periodsForYear.length > 0 ? periodsForYear.map(period => {
-                const periodFiltered = filterClientData(data.client_details, clientIds, period);
-                const agg = aggregateClientData(periodFiltered);
-                return {
-                    period_label: period,
-                    members: agg.members,
-                    claims: agg.claims,
-                    inpatient_cases: agg.inpatient_cases,
-                    outpatient_cases: agg.outpatient_cases,
-                    exgratia_cases: agg.exgratia_cases,
-                    new_enrollments: agg.new_enrollments,
-                    cancellations: agg.cancellations
-                };
-            }) : allPeriods.map(period => {
-                const periodFiltered = filterClientData(data.client_details, clientIds, period);
-                const agg = aggregateClientData(periodFiltered);
-                return {
-                    period_label: period,
-                    members: agg.members,
-                    claims: agg.claims,
-                    inpatient_cases: agg.inpatient_cases,
-                    outpatient_cases: agg.outpatient_cases,
-                    exgratia_cases: agg.exgratia_cases,
-                    new_enrollments: agg.new_enrollments,
-                    cancellations: agg.cancellations
-                };
-            });
+            // ── CHARTS ──
+            window.lastPeriodsData = periodsData;
             
             try { createCharts(periodsData, c); } catch(e) { console.error('createCharts error:', e); }
-            try { createInOutCharts(periodsData, inpatientCases, outpatientCases, exGratiaCases); } catch(e) { console.error('createInOutCharts error:', e); }
+            try { createInOutCharts(periodsData, c.inpatient_cases, c.outpatient_cases, c.exgratia_cases); } catch(e) { console.error('createInOutCharts error:', e); }
             try { createMemberTypeCharts(principalMembers, dependentMembers, c.claims); } catch(e) { console.error('createMemberTypeCharts error:', e); }
             try { createMovementChartsReal(periodsData); } catch(e) { console.error('createMovementCharts error:', e); }
-            
-            // Additional charts - each in separate try-catch
-            window.lastPeriodsData = periodsData; // v12: needed by createCategoryCharts trend
             try { createCategoryCharts(c); } catch(e) { console.error('createCategoryCharts error:', e); }
             try { createYoYCharts(periodsData); } catch(e) { console.error('createYoYCharts error:', e); }
             try { createHospitalCharts(); } catch(e) { console.error('createHospitalCharts error:', e); }
             try { createGeoCharts(); } catch(e) { console.error('createGeoCharts error:', e); }
             
             updateMetrics(util);
-            updateInsights(ch);
+            updateInsights(prevPeriod ? {
+                members: { percentage: prevPeriod.members > 0 ? ((c.members - prevPeriod.members) / prevPeriod.members * 100) : null },
+                claims:  { percentage: prevPeriod.claims > 0  ? ((c.claims  - prevPeriod.claims)  / prevPeriod.claims  * 100) : null }
+            } : null);
             updateTableReal(periodsData);
         }
         
-        // Real movement charts with actual data
         function createMovementChartsReal(periods) {
             // Movement Compare Chart
             const ctx1 = safeGetContext('movementCompareChart');
