@@ -7158,14 +7158,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     <button class="fullscreen-toggle-btn" id="fullscreenToggleBtn" onclick="toggleFullscreen()" title="Toggle Fullscreen (F11)">⛶</button>
     
     <!-- Global Navigation Buttons (always visible) -->
-    <div class="global-nav-buttons" id="globalNavButtons" style="position:fixed; top:0.5rem; right:90px; display:flex; gap:0.5rem; z-index:99999; align-items:center;">
-        <button class="global-nav-btn" id="dashboardBtn" onclick="goToDashboard()" style="display:none; background:linear-gradient(135deg, #3498db, #2980b9); color:white; border:none; padding:0.5rem 1rem; border-radius:8px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:0.85rem; cursor:pointer; box-shadow:0 4px 15px rgba(52,152,219,0.4);">
-            🏠 Dashboard
-        </button>
-        <button class="global-nav-btn" id="mainDashboardBtn" onclick="goToMainDashboard()" style="display:none; background:linear-gradient(135deg, var(--polaris-gold), #f5d76e); color:var(--polaris-navy); border:none; padding:0.5rem 1rem; border-radius:8px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:0.85rem; cursor:pointer; box-shadow:0 4px 15px rgba(212,175,55,0.4);">
-            📊 Main Dashboard
-        </button>
-    </div>
+    
     
     <!-- ═══════════════════════════════════════════════════════════════════════════
          IMPRESSIVE WELCOME LOADING SCREEN
@@ -7446,6 +7439,12 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         <span>⚖️</span> Compare
                     </button>
                 </div>
+                <button class="global-nav-btn" id="dashboardBtn" onclick="goToDashboard()" style="display:none; background:linear-gradient(135deg, #3498db, #2980b9); color:white; border:none; padding:0.5rem 0.9rem; border-radius:20px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:0.75rem; cursor:pointer; white-space:nowrap; flex-shrink:0;">
+                    🏠 Dashboard
+                </button>
+                <button class="global-nav-btn" id="mainDashboardBtn" onclick="goToMainDashboard()" style="display:none; background:linear-gradient(135deg, var(--polaris-gold), #f5d76e); color:var(--polaris-navy); border:none; padding:0.5rem 0.9rem; border-radius:20px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:0.75rem; cursor:pointer; white-space:nowrap; flex-shrink:0;">
+                    📊 Main Dashboard
+                </button>
                 <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
             </div>
         </div>
