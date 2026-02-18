@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-17-v24 - Fix: Claims Trend chart now populated with cumulative claims line. -->
+    <!-- VERSION: 2026-02-18-v25 - Fix: Claims Trend chart now populated with cumulative claims line. -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -4614,8 +4614,8 @@
             document.getElementById('exGratiaCases').textContent = c.exgratia_cases.toLocaleString();
             
             // ── PRINCIPAL / DEPENDENT (real from API) ──
-            const principalMembers = c.principal_members > 0 ? c.principal_members : Math.round(c.members * 0.4);
-            const dependentMembers = c.dependent_members > 0 ? c.dependent_members : (c.members - principalMembers);
+            const principalMembers = c.principal_members > 0 ? c.principal_members : Math.round(c.members * 0.6);
+            const dependentMembers = c.dependent_members > 0 ? c.dependent_members : c.members - principalMembers;
             document.getElementById('principalCount').textContent = principalMembers.toLocaleString();
             document.getElementById('dependentCount').textContent = dependentMembers.toLocaleString();
             
@@ -4630,7 +4630,7 @@
             
             try { createCharts(periodsData, c); } catch(e) { console.error('createCharts error:', e); }
             try { createInOutCharts(periodsData, c.inpatient_cases, c.outpatient_cases, c.exgratia_cases); } catch(e) { console.error('createInOutCharts error:', e); }
-            try { createMemberTypeCharts(principalMembers, dependentMembers, c.claims); } catch(e) { console.error('createMemberTypeCharts error:', e); }
+            try { createMemberTypeCharts(principalMembers, dependentMembers, c.claims, c.principal_claims, c.dependent_claims); } catch(e) { console.error('createMemberTypeCharts error:', e); }
             try { createMovementChartsReal(periodsData); } catch(e) { console.error('createMovementCharts error:', e); }
             try { createCategoryCharts(c); } catch(e) { console.error('createCategoryCharts error:', e); }
             try { createYoYCharts(periodsData); } catch(e) { console.error('createYoYCharts error:', e); }
@@ -4998,7 +4998,7 @@
             }
         }
         
-        function createMemberTypeCharts(principal, dependent, claims) {
+        function createMemberTypeCharts(principal, dependent, claims, principalClaimsData, dependentClaimsData) {
             // Member Type Pie - Doughnut
             const ctx1 = safeGetContext('memberTypePieChart');
             if (ctx1) {
@@ -5041,8 +5041,8 @@
                 if (ctx2) {
                     if (charts.memberClaims) charts.memberClaims.destroy();
                     
-                    const principalClaims = Math.round(claims * 0.55);
-                    const dependentClaims = claims - principalClaims;
+                    const principalClaims = (principalClaimsData > 0 || dependentClaimsData > 0) ? principalClaimsData : Math.round(claims * 0.55);
+                    const dependentClaims = (principalClaimsData > 0 || dependentClaimsData > 0) ? dependentClaimsData : claims - principalClaims;
                     
                     // Update stat values
                     const principalClaimsEl = document.getElementById('principalClaims');
