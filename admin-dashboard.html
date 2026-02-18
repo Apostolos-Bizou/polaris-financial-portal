@@ -7158,7 +7158,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     <button class="fullscreen-toggle-btn" id="fullscreenToggleBtn" onclick="toggleFullscreen()" title="Toggle Fullscreen (F11)">⛶</button>
     
     <!-- Global Navigation Buttons (always visible) -->
-    <div class="global-nav-buttons" id="globalNavButtons" style="position:fixed; top:58px; right:1rem; display:flex; gap:0.5rem; z-index:9999;">
+    <div class="global-nav-buttons" id="globalNavButtons" style="position:fixed; top:1rem; right:60px; display:flex; gap:0.5rem; z-index:99999;">
         <button class="global-nav-btn" id="dashboardBtn" onclick="goToDashboard()" style="display:none; background:linear-gradient(135deg, #3498db, #2980b9); color:white; border:none; padding:0.5rem 1rem; border-radius:8px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:0.85rem; cursor:pointer; box-shadow:0 4px 15px rgba(52,152,219,0.4);">
             🏠 Dashboard
         </button>
@@ -20426,12 +20426,21 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 welcomeScreen.classList.add('hidden');
             }
             
+            // Always hide dashboard nav buttons when on main dashboard
+            const dashBtn = document.getElementById('dashboardBtn');
+            const mainDashBtn = document.getElementById('mainDashboardBtn');
+            if (dashBtn) dashBtn.style.display = 'none';
+            if (mainDashBtn) mainDashBtn.style.display = 'none';
+            
             // Show main dashboard after brief delay
             setTimeout(() => {
                 if (mainDashboard) {
                     mainDashboard.classList.remove('hidden');
                     initDashboardStars();
                     updateDashboardStats();
+                    // Hide again after render (in case loadData made it visible)
+                    if (dashBtn) dashBtn.style.display = 'none';
+                    if (mainDashBtn) mainDashBtn.style.display = 'none';
                 }
             }, 800);
         }
