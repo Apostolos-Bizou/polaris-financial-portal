@@ -1846,7 +1846,7 @@
     </footer>
     
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxBnEkHdzvxby_W1RuLpkFtlQ6GScMyF8wqap9v1BhvuncSx0SxAsAG9F11_IYvDYX6/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbye9XIpC0VLyBLftcN3ew5nw7BvbKd19-_JCR-xfKWEtjbvWYJqdvOSjfoaruI7ixp6/exec';
         let currentUser = null, charts = {};
         let companiesList = [];  // List of parent + subsidiaries
         let selectedCompanyId = null;  // Currently selected company
@@ -4407,8 +4407,7 @@
                     console.log(`✅ v16 COMPARE: ${selectedQuarters.join('+')} → cumulative Q1→${lastQ}`, cumulResult.data?.kpis?.total_claims, 'claims');
                     
                 } else {
-                    // SINGLE PERIOD: load each quarter with startDate/endDate (same as admin)
-                    // Admin approach: one call per quarter with exact date range → no subtraction needed
+                    // SINGLE PERIOD: load all 4 quarters (API returns YTD per Q, we subtract to get standalone)
                     const promises = allQuarters.map(q => {
                         const range = getQuarterDateRange(q, year);
                         const params = new URLSearchParams({
@@ -4417,12 +4416,13 @@
                             quarter: q,
                             year: year,
                             startDate: range.start,
-                            endDate: range.end
+                            endDate: range.end,
+                            cumulative: 'false'
                         });
                         return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).then(d => ({ quarter: q, data: d })).catch(() => ({ quarter: q, data: null }));
                     });
                     results = await Promise.all(promises);
-                    console.log(`✅ v27 SINGLE: all 4 quarters loaded with date ranges (admin method), showing ${activeQ}`);
+                    console.log(`✅ v27 SINGLE: quarters with daterange+cumulative=false, showing ${activeQ}`);
                 }
                 
                 // Build YTD data from API results
@@ -4452,17 +4452,21 @@
                 // Save raw YTD map for compare mode (needs YTD totals not standalone)
                 window.lastYtdMap = ytdMap;
                 
-                // v27: Each quarter loaded with exact date range (admin method)
-                // API returns standalone values per quarter - NO subtraction needed
+                // Compute STANDALONE values by subtracting previous Q YTD
+                // API returns YTD per quarter: Q2_ytd = Q1+Q2, so Q2_standalone = Q2_ytd - Q1_ytd
                 const periodsData = allQs.filter(q => ytdMap[q]).map((q, idx) => {
                     const ytd = ytdMap[q];
+                    const prevQ = idx > 0 ? allQs[idx-1] : null;
+                    const prevYtd = prevQ && ytdMap[prevQ] ? ytdMap[prevQ] : null;
                     const standalone = {
                         period_label: `${q} ${year}`,
                         quarter: q,
                         cumulative: false,
+                        // Members = snapshot (not cumulative) - use as-is
                         members: ytd.members,
                         principal_members: ytd.principal_members,
                         dependent_members: ytd.dependent_members,
+                        // v27: standalone values direct from API (no subtraction)
                         claims: ytd.claims,
                         approved_usd: ytd.approved_usd,
                         total_fees: ytd.total_fees,
@@ -4472,6 +4476,7 @@
                         new_enrollments: ytd.new_enrollments,
                         cancellations: ytd.cancellations,
                         net_change: ytd.net_change,
+                        // Store YTD for cumulative mode
                         ytd_claims: ytd.claims,
                         ytd_approved_usd: ytd.approved_usd,
                         ytd_inpatient: ytd.inpatient_cases,
