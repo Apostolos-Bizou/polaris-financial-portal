@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polaris Financial Services - Client Portal</title>
-    <!-- VERSION: 2026-02-09-v11 - Fixed API to use getFinancialData which returns proper data array -->
+    <!-- VERSION: 2026-02-17-v24 - Fix: Claims Trend chart now populated with cumulative claims line. -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1126,7 +1126,7 @@
             <div class="welcome-message">YOUR KPIs are on track</div>
             <div class="welcome-team">POLARIS TEAM</div>
             <div class="welcome-tagline">
-                <span>Fast</span>â€¢<span>Fair</span>â€¢<span>Flexible</span>
+                <span>Fast</span>•<span>Fair</span>•<span>Flexible</span>
             </div>
         </div>
         
@@ -1186,7 +1186,7 @@
     <header class="header" id="mainHeader" style="display:none">
         <div class="header-content">
             <div class="logo-section">
-                <div class="polaris-star">âœ¦</div>
+                <div class="polaris-star">✦</div>
                 <span class="polaris-text">POLARIS</span>
                 <span class="portal-badge">CLIENT PORTAL</span>
             </div>
@@ -1198,10 +1198,10 @@
                     </select>
                 </div>
                 <button onclick="openReportBuilder()" class="reports-btn">
-                    <span>ðŸ“Š</span> Reports
+                    <span>📊</span> Reports
                 </button>
                 <a href="#" id="activeMembersBtn" class="active-members-btn" onclick="openActiveMembers()">
-                    <span>ðŸ‘¥</span> Active Members
+                    <span>👥</span> Active Members
                 </a>
                 <div class="client-badge">
                     <div class="client-avatar" id="clientAvatar">U</div>
@@ -1214,7 +1214,7 @@
     
     <main class="main-content" id="mainContent" style="display:none">
         <div class="page-header">
-            <h1 class="page-title">ðŸ“Š Healthcare Analytics Dashboard</h1>
+            <h1 class="page-title">📊 Healthcare Analytics Dashboard</h1>
             <p class="page-subtitle">
                 <span id="pageCompanyName" style="color: var(--polaris-gold); font-weight: 600;"></span>
                 <span class="period-badge" id="periodBadge">Q3 2025</span>
@@ -1224,7 +1224,7 @@
         <!-- Quarter Selector Bar -->
         <div class="quarter-selector-bar">
             <div class="quarter-selector-left">
-                <span class="quarter-label">ðŸ“… Select Period:</span>
+                <span class="quarter-label">📅 Select Period:</span>
                 <div class="quarter-buttons">
                     <button class="quarter-btn active" data-quarter="Q1" onclick="toggleQuarter('Q1')">Q1</button>
                     <button class="quarter-btn" data-quarter="Q2" onclick="toggleQuarter('Q2')">Q2</button>
@@ -1239,10 +1239,10 @@
             </div>
             <div class="quarter-selector-right">
                 <button class="quarter-compare-btn" id="cumulativeToggleBtn" onclick="toggleCumulativeMode()" style="background: linear-gradient(135deg, #1a4a3a, #2d6a5a); border-color: #4CAF50;">
-                    <span>ðŸ“Š</span> <span id="cumulativeBtnText">Single Period</span>
+                    <span>📊</span> <span id="cumulativeBtnText">Single Period</span>
                 </button>
                 <button class="quarter-compare-btn" id="quarterCompareBtn" onclick="toggleQuarterCompare()">
-                    <span>âš–ï¸</span> Compare Quarters
+                    <span>⚖️</span> Compare Quarters
                 </button>
                 <span class="selected-quarters-badge" id="selectedQuartersBadge">Q1 2025</span>
             </div>
@@ -1252,54 +1252,54 @@
             <div class="kpi-grid" style="grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1.5rem;">
                 <div class="kpi-card" style="background: linear-gradient(135deg, #0D1F0D 0%, #1a3a1a 50%, #0D1F0D 100%); border: 3px solid #4CAF50; box-shadow: 0 0 40px rgba(76,175,80,0.3), inset 0 1px 0 rgba(255,255,255,0.1); position:relative; overflow:hidden;">
                     <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:radial-gradient(circle, rgba(76,175,80,0.15) 0%, transparent 70%);"></div>
-                    <div class="kpi-icon" style="font-size:2.5rem">ðŸ’°</div>
+                    <div class="kpi-icon" style="font-size:2.5rem">💰</div>
                     <div class="kpi-label" style="color: #81C784; font-size:1.2rem; font-weight:700; text-transform:uppercase; letter-spacing:2px;">Cost per Member</div>
                     <div class="kpi-value" id="kpiCostPerMember" style="font-size: 4.5rem; color: #4CAF50; text-shadow: 0 0 40px rgba(76,175,80,0.7), 0 4px 20px rgba(0,0,0,0.4); font-weight:800; letter-spacing:-3px; line-height:1;">$0.00</div>
                     <div class="kpi-trend" style="background:rgba(76,175,80,0.25);color:#A5D6A7;font-weight:600;font-size:0.95rem;padding:0.5rem 1rem;border-radius:20px;margin-top:0.5rem">Per Member / Period</div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon">ðŸ‘¥</div>
-                    <div class="kpi-label">Total Members</div>
-                    <div class="kpi-value" id="kpiMembers">-</div>
-                    <div class="kpi-trend" id="kpiMembersTrend">-</div>
+                <div class="kpi-card" style="border:2px solid rgba(212,175,55,0.4);background:linear-gradient(135deg,#1a1a0d,#2a2a1a);">
+                    <div class="kpi-icon" style="font-size:1.8rem">👥</div>
+                    <div class="kpi-label" style="color:#D4AF37;font-weight:700;letter-spacing:1px;">Total Members</div>
+                    <div class="kpi-value" id="kpiMembers" style="font-size:2.8rem;font-weight:800;color:#fff;">-</div>
+                    <div class="kpi-trend" id="kpiMembersTrend" style="font-size:0.9rem;">-</div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon">ðŸ“‹</div>
-                    <div class="kpi-label">Total Claims</div>
-                    <div class="kpi-value" id="kpiClaims">-</div>
-                    <div class="kpi-trend" id="kpiClaimsTrend">-</div>
+                <div class="kpi-card" style="border:2px solid rgba(52,152,219,0.4);background:linear-gradient(135deg,#0d1a22,#1a2a35);">
+                    <div class="kpi-icon" style="font-size:1.8rem">📋</div>
+                    <div class="kpi-label" style="color:#5dade2;font-weight:700;letter-spacing:1px;">Total Claims</div>
+                    <div class="kpi-value" id="kpiClaims" style="font-size:2.8rem;font-weight:800;color:#fff;">-</div>
+                    <div class="kpi-trend" id="kpiClaimsTrend" style="font-size:0.9rem;">-</div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon">ðŸŽ¯</div>
-                    <div class="kpi-label">Utilization Rate</div>
-                    <div class="kpi-value" id="kpiUtilization">-</div>
-                    <div class="kpi-trend" style="background:rgba(255,255,255,0.1);color:var(--text-secondary)">Target: 15%</div>
+                <div class="kpi-card" style="border:2px solid rgba(231,76,60,0.4);background:linear-gradient(135deg,#220d0d,#351a1a);">
+                    <div class="kpi-icon" style="font-size:1.8rem">🎯</div>
+                    <div class="kpi-label" style="color:#e74c3c;font-weight:700;letter-spacing:1px;">Utilization Rate</div>
+                    <div class="kpi-value" id="kpiUtilization" style="font-size:2.8rem;font-weight:800;color:#fff;">-</div>
+                    <div class="kpi-trend" style="background:rgba(231,76,60,0.15);color:#e74c3c;font-weight:600;padding:0.4rem 0.8rem;border-radius:15px;">Target: 15%</div>
                 </div>
             </div>
         </section>
         
         <!-- INPATIENT vs OUTPATIENT Section - TOP PRIORITY -->
         <section class="section">
-            <h2 class="section-title">ðŸ¥ Inpatient vs Outpatient Analysis</h2>
+            <h2 class="section-title">🏥 Inpatient vs Outpatient Analysis</h2>
             <div class="chart-grid">
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“Š Cases Distribution</h3>
+                        <h3 class="chart-title">📊 Cases Distribution</h3>
                         <span class="chart-badge">Current Period</span>
                     </div>
                     <div class="stats-mini-grid" style="margin-bottom:1rem; grid-template-columns: repeat(3, 1fr);">
                         <div class="stat-mini" style="border-left:4px solid #e74c3c">
-                            <div class="stat-mini-icon">ðŸ¨</div>
+                            <div class="stat-mini-icon">🏨</div>
                             <div class="stat-mini-value" id="inpatientCases">-</div>
                             <div class="stat-mini-label">Inpatient Cases</div>
                         </div>
                         <div class="stat-mini" style="border-left:4px solid #3498db">
-                            <div class="stat-mini-icon">ðŸƒ</div>
+                            <div class="stat-mini-icon">🏃</div>
                             <div class="stat-mini-value" id="outpatientCases">-</div>
                             <div class="stat-mini-label">Outpatient Cases</div>
                         </div>
                         <div class="stat-mini" style="border-left:4px solid #D4AF37">
-                            <div class="stat-mini-icon">ðŸŽ</div>
+                            <div class="stat-mini-icon">🎁</div>
                             <div class="stat-mini-value" id="exGratiaCases">-</div>
                             <div class="stat-mini-label">Ex Gratia Cases</div>
                         </div>
@@ -1308,7 +1308,7 @@
                 </div>
                 <div class="chart-card wide">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“ˆ Inpatient vs Outpatient Trend</h3>
+                        <h3 class="chart-title">📈 Inpatient vs Outpatient Trend</h3>
                     </div>
                     <div class="chart-container"><canvas id="inOutTrendChart"></canvas></div>
                 </div>
@@ -1317,20 +1317,20 @@
 
         <!-- PRINCIPAL vs DEPENDENT Section -->
         <section class="section">
-            <h2 class="section-title">ðŸ‘¥ Principal vs Dependent Analysis</h2>
+            <h2 class="section-title">👥 Principal vs Dependent Analysis</h2>
             <div class="chart-grid">
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ‘¤ Member Type Distribution</h3>
+                        <h3 class="chart-title">👤 Member Type Distribution</h3>
                     </div>
                     <div class="stats-mini-grid" style="margin-bottom:1rem">
                         <div class="stat-mini" style="border-left:4px solid #2E7D32">
-                            <div class="stat-mini-icon">âš“</div>
+                            <div class="stat-mini-icon">⚓</div>
                             <div class="stat-mini-value" id="principalCount">-</div>
                             <div class="stat-mini-label">Seafarers (Principal)</div>
                         </div>
                         <div class="stat-mini" style="border-left:4px solid #D4AF37">
-                            <div class="stat-mini-icon">ðŸ‘¨â€ðŸ‘©â€ðŸ‘§</div>
+                            <div class="stat-mini-icon">👨‍👩‍👧</div>
                             <div class="stat-mini-value" id="dependentCount">-</div>
                             <div class="stat-mini-label">Dependents</div>
                         </div>
@@ -1339,16 +1339,16 @@
                 </div>
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“Š Claims by Member Type</h3>
+                        <h3 class="chart-title">📊 Claims by Member Type</h3>
                     </div>
                     <div class="stats-mini-grid" style="margin-bottom:1rem">
                         <div class="stat-mini" style="border-left:4px solid #2E7D32">
-                            <div class="stat-mini-icon">âš“</div>
+                            <div class="stat-mini-icon">⚓</div>
                             <div class="stat-mini-value" id="principalClaims">-</div>
                             <div class="stat-mini-label">Seafarer Claims</div>
                         </div>
                         <div class="stat-mini" style="border-left:4px solid #D4AF37">
-                            <div class="stat-mini-icon">ðŸ‘¨â€ðŸ‘©â€ðŸ‘§</div>
+                            <div class="stat-mini-icon">👨‍👩‍👧</div>
                             <div class="stat-mini-value" id="dependentClaims">-</div>
                             <div class="stat-mini-label">Dependent Claims</div>
                         </div>
@@ -1360,11 +1360,11 @@
 
         <!-- MEMBER MOVEMENT Section -->
         <section class="section">
-            <h2 class="section-title">ðŸ“ˆ Member Movement</h2>
+            <h2 class="section-title">📈 Member Movement</h2>
             <div class="chart-grid">
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“Š Movement Summary</h3>
+                        <h3 class="chart-title">📊 Movement Summary</h3>
                         <span class="chart-badge">Current Period</span>
                     </div>
                     <div class="stats-mini-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom:1rem;">
@@ -1385,7 +1385,7 @@
                 </div>
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“ˆ Movement Trend</h3>
+                        <h3 class="chart-title">📈 Movement Trend</h3>
                         <span class="chart-badge">Quarterly</span>
                     </div>
                     <div class="chart-container"><canvas id="movementTrendChart"></canvas></div>
@@ -1394,7 +1394,7 @@
             <div class="chart-grid" style="grid-template-columns: 1fr; margin-top: 1.25rem;">
                 <div class="chart-card wide">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“‰ Enrollment vs Cancellation Trend</h3>
+                        <h3 class="chart-title">📉 Enrollment vs Cancellation Trend</h3>
                         <span class="chart-badge">All Periods</span>
                     </div>
                     <div class="chart-container" style="height: 300px;"><canvas id="movementFullTrendChart"></canvas></div>
@@ -1404,11 +1404,11 @@
 
         <!-- CLAIMS BY CATEGORY Section -->
         <section class="section">
-            <h2 class="section-title">ðŸ“Š Claims by Category</h2>
+            <h2 class="section-title">📊 Claims by Category</h2>
             <div class="chart-grid">
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ¥ Category Distribution</h3>
+                        <h3 class="chart-title">🏥 Category Distribution</h3>
                         <span class="chart-badge">Current Period</span>
                     </div>
                     <div class="stats-mini-grid" style="margin-bottom:1rem; grid-template-columns: repeat(6, 1fr);">
@@ -1441,7 +1441,7 @@
                 </div>
                 <div class="chart-card wide">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“ˆ Category Trend</h3>
+                        <h3 class="chart-title">📈 Category Trend</h3>
                     </div>
                     <div class="chart-container"><canvas id="categoryTrendChart"></canvas></div>
                 </div>
@@ -1450,11 +1450,11 @@
 
         <!-- YEAR-OVER-YEAR COMPARISON Section -->
         <section class="section">
-            <h2 class="section-title">ðŸ“ˆ Year-over-Year Comparison</h2>
+            <h2 class="section-title">📈 Year-over-Year Comparison</h2>
             <div class="chart-grid">
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“Š Annual Claims Comparison</h3>
+                        <h3 class="chart-title">📊 Annual Claims Comparison</h3>
                     </div>
                     <div class="stats-mini-grid" style="margin-bottom:1rem;">
                         <div class="stat-mini" style="border-left:4px solid #D4AF37;">
@@ -1470,95 +1470,59 @@
                 </div>
                 <div class="chart-card wide">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“ˆ Monthly YoY Trend</h3>
-                        <span class="chart-badge">2025 vs 2024</span>
+                        <h3 class="chart-title">💊 Annual Performance Summary</h3>
+                        <span class="chart-badge">2025 YTD</span>
                     </div>
-                    <div class="yoy-summary" style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1rem;">
-                        <div style="text-align:center;padding:1rem;background:rgba(76,175,80,0.1);border-radius:10px;">
-                            <div style="font-size:0.95rem;color:var(--text-muted)">Claims Change</div>
-                            <div style="font-size:1.8rem;font-weight:700;color:#4CAF50" id="yoyClaimsChange">+12%</div>
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1rem;">
+                        <div style="text-align:center;padding:1.2rem;background:rgba(76,175,80,0.1);border-radius:12px;border:1px solid rgba(76,175,80,0.2);">
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Total Approved (YTD)</div>
+                            <div style="font-size:1.6rem;font-weight:800;color:#4CAF50" id="ytdApproved">-</div>
                         </div>
-                        <div style="text-align:center;padding:1rem;background:rgba(52,152,219,0.1);border-radius:10px;">
-                            <div style="font-size:0.95rem;color:var(--text-muted)">Member Growth</div>
-                            <div style="font-size:1.8rem;font-weight:700;color:#3498db" id="yoyMemberChange">+15%</div>
+                        <div style="text-align:center;padding:1.2rem;background:rgba(52,152,219,0.1);border-radius:12px;border:1px solid rgba(52,152,219,0.2);">
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Avg Cost/Member (YTD)</div>
+                            <div style="font-size:1.6rem;font-weight:800;color:#5dade2" id="ytdCPM">-</div>
+                        </div>
+                        <div style="text-align:center;padding:1.2rem;background:rgba(212,175,55,0.1);border-radius:12px;border:1px solid rgba(212,175,55,0.2);">
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Total Inpatient (YTD)</div>
+                            <div style="font-size:1.6rem;font-weight:800;color:#D4AF37" id="ytdInpatient">-</div>
+                        </div>
+                        <div style="text-align:center;padding:1.2rem;background:rgba(231,76,60,0.1);border-radius:12px;border:1px solid rgba(231,76,60,0.2);">
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.3rem;">Utilization Rate (YTD)</div>
+                            <div style="font-size:1.6rem;font-weight:800;color:#e74c3c" id="ytdUtil">-</div>
                         </div>
                     </div>
-                    <div class="chart-container"><canvas id="yoyTrendChart"></canvas></div>
+                    <div style="padding:1rem;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.08);">
+                        <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.8rem;">Claims Distribution (YTD)</div>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;">
+                            <div style="text-align:center;"><div style="font-size:0.75rem;color:#e74c3c;">Inpatient</div><div style="font-weight:700;color:#fff" id="ytdInpPct">-</div></div>
+                            <div style="text-align:center;"><div style="font-size:0.75rem;color:#5dade2;">Outpatient</div><div style="font-weight:700;color:#fff" id="ytdOutPct">-</div></div>
+                            <div style="text-align:center;"><div style="font-size:0.75rem;color:#D4AF37;">Ex Gratia</div><div style="font-weight:700;color:#fff" id="ytdExgPct">-</div></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- TOP HOSPITALS/PROVIDERS Section -->
         <section class="section">
-            <h2 class="section-title">ðŸ¥ Top Hospitals & Providers</h2>
-            <div class="chart-grid">
-                <div class="chart-card wide">
-                    <div class="chart-header">
-                        <h3 class="chart-title">ðŸ† Top 10 by Claims</h3>
-                        <span class="chart-badge">Current Period</span>
-                    </div>
-                    <div class="chart-container tall"><canvas id="topHospitalsChart"></canvas></div>
-                </div>
-                <div class="chart-card wide">
-                    <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“‹ Hospital Details</h3>
-                    </div>
-                    <div class="table-wrapper">
-                        <table class="data-table" id="hospitalsTable">
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Hospital/Provider</th>
-                                    <th>Claims</th>
-                                    <th>% of Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="hospitalsTableBody">
-                            </tbody>
-                        </table>
-                    </div>
+            <h2 class="section-title">🏥 Top Hospitals & Providers</h2>
+            <div style="display:flex;align-items:center;justify-content:center;padding:3rem 2rem;background:rgba(30,58,30,0.3);border-radius:12px;border:1px dashed rgba(212,175,55,0.3);text-align:center;">
+                <div>
+                    <div style="font-size:3rem;margin-bottom:1rem;">🏗️</div>
+                    <div style="font-size:1.2rem;font-weight:700;color:#D4AF37;margin-bottom:0.5rem;">Coming Soon</div>
+                    <div style="color:var(--text-muted);font-size:0.9rem;">Hospital & Provider data will be available in a future update.</div>
                 </div>
             </div>
         </section>
 
         <!-- GEOGRAPHIC DISTRIBUTION Section -->
         <section class="section">
-            <h2 class="section-title">ðŸŒ Geographic Distribution</h2>
-            <div class="chart-grid">
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“ Claims by Region</h3>
-                        <span class="chart-badge">Philippines</span>
-                    </div>
-                    <div class="chart-container"><canvas id="geoRegionChart"></canvas></div>
-                </div>
-                <div class="chart-card wide">
-                    <div class="chart-header">
-                        <h3 class="chart-title">ðŸ™ï¸ Top Cities by Claims</h3>
-                    </div>
-                    <div class="stats-mini-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom:1rem;">
-                        <div class="stat-mini" style="border-left:4px solid #4CAF50;">
-                            <div style="font-size:1.8rem;font-weight:700;color:#4CAF50" id="geoManila">-</div>
-                            <div style="font-size:0.9rem;color:var(--text-muted)">Metro Manila</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #2196F3;">
-                            <div style="font-size:1.8rem;font-weight:700;color:#2196F3" id="geoCebu">-</div>
-                            <div style="font-size:0.9rem;color:var(--text-muted)">Cebu</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #FF9800;">
-                            <div style="font-size:1.8rem;font-weight:700;color:#FF9800" id="geoDavao">-</div>
-                            <div style="font-size:0.9rem;color:var(--text-muted)">Davao</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #D4AF37;">
-                            <div style="font-size:1.8rem;font-weight:700;color:#D4AF37" id="geoIloilo">-</div>
-                            <div style="font-size:0.9rem;color:var(--text-muted)">Iloilo</div>
-                        </div>
-                        <div class="stat-mini" style="border-left:4px solid #607D8B;">
-                            <div style="font-size:1.8rem;font-weight:700;color:#607D8B" id="geoOther">-</div>
-                            <div style="font-size:0.9rem;color:var(--text-muted)">Other</div>
-                        </div>
-                    </div>
-                    <div class="chart-container"><canvas id="geoCitiesChart"></canvas></div>
+            <h2 class="section-title">🌍 Geographic Distribution</h2>
+            <div style="display:flex;align-items:center;justify-content:center;padding:3rem 2rem;background:rgba(30,58,30,0.3);border-radius:12px;border:1px dashed rgba(212,175,55,0.3);text-align:center;">
+                <div>
+                    <div style="font-size:3rem;margin-bottom:1rem;">🏗️</div>
+                    <div style="font-size:1.2rem;font-weight:700;color:#D4AF37;margin-bottom:0.5rem;">Coming Soon</div>
+                    <div style="color:var(--text-muted);font-size:0.9rem;">Geographic distribution data will be available in a future update.</div>
                 </div>
             </div>
         </section>
@@ -1566,7 +1530,7 @@
         <section class="section">
             <div class="comparison-banner">
                 <div class="comparison-header">
-                    <h2 class="section-title" style="margin:0">ðŸ“Š Period Comparison</h2>
+                    <h2 class="section-title" style="margin:0">📊 Period Comparison</h2>
                     <span class="period-badge" id="cmpPeriodLabel">Q3 vs Q2 2025</span>
                 </div>
                 <div class="comparison-grid">
@@ -1591,43 +1555,43 @@
         </section>
         
         <section class="section">
-            <h2 class="section-title">ðŸ“‹ Claims Analysis</h2>
+            <h2 class="section-title">📋 Claims Analysis</h2>
             <div class="chart-grid three">
                 <div class="chart-card">
-                    <div class="chart-header"><h3 class="chart-title">ðŸ“Š Claims by Period</h3></div>
+                    <div class="chart-header"><h3 class="chart-title">📊 Claims by Period</h3></div>
                     <div class="chart-container"><canvas id="claimsPeriodChart"></canvas></div>
                 </div>
                 <div class="chart-card">
-                    <div class="chart-header"><h3 class="chart-title">ðŸ¥ Claims per 1000</h3></div>
+                    <div class="chart-header"><h3 class="chart-title">🏥 Claims per 1000</h3></div>
                     <div class="chart-container"><canvas id="claims1000Chart"></canvas></div>
                 </div>
                 <div class="chart-card">
-                    <div class="chart-header"><h3 class="chart-title">ðŸ“ˆ Claims Trend</h3></div>
+                    <div class="chart-header"><h3 class="chart-title">📈 Claims Trend</h3></div>
                     <div class="chart-container"><canvas id="claimsTrendChart"></canvas></div>
                 </div>
             </div>
         </section>
         
         <section class="section">
-            <h2 class="section-title">ðŸ† Plan Performance</h2>
+            <h2 class="section-title">🏆 Plan Performance</h2>
             <div class="stats-mini-grid" style="margin-bottom:1.5rem">
                 <div class="stat-mini">
-                    <div class="stat-mini-icon">ðŸ¥‡</div>
+                    <div class="stat-mini-icon">🥇</div>
                     <div class="stat-mini-value" id="goldMembers">60%</div>
                     <div class="stat-mini-label">Gold Members</div>
                 </div>
                 <div class="stat-mini">
-                    <div class="stat-mini-icon">ðŸ’Ž</div>
+                    <div class="stat-mini-icon">💎</div>
                     <div class="stat-mini-value" id="platMembers">25%</div>
                     <div class="stat-mini-label">Platinum</div>
                 </div>
                 <div class="stat-mini">
-                    <div class="stat-mini-icon">ðŸ¥ˆ</div>
+                    <div class="stat-mini-icon">🥈</div>
                     <div class="stat-mini-value" id="silverMembers">15%</div>
                     <div class="stat-mini-label">Silver</div>
                 </div>
                 <div class="stat-mini">
-                    <div class="stat-mini-icon">ðŸ“Š</div>
+                    <div class="stat-mini-icon">📊</div>
                     <div class="stat-mini-value" id="totalActive">-</div>
                     <div class="stat-mini-label">Total Active</div>
                 </div>
@@ -1635,7 +1599,7 @@
             <div class="chart-grid">
                 <div class="chart-card wide">
                     <div class="chart-header">
-                        <h3 class="chart-title">ðŸ“Š Member Distribution by Plan</h3>
+                        <h3 class="chart-title">📊 Member Distribution by Plan</h3>
                         <span class="chart-badge">Current Period</span>
                     </div>
                     <div class="chart-container"><canvas id="planPieChart"></canvas></div>
@@ -1644,14 +1608,14 @@
         </section>
         
         <section class="section">
-            <h2 class="section-title">ðŸ“ˆ Utilization Metrics</h2>
+            <h2 class="section-title">📈 Utilization Metrics</h2>
             <div class="chart-grid three">
                 <div class="chart-card">
-                    <div class="chart-header"><h3 class="chart-title">ðŸ“Š Utilization Trend</h3></div>
+                    <div class="chart-header"><h3 class="chart-title">📊 Utilization Trend</h3></div>
                     <div class="chart-container"><canvas id="utilizationChart"></canvas></div>
                 </div>
                 <div class="chart-card">
-                    <div class="chart-header"><h3 class="chart-title">ðŸ¥ Key Metrics</h3></div>
+                    <div class="chart-header"><h3 class="chart-title">🏥 Key Metrics</h3></div>
                     <div style="padding:1rem 0">
                         <div class="progress-item">
                             <div class="progress-header">
@@ -1670,7 +1634,7 @@
                     </div>
                 </div>
                 <div class="chart-card">
-                    <div class="chart-header"><h3 class="chart-title">ðŸ’¡ AI Insights</h3></div>
+                    <div class="chart-header"><h3 class="chart-title">💡 AI Insights</h3></div>
                     <div class="insights-list" id="insightsList"></div>
                 </div>
             </div>
@@ -1679,7 +1643,7 @@
         <section class="section">
             <div class="data-table-container">
                 <div class="table-header">
-                    <h3 class="section-title" style="margin:0">ðŸ“… Historical Data</h3>
+                    <h3 class="section-title" style="margin:0">📅 Historical Data</h3>
                     <input type="text" class="table-search" placeholder="Search..." id="tableSearch">
                 </div>
                 <div class="table-wrapper">
@@ -1700,20 +1664,20 @@
     <div class="report-builder-modal hidden" id="reportBuilderModal">
         <div class="report-builder-box">
             <div class="rb-header" style="position:relative">
-                <h2>ðŸ“Š Report Builder</h2>
-                <p>Î”Î·Î¼Î¹Î¿Ï…ÏÎ³Î®ÏƒÏ„Îµ Ï€ÏÎ¿ÏƒÎ±ÏÎ¼Î¿ÏƒÎ¼Î­Î½ÎµÏ‚ Î±Î½Î±Ï†Î¿ÏÎ­Ï‚</p>
-                <button class="rb-close" onclick="closeReportBuilder()">âœ•</button>
+                <h2>📊 Report Builder</h2>
+                <p>Δημιουργήστε προσαρμοσμένες αναφορές</p>
+                <button class="rb-close" onclick="closeReportBuilder()">✕</button>
             </div>
             
             <div class="rb-content">
                 <!-- Period Selection -->
                 <div class="rb-section">
-                    <div class="rb-section-title">ðŸ“… Î§ÏÎ¿Î½Î¹ÎºÎ® Î ÎµÏÎ¯Î¿Î´Î¿Ï‚</div>
+                    <div class="rb-section-title">📅 Χρονική Περίοδος</div>
                     <div class="rb-period-grid">
                         <div class="rb-select-group">
-                            <label>Î‘Ï€ÏŒ</label>
+                            <label>Από</label>
                             <select class="rb-select" id="rbFromPeriod">
-                                <option value="">Î•Ï€Î¹Î»Î­Î¾Ï„Îµ Ï€ÎµÏÎ¯Î¿Î´Î¿</option>
+                                <option value="">Επιλέξτε περίοδο</option>
                                 <option value="2025-Q1">Q1 2025</option>
                                 <option value="2025-Q2">Q2 2025</option>
                                 <option value="2025-Q3" selected>Q3 2025</option>
@@ -1721,9 +1685,9 @@
                             </select>
                         </div>
                         <div class="rb-select-group">
-                            <label>ÎˆÏ‰Ï‚</label>
+                            <label>Έως</label>
                             <select class="rb-select" id="rbToPeriod">
-                                <option value="">Î•Ï€Î¹Î»Î­Î¾Ï„Îµ Ï€ÎµÏÎ¯Î¿Î´Î¿</option>
+                                <option value="">Επιλέξτε περίοδο</option>
                                 <option value="2025-Q1">Q1 2025</option>
                                 <option value="2025-Q2">Q2 2025</option>
                                 <option value="2025-Q3" selected>Q3 2025</option>
@@ -1735,112 +1699,112 @@
                 
                 <!-- Quick Templates -->
                 <div class="rb-section">
-                    <div class="rb-section-title">âš¡ Î“ÏÎ®Î³Î¿ÏÎ± Î ÏÏŒÏ„Ï…Ï€Î±</div>
+                    <div class="rb-section-title">⚡ Γρήγορα Πρότυπα</div>
                     <div class="rb-templates">
                         <div class="rb-template-btn" onclick="selectTemplate('board')">
-                            <span>ðŸŽ¯</span>
+                            <span>🎯</span>
                             <div>Board Meeting</div>
                         </div>
                         <div class="rb-template-btn" onclick="selectTemplate('monthly')">
-                            <span>ðŸ“ˆ</span>
-                            <div>ÎœÎ·Î½Î¹Î±Î¯Î± Î‘Î½Î±ÏƒÎºÏŒÏ€Î·ÏƒÎ·</div>
+                            <span>📈</span>
+                            <div>Μηνιαία Ανασκόπηση</div>
                         </div>
                         <div class="rb-template-btn" onclick="selectTemplate('executive')">
-                            <span>âš¡</span>
+                            <span>⚡</span>
                             <div>Executive Summary</div>
                         </div>
                         <div class="rb-template-btn" onclick="selectTemplate('full')">
-                            <span>ðŸ“Š</span>
-                            <div>Î Î»Î®ÏÎ·Ï‚ Î‘Î½Î±Ï†Î¿ÏÎ¬</div>
+                            <span>📊</span>
+                            <div>Πλήρης Αναφορά</div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Report Sections -->
                 <div class="rb-section">
-                    <div class="rb-section-title">ðŸ“‹ Î•Î½ÏŒÏ„Î·Ï„ÎµÏ‚ Î‘Î½Î±Ï†Î¿ÏÎ¬Ï‚</div>
+                    <div class="rb-section-title">📋 Ενότητες Αναφοράς</div>
                     <div class="rb-sections-list">
                         <label class="rb-section-item selected">
                             <input type="checkbox" id="sec_executive" checked>
                             <div class="rb-section-item-content">
                                 <div class="rb-section-item-title">Executive Summary</div>
-                                <div class="rb-section-item-desc">Î£Ï…Î½Î¿Ï€Ï„Î¹ÎºÎ® Ï€Î±ÏÎ¿Ï…ÏƒÎ¯Î±ÏƒÎ· KPIs</div>
+                                <div class="rb-section-item-desc">Συνοπτική παρουσίαση KPIs</div>
                             </div>
-                            <span class="rb-section-item-badge">1 ÏƒÎµÎ»Î¯Î´Î±</span>
+                            <span class="rb-section-item-badge">1 σελίδα</span>
                         </label>
                         <label class="rb-section-item selected">
                             <input type="checkbox" id="sec_inout" checked>
                             <div class="rb-section-item-content">
-                                <div class="rb-section-item-title">ðŸ¥ Inpatient vs Outpatient</div>
-                                <div class="rb-section-item-desc">Î‘Î½Î¬Î»Ï…ÏƒÎ· Ï€ÎµÏÎ¹ÏƒÏ„Î±Ï„Î¹ÎºÏŽÎ½ ÎºÎ±Î¹ ÎºÏŒÏƒÏ„Î¿Ï…Ï‚</div>
+                                <div class="rb-section-item-title">🏥 Inpatient vs Outpatient</div>
+                                <div class="rb-section-item-desc">Ανάλυση περιστατικών και κόστους</div>
                             </div>
-                            <span class="rb-section-item-badge">1 ÏƒÎµÎ»Î¯Î´Î±</span>
+                            <span class="rb-section-item-badge">1 σελίδα</span>
                         </label>
                         <label class="rb-section-item selected">
                             <input type="checkbox" id="sec_claims" checked>
                             <div class="rb-section-item-content">
-                                <div class="rb-section-item-title">ðŸ“‹ Claims Analysis</div>
-                                <div class="rb-section-item-desc">Î›ÎµÏ€Ï„Î¿Î¼ÎµÏÎ®Ï‚ Î±Î½Î¬Î»Ï…ÏƒÎ· Î±Î¾Î¹ÏŽÏƒÎµÏ‰Î½</div>
+                                <div class="rb-section-item-title">📋 Claims Analysis</div>
+                                <div class="rb-section-item-desc">Λεπτομερής ανάλυση αξιώσεων</div>
                             </div>
-                            <span class="rb-section-item-badge">1 ÏƒÎµÎ»Î¯Î´Î±</span>
+                            <span class="rb-section-item-badge">1 σελίδα</span>
                         </label>
                         <label class="rb-section-item">
                             <input type="checkbox" id="sec_members">
                             <div class="rb-section-item-content">
-                                <div class="rb-section-item-title">ðŸ‘¥ Principal vs Dependent</div>
-                                <div class="rb-section-item-desc">Î‘Î½Î¬Î»Ï…ÏƒÎ· Î½Î±Ï…Ï„Î¹ÎºÏŽÎ½ ÎºÎ±Î¹ ÎµÎ¾Î±ÏÏ„Ï‰Î¼Î­Î½Ï‰Î½</div>
+                                <div class="rb-section-item-title">👥 Principal vs Dependent</div>
+                                <div class="rb-section-item-desc">Ανάλυση ναυτικών και εξαρτωμένων</div>
                             </div>
-                            <span class="rb-section-item-badge">1 ÏƒÎµÎ»Î¯Î´Î±</span>
+                            <span class="rb-section-item-badge">1 σελίδα</span>
                         </label>
                         <label class="rb-section-item">
                             <input type="checkbox" id="sec_movement">
                             <div class="rb-section-item-content">
-                                <div class="rb-section-item-title">ðŸ“ˆ Member Movement</div>
-                                <div class="rb-section-item-desc">Î•Î³Î³ÏÎ±Ï†Î­Ï‚, Î±ÎºÏ…ÏÏŽÏƒÎµÎ¹Ï‚, Î¼ÎµÏ„Î±Î²Î¿Î»Î­Ï‚</div>
+                                <div class="rb-section-item-title">📈 Member Movement</div>
+                                <div class="rb-section-item-desc">Εγγραφές, ακυρώσεις, μεταβολές</div>
                             </div>
-                            <span class="rb-section-item-badge">1 ÏƒÎµÎ»Î¯Î´Î±</span>
+                            <span class="rb-section-item-badge">1 σελίδα</span>
                         </label>
                         <label class="rb-section-item">
                             <input type="checkbox" id="sec_plans">
                             <div class="rb-section-item-content">
-                                <div class="rb-section-item-title">ðŸ† Plan Performance</div>
-                                <div class="rb-section-item-desc">Î‘Ï€ÏŒÎ´Î¿ÏƒÎ· Î±Î½Î¬ Ï„ÏÏ€Î¿ Ï€Î»Î¬Î½Î¿Ï…</div>
+                                <div class="rb-section-item-title">🏆 Plan Performance</div>
+                                <div class="rb-section-item-desc">Απόδοση ανά τύπο πλάνου</div>
                             </div>
-                            <span class="rb-section-item-badge">1 ÏƒÎµÎ»Î¯Î´Î±</span>
+                            <span class="rb-section-item-badge">1 σελίδα</span>
                         </label>
                         <label class="rb-section-item">
                             <input type="checkbox" id="sec_history">
                             <div class="rb-section-item-content">
-                                <div class="rb-section-item-title">ðŸ“… Historical Data</div>
-                                <div class="rb-section-item-desc">Î™ÏƒÏ„Î¿ÏÎ¹ÎºÎ¬ Î´ÎµÎ´Î¿Î¼Î­Î½Î± ÏƒÎµ Ï€Î¯Î½Î±ÎºÎ±</div>
+                                <div class="rb-section-item-title">📅 Historical Data</div>
+                                <div class="rb-section-item-desc">Ιστορικά δεδομένα σε πίνακα</div>
                             </div>
-                            <span class="rb-section-item-badge">2-3 ÏƒÎµÎ»Î¯Î´ÎµÏ‚</span>
+                            <span class="rb-section-item-badge">2-3 σελίδες</span>
                         </label>
                         <label class="rb-section-item">
                             <input type="checkbox" id="sec_trends">
                             <div class="rb-section-item-content">
-                                <div class="rb-section-item-title">ðŸ“Š Trends & Charts</div>
-                                <div class="rb-section-item-desc">Î“ÏÎ±Ï†Î®Î¼Î±Ï„Î± ÎºÎ±Î¹ Ï„Î¬ÏƒÎµÎ¹Ï‚</div>
+                                <div class="rb-section-item-title">📊 Trends & Charts</div>
+                                <div class="rb-section-item-desc">Γραφήματα και τάσεις</div>
                             </div>
-                            <span class="rb-section-item-badge">2 ÏƒÎµÎ»Î¯Î´ÎµÏ‚</span>
+                            <span class="rb-section-item-badge">2 σελίδες</span>
                         </label>
                     </div>
                 </div>
                 
                 <!-- Export Format -->
                 <div class="rb-section">
-                    <div class="rb-section-title">ðŸŽ¨ ÎœÎ¿ÏÏ†Î® Î•Î¾Î±Î³Ï‰Î³Î®Ï‚</div>
+                    <div class="rb-section-title">🎨 Μορφή Εξαγωγής</div>
                     <div class="rb-formats">
                         <div class="rb-format-btn selected" onclick="selectFormat('pdf')" id="formatPdf">
-                            <span>ðŸ“„</span>
+                            <span>📄</span>
                             <div>PDF</div>
                         </div>
                         <div class="rb-format-btn" onclick="selectFormat('excel')" id="formatExcel">
-                            <span>ðŸ“Š</span>
+                            <span>📊</span>
                             <div>Excel</div>
                         </div>
                         <div class="rb-format-btn" onclick="selectFormat('both')" id="formatBoth">
-                            <span>ðŸ“¦</span>
+                            <span>📦</span>
                             <div>PDF + Excel</div>
                         </div>
                     </div>
@@ -1848,17 +1812,17 @@
                 
                 <!-- Info Box -->
                 <div class="rb-info-box">
-                    <span>ðŸ’¡</span>
+                    <span>💡</span>
                     <div>
-                        <strong>Î£Ï…Î¼Î²Î¿Ï…Î»Î®:</strong> Î•Ï€Î¹Î»Î­Î¾Ï„Îµ Î¼ÏŒÎ½Î¿ Ï„Î¹Ï‚ ÎµÎ½ÏŒÏ„Î·Ï„ÎµÏ‚ Ï€Î¿Ï… Ï‡ÏÎµÎ¹Î¬Î¶ÎµÏƒÏ„Îµ Î³Î¹Î± Ï€Î¹Î¿ Î³ÏÎ®Î³Î¿ÏÎ· Î´Î·Î¼Î¹Î¿Ï…ÏÎ³Î¯Î± Î±Î½Î±Ï†Î¿ÏÎ¬Ï‚.
+                        <strong>Συμβουλή:</strong> Επιλέξτε μόνο τις ενότητες που χρειάζεστε για πιο γρήγορη δημιουργία αναφοράς.
                     </div>
                 </div>
             </div>
             
             <div class="rb-footer">
-                <button class="rb-btn rb-btn-cancel" onclick="closeReportBuilder()">Î‘ÎºÏÏÏ‰ÏƒÎ·</button>
-                <button class="rb-btn rb-btn-preview" onclick="previewReport()">ðŸ” Î ÏÎ¿ÎµÏ€Î¹ÏƒÎºÏŒÏ€Î·ÏƒÎ·</button>
-                <button class="rb-btn rb-btn-generate" onclick="generateReport()">ðŸ“„ Î”Î·Î¼Î¹Î¿Ï…ÏÎ³Î¯Î± Î‘Î½Î±Ï†Î¿ÏÎ¬Ï‚</button>
+                <button class="rb-btn rb-btn-cancel" onclick="closeReportBuilder()">Ακύρωση</button>
+                <button class="rb-btn rb-btn-preview" onclick="previewReport()">🔍 Προεπισκόπηση</button>
+                <button class="rb-btn rb-btn-generate" onclick="generateReport()">📄 Δημιουργία Αναφοράς</button>
             </div>
         </div>
     </div>
@@ -1866,7 +1830,7 @@
     <!-- Report Generation Modal -->
     <div class="report-modal hidden" id="reportModal">
         <div class="report-box">
-            <div style="font-size:3rem;margin-bottom:1rem">ðŸ“„</div>
+            <div style="font-size:3rem;margin-bottom:1rem">📄</div>
             <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:0.5rem" id="reportTitle">Generating Report...</h3>
             <p style="color:var(--text-secondary);margin-bottom:1rem" id="reportStatus">Preparing your personalized report</p>
             <div class="report-progress">
@@ -1877,7 +1841,7 @@
     </div>
     
     <footer class="footer" id="mainFooter" style="display:none">
-        <p>Â© 2025 Polaris Financial Services. All rights reserved.</p>
+        <p>© 2025 Polaris Financial Services. All rights reserved.</p>
         <p style="margin-top:0.5rem">Last updated: <span id="lastUpdated">-</span></p>
     </footer>
     
@@ -1888,7 +1852,8 @@
         let selectedCompanyId = null;  // Currently selected company
         
         // Quarter selection state
-        let selectedQuarters = ['Q1']; // Default: Q1 selected
+        let selectedQuarters = ['Q4']; // Default: Q4 selected (latest period)
+        let _loadDataInProgress = false; // v16: prevent race conditions
         let quarterCompareMode = false;
         let cumulativeMode = false; // Toggle between single period and cumulative (YTD)
         let selectedYear = 2025; // Start with 2025
@@ -1921,12 +1886,10 @@
         // Change year function
         function changeYear(year) {
             selectedYear = parseInt(year);
-            console.log('ðŸ“… Year changed to:', selectedYear);
+            console.log('📅 Year changed to:', selectedYear);
             updateQuarterUI();
-            // Reload data
-            if (rawApiData) {
-                updateDashboard(rawApiData, selectedCompanyId);
-            }
+            // v14: Reload fresh data for new year
+            loadData(selectedCompanyId);
         }
         
         // Toggle single quarter
@@ -1948,10 +1911,8 @@
             
             updateQuarterUI();
             
-            // Reload data with new quarter filter
-            if (rawApiData) {
-                updateDashboard(rawApiData, selectedCompanyId);
-            }
+            // v16: reload API with new mode (cumulative needs different API call)
+            loadData(selectedCompanyId);
         }
         
         // Toggle cumulative mode (YTD)
@@ -1963,21 +1924,19 @@
             if (cumulativeMode) {
                 btn.style.background = 'linear-gradient(135deg, #2d6a5a, #4CAF50)';
                 btn.style.borderColor = '#6abf69';
-                btnText.textContent = 'ðŸ“ˆ Cumulative (YTD)';
-                console.log('ðŸ“ˆ Cumulative Mode ON: Showing YTD data');
+                btnText.textContent = '📈 Cumulative (YTD)';
+                console.log('📈 Cumulative Mode ON: Showing YTD data');
             } else {
                 btn.style.background = 'linear-gradient(135deg, #1a4a3a, #2d6a5a)';
                 btn.style.borderColor = '#4CAF50';
-                btnText.textContent = 'ðŸ“Š Single Period';
-                console.log('ðŸ“Š Single Period Mode: Showing only selected quarter');
+                btnText.textContent = '📊 Single Period';
+                console.log('📊 Single Period Mode: Showing only selected quarter');
             }
             
             updateQuarterUI();
             
-            // Reload data
-            if (rawApiData) {
-                updateDashboard(rawApiData, selectedCompanyId);
-            }
+            // v16: cumulative mode needs fresh API call with cumulative=true
+            loadData(selectedCompanyId);
         }
         
         // Toggle compare quarters mode
@@ -1987,19 +1946,18 @@
             
             if (quarterCompareMode) {
                 btn.classList.add('active');
-                btn.innerHTML = '<span>âœ“</span> Compare Mode ON';
+                btn.innerHTML = '<span>✓</span> Compare Mode ON';
+                // v16: reload so compare mode fetches correct quarters
+                updateQuarterUI();
+                loadData(selectedCompanyId);
             } else {
                 btn.classList.remove('active');
-                btn.innerHTML = '<span>âš–ï¸</span> Compare Quarters';
-                // Reset to single selection
-                selectedQuarters = [selectedQuarters[0]];
-                // Reload single quarter
-                if (rawApiData) {
-                    updateDashboard(rawApiData, selectedCompanyId);
-                }
+                btn.innerHTML = '<span>⚖️</span> Compare Quarters';
+                // Reset to single selection (keep last selected Q)
+                selectedQuarters = [selectedQuarters[selectedQuarters.length - 1] || 'Q4'];
+                updateQuarterUI();
+                loadData(selectedCompanyId);
             }
-            
-            updateQuarterUI();
         }
         
         // Update quarter UI (button states and badge)
@@ -2025,7 +1983,7 @@
                 if (cumulativeMode && q !== 'Q1') {
                     const q1Range = getQuarterDateRange('Q1', selectedYear);
                     const qRange = getQuarterDateRange(q, selectedYear);
-                    badge.textContent = `Q1â†’${q} ${selectedYear} (YTD)`;
+                    badge.textContent = `Q1→${q} ${selectedYear} (YTD)`;
                     badge.title = `Cumulative: ${q1Range.start} to ${qRange.end}`;
                 } else {
                     const range = getQuarterDateRange(q);
@@ -2045,7 +2003,7 @@
             const periodBadge = document.getElementById('periodBadge');
             if (periodBadge) {
                 if (cumulativeMode && selectedQuarters[0] !== 'Q1') {
-                    periodBadge.textContent = `Q1â†’${selectedQuarters[0]} ${selectedYear}`;
+                    periodBadge.textContent = `Q1→${selectedQuarters[0]} ${selectedYear}`;
                 } else if (selectedQuarters.length > 1) {
                     periodBadge.textContent = selectedQuarters.sort().join(' vs ') + ` ${selectedYear}`;
                 } else {
@@ -2115,7 +2073,7 @@
                                     parent_client_id: s.parent_client_id
                                 }))
                             ];
-                            console.log('ðŸ“Š Loaded', companiesList.length, 'companies (1 parent +', subsidiaries.length, 'subsidiaries)');
+                            console.log('📊 Loaded', companiesList.length, 'companies (1 parent +', subsidiaries.length, 'subsidiaries)');
                         } else {
                             // Fallback: use user data only
                             companiesList = [{ client_id: data.user.client_id, company_name: data.user.company_name || 'My Company', is_parent: true }];
@@ -2155,15 +2113,13 @@
             const company = companiesList.find(c => c.client_id === clientId);
             if (company) {
                 const displayName = company.is_parent 
-                    ? `${company.company_name} (All Companies)` 
+                    ? `${company.company_name} (Parent)` 
                     : company.company_name;
                 document.getElementById('pageCompanyName').textContent = displayName;
             }
             
-            // Refilter existing data (no need to refetch)
-            if (rawApiData) {
-                updateDashboard(rawApiData, clientId);
-            }
+            // v14: Always reload fresh data for the selected company
+            loadData(clientId);
         }
         
         // Populate company dropdown
@@ -2182,7 +2138,7 @@
             companiesList.forEach(company => {
                 const option = document.createElement('option');
                 option.value = company.client_id;
-                option.textContent = company.is_parent ? `ðŸ¢ ${company.company_name} (Parent)` : `  â””â”€ ${company.company_name}`;
+                option.textContent = company.is_parent ? `🏢 ${company.company_name} (Parent)` : `  └─ ${company.company_name}`;
                 if (company.client_id === selectedCompanyId) {
                     option.selected = true;
                 }
@@ -2278,11 +2234,11 @@
         function previewReport() {
             const selectedSections = Object.entries(reportConfig.sections).filter(([k, v]) => v).map(([k]) => k);
             const pages = selectedSections.length + 1; // +1 for cover
-            alert(`ðŸ“„ Î ÏÎ¿ÎµÏ€Î¹ÏƒÎºÏŒÏ€Î·ÏƒÎ· Î‘Î½Î±Ï†Î¿ÏÎ¬Ï‚\n\n` +
-                  `Î ÎµÏÎ¯Î¿Î´Î¿Ï‚: ${reportConfig.fromPeriod} - ${reportConfig.toPeriod}\n` +
-                  `Î•Î½ÏŒÏ„Î·Ï„ÎµÏ‚: ${selectedSections.length}\n` +
-                  `Î•ÎºÏ„Î¹Î¼ÏŽÎ¼ÎµÎ½ÎµÏ‚ ÏƒÎµÎ»Î¯Î´ÎµÏ‚: ${pages}\n` +
-                  `ÎœÎ¿ÏÏ†Î®: ${reportConfig.format.toUpperCase()}`);
+            alert(`📄 Προεπισκόπηση Αναφοράς\n\n` +
+                  `Περίοδος: ${reportConfig.fromPeriod} - ${reportConfig.toPeriod}\n` +
+                  `Ενότητες: ${selectedSections.length}\n` +
+                  `Εκτιμώμενες σελίδες: ${pages}\n` +
+                  `Μορφή: ${reportConfig.format.toUpperCase()}`);
         }
         
         async function generateReport() {
@@ -2302,7 +2258,7 @@
         }
         
         function generateExcelReport() {
-            alert('ðŸ“Š Excel export Î¸Î± Ï…Î»Î¿Ï€Î¿Î¹Î·Î¸ÎµÎ¯ ÏƒÏÎ½Ï„Î¿Î¼Î±!\n\nÎ ÏÎ¿Ï‚ Ï„Î¿ Ï€Î±ÏÏŒÎ½ Î´Î¹Î±Î¸Î­ÏƒÎ¹Î¼Î· Î¼ÏŒÎ½Î¿ Î· PDF Î¼Î¿ÏÏ†Î®.');
+            alert('📊 Excel export θα υλοποιηθεί σύντομα!\n\nΠρος το παρόν διαθέσιμη μόνο η PDF μορφή.');
         }
         
         async function generateCustomPDF(sections) {
@@ -2470,7 +2426,7 @@
                 doc.setFont('helvetica', 'normal');
                 doc.text(clientName, margin, 75);
                 doc.setFontSize(12);
-                doc.text(periodLabel + '  â€¢  ' + reportDate, margin, 88);
+                doc.text(periodLabel + '  •  ' + reportDate, margin, 88);
                 
                 // Quick stats row
                 let yPos = 115;
@@ -2510,14 +2466,14 @@
                 
                 yPos += 8;
                 const sectionNames = {
-                    executive: { name: 'Executive Summary', icon: 'ðŸ“Š' },
-                    inout: { name: 'Inpatient vs Outpatient', icon: 'ðŸ¥' },
-                    claims: { name: 'Claims Analysis', icon: 'ðŸ“‹' },
-                    members: { name: 'Member Analysis', icon: 'ðŸ‘¥' },
-                    movement: { name: 'Member Movement', icon: 'ðŸ“ˆ' },
-                    plans: { name: 'Plan Performance', icon: 'ðŸ†' },
-                    history: { name: 'Historical Data', icon: 'ðŸ“…' },
-                    trends: { name: 'Trends', icon: 'ðŸ“Š' }
+                    executive: { name: 'Executive Summary', icon: '📊' },
+                    inout: { name: 'Inpatient vs Outpatient', icon: '🏥' },
+                    claims: { name: 'Claims Analysis', icon: '📋' },
+                    members: { name: 'Member Analysis', icon: '👥' },
+                    movement: { name: 'Member Movement', icon: '📈' },
+                    plans: { name: 'Plan Performance', icon: '🏆' },
+                    history: { name: 'Historical Data', icon: '📅' },
+                    trends: { name: 'Trends', icon: '📊' }
                 };
                 
                 let col = 0;
@@ -2541,7 +2497,7 @@
                 doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
                 doc.setTextColor(255, 255, 255);
                 doc.setFontSize(8);
-                doc.text('Confidential  â€¢  Polaris Financial Services  â€¢  ' + reportDate, pageWidth / 2, pageHeight - 6, { align: 'center' });
+                doc.text('Confidential  •  Polaris Financial Services  •  ' + reportDate, pageWidth / 2, pageHeight - 6, { align: 'center' });
                 
                 // ==================== PAGE 2: EXECUTIVE SUMMARY ====================
                 if (sections.executive) {
@@ -2738,7 +2694,7 @@
                     doc.rect(0, pageHeight - 8, pageWidth, 8, 'F');
                     doc.setTextColor(255, 255, 255);
                     doc.setFontSize(6);
-                    doc.text('Page 2  â€¢  Polaris Financial Services  â€¢  Confidential', pageWidth / 2, pageHeight - 3, { align: 'center' });
+                    doc.text('Page 2  •  Polaris Financial Services  •  Confidential', pageWidth / 2, pageHeight - 3, { align: 'center' });
                 }
                 
                 // ==================== PAGE 3: INPATIENT VS OUTPATIENT ====================
@@ -2970,7 +2926,7 @@
                     doc.rect(0, pageHeight - 8, pageWidth, 8, 'F');
                     doc.setTextColor(255, 255, 255);
                     doc.setFontSize(6);
-                    doc.text('Page 3  â€¢  Polaris Financial Services  â€¢  Confidential', pageWidth / 2, pageHeight - 3, { align: 'center' });
+                    doc.text('Page 3  •  Polaris Financial Services  •  Confidential', pageWidth / 2, pageHeight - 3, { align: 'center' });
                 }
                 
                 // ==================== PAGE 4: CLAIMS ANALYSIS ====================
@@ -2992,10 +2948,10 @@
                     
                     // Claims overview cards
                     const claimCards = [
-                        { label: 'Total Claims', value: totalClaims, icon: 'ðŸ“‹', color: blue },
-                        { label: 'Approved', value: approvedAmount, icon: 'âœ“', color: green },
-                        { label: 'Avg Claim', value: '$127.05', icon: 'ðŸ“Š', color: gold },
-                        { label: 'Pending', value: '23', icon: 'â³', color: orange }
+                        { label: 'Total Claims', value: totalClaims, icon: '📋', color: blue },
+                        { label: 'Approved', value: approvedAmount, icon: '✓', color: green },
+                        { label: 'Avg Claim', value: '$127.05', icon: '📊', color: gold },
+                        { label: 'Pending', value: '23', icon: '⏳', color: orange }
                     ];
                     
                     const cardW = (contentWidth - 15) / 4;
@@ -3112,7 +3068,7 @@
                     doc.rect(0, pageHeight - 8, pageWidth, 8, 'F');
                     doc.setTextColor(255, 255, 255);
                     doc.setFontSize(6);
-                    doc.text('Page 4  â€¢  Polaris Financial Services  â€¢  Confidential', pageWidth / 2, pageHeight - 3, { align: 'center' });
+                    doc.text('Page 4  •  Polaris Financial Services  •  Confidential', pageWidth / 2, pageHeight - 3, { align: 'center' });
                 }
                 
                 // Cost Breakdown section REMOVED from client portal (no financial data)
@@ -3234,13 +3190,13 @@
                 doc.text('This report contains:', margin + 5, 175);
                 
                 const contents = [
-                    'â€¢ Executive Summary & KPIs',
-                    'â€¢ Period Comparison Analysis',
-                    'â€¢ Inpatient vs Outpatient Breakdown',
-                    'â€¢ Principal vs Dependent Analysis',
-                    'â€¢ Cost Analysis & Trends',
-                    'â€¢ Member Movement Statistics',
-                    'â€¢ Historical Data'
+                    '• Executive Summary & KPIs',
+                    '• Period Comparison Analysis',
+                    '• Inpatient vs Outpatient Breakdown',
+                    '• Principal vs Dependent Analysis',
+                    '• Cost Analysis & Trends',
+                    '• Member Movement Statistics',
+                    '• Historical Data'
                 ];
                 
                 contents.forEach((item, i) => {
@@ -3251,7 +3207,7 @@
                 doc.setFontSize(10);
                 doc.setTextColor(...textMuted);
                 doc.text('Confidential - For authorized use only', pageWidth / 2, 280, { align: 'center' });
-                doc.text('Â© 2025 Polaris Financial Services', pageWidth / 2, 287, { align: 'center' });
+                doc.text('© 2025 Polaris Financial Services', pageWidth / 2, 287, { align: 'center' });
                 
                 // ==================== PAGE 2: EXECUTIVE SUMMARY ====================
                 updateProgress(25, 'Building executive summary...');
@@ -3268,11 +3224,11 @@
                 
                 // KPI boxes
                 const kpis = [
-                    { label: 'Total Members', value: document.getElementById('kpiMembers')?.textContent || '-', icon: 'ðŸ‘¥' },
-                    { label: 'Total Claims', value: document.getElementById('kpiClaims')?.textContent || '-', icon: 'ðŸ“‹' },
-                    { label: 'Approved Amount', value: document.getElementById('kpiApproved')?.textContent || '-', icon: 'ðŸ’µ' },
-                    { label: 'Cost per Member', value: document.getElementById('kpiCost')?.textContent || '-', icon: 'ðŸ“ˆ' },
-                    { label: 'Utilization Rate', value: document.getElementById('kpiUtilization')?.textContent || '-', icon: 'ðŸŽ¯' }
+                    { label: 'Total Members', value: document.getElementById('kpiMembers')?.textContent || '-', icon: '👥' },
+                    { label: 'Total Claims', value: document.getElementById('kpiClaims')?.textContent || '-', icon: '📋' },
+                    { label: 'Approved Amount', value: document.getElementById('kpiApproved')?.textContent || '-', icon: '💵' },
+                    { label: 'Cost per Member', value: document.getElementById('kpiCost')?.textContent || '-', icon: '📈' },
+                    { label: 'Utilization Rate', value: document.getElementById('kpiUtilization')?.textContent || '-', icon: '🎯' }
                 ];
                 
                 let yPos = 40;
@@ -3846,8 +3802,8 @@
                             doc.setTextColor(...textDark);
                         } else if (colIdx === 3) {
                             // Change column - color based on value
-                            const isPositive = cell.includes('+') || cell.includes('â†‘');
-                            const isNegative = cell.includes('-') || cell.includes('â†“');
+                            const isPositive = cell.includes('+') || cell.includes('↑');
+                            const isNegative = cell.includes('-') || cell.includes('↓');
                             doc.setFont('helvetica', 'bold');
                             doc.setTextColor(isPositive ? 76 : isNegative ? 211 : 120, isPositive ? 175 : isNegative ? 47 : 120, isPositive ? 80 : isNegative ? 47 : 120);
                         } else {
@@ -4374,278 +4330,321 @@
         // Store raw API data for filtering
         let rawApiData = null;
         
-        async function loadData(clientId) {
-            try {
-                // Fetch ALL financial data - we filter on frontend
-                const apiUrl = `${API_URL}?action=getFinancialData`;
-                
-                const r = await fetch(apiUrl);
-                const d = await r.json();
-                if (d.success && d.data) {
-                    // Transform API response to expected format
-                    const clientDetails = d.data;
-                    
-                    // Extract unique periods from data
-                    const periodsSet = new Set();
-                    clientDetails.forEach(item => {
-                        if (item.period) periodsSet.add(item.period);
-                    });
-                    const periods = Array.from(periodsSet).sort();
-                    
-                    // Transform period format from "Q1-2025" to "Q1 2025"
-                    const transformedDetails = clientDetails.map(item => ({
-                        ...item,
-                        period: item.period ? item.period.replace('-', ' ') : item.period
-                    }));
-                    const transformedPeriods = periods.map(p => p.replace('-', ' '));
-                    
-                    rawApiData = {
-                        client_details: transformedDetails,
-                        periods: transformedPeriods
-                    };
-                    
-                    console.log('ðŸ“Š Client Portal: Loaded', transformedDetails.length, 'records,', transformedPeriods.length, 'periods');
-                    updateDashboard(rawApiData, clientId);
-                } else {
-                    console.error('API Error:', d.error || 'Unknown error');
-                }
-                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
-            } catch(e) { console.error('Load data error:', e); }
-        }
-        
-        // Get list of client_ids to include based on selection
-        function getClientIdsToFilter(selectedId) {
-            const selected = companiesList.find(c => c.client_id === selectedId);
-            
-            if (selected && selected.is_parent) {
-                // Parent selected - include ALL companies in the group
-                return companiesList.map(c => c.client_id);
-            } else {
-                // Subsidiary selected - include only that one
-                return [selectedId];
-            }
-        }
-        
-        // Filter and aggregate client_details by period
-        function filterClientData(clientDetails, clientIds, period) {
-            return clientDetails.filter(cd => 
-                clientIds.includes(cd.client_id) && cd.period === period
-            );
-        }
-        
-        // Aggregate data for multiple clients
-        function aggregateClientData(filteredData) {
-            const members = filteredData.reduce((sum, d) => sum + (d.members || 0), 0);
-            const approved_usd = filteredData.reduce((sum, d) => sum + (d.approved_usd || 0), 0);
-            const principal_members = filteredData.reduce((sum, d) => sum + (d.principal_members || 0), 0);
-            const dependent_members = filteredData.reduce((sum, d) => sum + (d.dependent_members || 0), 0);
-            const principal_claims = filteredData.reduce((sum, d) => sum + (d.principal_claims || 0), 0);
-            const dependent_claims = filteredData.reduce((sum, d) => sum + (d.dependent_claims || 0), 0);
-            return {
-                members: members,
-                principal_members: principal_members,
-                dependent_members: dependent_members,
-                principal_claims: principal_claims,
-                dependent_claims: dependent_claims,
-                claims: filteredData.reduce((sum, d) => sum + (d.claims || 0), 0),
-                approved_usd: approved_usd,
-                cost_per_member: members > 0 ? approved_usd / members : 0,
-                inpatient_cases: filteredData.reduce((sum, d) => sum + (d.inpatient_cases || 0), 0),
-                outpatient_cases: filteredData.reduce((sum, d) => sum + (d.outpatient_cases || 0), 0),
-                exgratia_cases: filteredData.reduce((sum, d) => sum + (d.exgratia_cases || 0), 0),
-                new_enrollments: filteredData.reduce((sum, d) => sum + (d.new_enrollments || 0), 0),
-                cancellations: filteredData.reduce((sum, d) => sum + (d.cancellations || 0), 0)
+        function getQuarterDateRange(quarter, year) {
+            const y = year || selectedYear;
+            const ranges = {
+                'Q1': { start: `${y}-01-01`, end: `${y}-03-31` },
+                'Q2': { start: `${y}-04-01`, end: `${y}-06-30` },
+                'Q3': { start: `${y}-07-01`, end: `${y}-09-30` },
+                'Q4': { start: `${y}-10-01`, end: `${y}-12-31` }
             };
+            return ranges[quarter] || ranges['Q1'];
+        }
+        
+        async function loadData(clientId) {
+            // v16: Match admin logic exactly - single/cumulative/compare modes
+            // Debounce: cancel if already loading
+            if (_loadDataInProgress) {
+                console.log('⏳ loadData already in progress, skipping duplicate call');
+                return;
+            }
+            _loadDataInProgress = true;
+            try {
+                const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+                const year = selectedYear.toString();
+                const apiClientId = clientId || selectedCompanyId || 'ALL';
+                const activeQ = selectedQuarters[0] || 'Q4';
+                
+                console.log(`📊 v16: Loading for ${apiClientId} | Q=${activeQ} | cumulative=${cumulativeMode} | compare=${quarterCompareMode}`);
+                
+                let results = [];
+                
+                if (cumulativeMode) {
+                    // CUMULATIVE: Q1 start → activeQ end, same as admin
+                    const q1Range = getQuarterDateRange('Q1', year);
+                    const qRange = getQuarterDateRange(activeQ, year);
+                    const params = new URLSearchParams({
+                        action: 'getClientKPISummary',
+                        clientId: apiClientId,
+                        quarter: activeQ,
+                        year: year,
+                        startDate: q1Range.start,
+                        endDate: qRange.end,
+                        cumulative: 'true'
+                    });
+                    const d = await fetch(`${API_URL}?${params.toString()}`).then(r => r.json());
+                    results = [{ quarter: activeQ, data: d, cumulative: true }];
+                    console.log(`✅ v16 CUMULATIVE: Q1→${activeQ}`, d.kpis?.total_members, 'members', d.kpis?.total_claims, 'claims');
+                    
+                } else if (quarterCompareMode && selectedQuarters.length > 1) {
+                    // COMPARE MODE: use cumulative=true on last selected quarter (same as admin)
+                    // API returns running totals per year, so summing individual Qs double-counts
+                    // Use highest selected quarter (Q4 > Q3 > Q2 > Q1)
+                    const qOrd = {'Q1':1,'Q2':2,'Q3':3,'Q4':4};
+                    const lastQ = [...selectedQuarters].sort((a,b) => qOrd[a]-qOrd[b]).pop();
+                    const params = new URLSearchParams({
+                        action: 'getClientKPISummary',
+                        clientId: apiClientId,
+                        quarter: lastQ,
+                        year: year,
+                        cumulative: 'true'
+                    });
+                    // Also load all individual Qs with date ranges for charts/historical table
+                    const allPromises = ['Q1','Q2','Q3','Q4'].map(q => {
+                        const range = getQuarterDateRange(q, year);
+                        const p = new URLSearchParams({ action: 'getClientKPISummary', clientId: apiClientId, quarter: q, year: year, startDate: range.start, endDate: range.end });
+                        return fetch(`${API_URL}?${p.toString()}`).then(r => r.json()).then(d => ({ quarter: q, data: d })).catch(() => ({ quarter: q, data: null }));
+                    });
+                    const q1Range = getQuarterDateRange('Q1', year);
+                    const lastRange = getQuarterDateRange(lastQ, year);
+                    params.append('startDate', q1Range.start);
+                    params.append('endDate', lastRange.end);
+                    const [cumulResult, ...allResults] = await Promise.all([
+                        fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).then(d => ({ quarter: lastQ, data: d, cumulative: true })),
+                        ...allPromises
+                    ]);
+                    results = [cumulResult, ...allResults.filter(r => r.data)];
+                    console.log(`✅ v16 COMPARE: ${selectedQuarters.join('+')} → cumulative Q1→${lastQ}`, cumulResult.data?.kpis?.total_claims, 'claims');
+                    
+                } else {
+                    // SINGLE PERIOD: load all 4 quarters (API returns YTD per Q, we subtract to get standalone)
+                    const promises = allQuarters.map(q => {
+                        const params = new URLSearchParams({
+                            action: 'getClientKPISummary',
+                            clientId: apiClientId,
+                            quarter: q,
+                            year: year
+                        });
+                        return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).then(d => ({ quarter: q, data: d })).catch(() => ({ quarter: q, data: null }));
+                    });
+                    results = await Promise.all(promises);
+                    console.log(`✅ v19 SINGLE: all 4 quarters loaded (YTD), standalone computed by subtraction, showing ${activeQ}`);
+                }
+                
+                // Build YTD data from API results
+                const allQs = ['Q1','Q2','Q3','Q4'];
+                const ytdMap = {};
+                results.filter(r => r.data && r.data.kpis && !r.cumulative).forEach(r => {
+                    const k = r.data.kpis;
+                    const mt = r.data.memberTypes || {};
+                    const ct = r.data.claimTypes || {};
+                    ytdMap[r.quarter] = {
+                        members: k.total_members || 0,
+                        claims: k.total_claims || 0,
+                        approved_usd: k.total_cost_usd || 0,
+                        cost_per_member: k.cost_per_member || 0,
+                        total_fees: k.total_fees || 0,
+                        inpatient_cases: k.inpatient_cases || ct.inpatient || 0,
+                        outpatient_cases: k.outpatient_cases || ct.outpatient || 0,
+                        exgratia_cases: k.exgratia_cases || ct.exgratia || 0,
+                        new_enrollments: k.new_enrollments || 0,
+                        cancellations: k.cancellations || 0,
+                        net_change: k.net_change || 0,
+                        principal_members: mt.principal || k.principal_members || 0,
+                        dependent_members: mt.dependent || k.dependent_members || 0,
+                    };
+                });
+                
+                // Save raw YTD map for compare mode (needs YTD totals not standalone)
+                window.lastYtdMap = ytdMap;
+                
+                // Compute STANDALONE values by subtracting previous Q YTD
+                // API returns YTD per quarter: Q2_ytd = Q1+Q2, so Q2_standalone = Q2_ytd - Q1_ytd
+                const periodsData = allQs.filter(q => ytdMap[q]).map((q, idx) => {
+                    const ytd = ytdMap[q];
+                    const prevQ = idx > 0 ? allQs[idx-1] : null;
+                    const prevYtd = prevQ && ytdMap[prevQ] ? ytdMap[prevQ] : null;
+                    const standalone = {
+                        period_label: `${q} ${year}`,
+                        quarter: q,
+                        cumulative: false,
+                        // Members = snapshot (not cumulative) - use as-is
+                        members: ytd.members,
+                        principal_members: ytd.principal_members,
+                        dependent_members: ytd.dependent_members,
+                        // Subtract prev YTD to get standalone quarter values
+                        claims: prevYtd ? ytd.claims - prevYtd.claims : ytd.claims,
+                        approved_usd: prevYtd ? ytd.approved_usd - prevYtd.approved_usd : ytd.approved_usd,
+                        total_fees: prevYtd ? ytd.total_fees - prevYtd.total_fees : ytd.total_fees,
+                        inpatient_cases: prevYtd ? ytd.inpatient_cases - prevYtd.inpatient_cases : ytd.inpatient_cases,
+                        outpatient_cases: prevYtd ? ytd.outpatient_cases - prevYtd.outpatient_cases : ytd.outpatient_cases,
+                        exgratia_cases: prevYtd ? ytd.exgratia_cases - prevYtd.exgratia_cases : ytd.exgratia_cases,
+                        new_enrollments: prevYtd ? ytd.new_enrollments - prevYtd.new_enrollments : ytd.new_enrollments,
+                        cancellations: prevYtd ? ytd.cancellations - prevYtd.cancellations : ytd.cancellations,
+                        net_change: prevYtd ? ytd.net_change - prevYtd.net_change : ytd.net_change,
+                        // Store YTD for cumulative mode
+                        ytd_claims: ytd.claims,
+                        ytd_approved_usd: ytd.approved_usd,
+                        ytd_inpatient: ytd.inpatient_cases,
+                        ytd_outpatient: ytd.outpatient_cases,
+                        ytd_exgratia: ytd.exgratia_cases,
+                    };
+                    standalone.cost_per_member = standalone.members > 0 ? standalone.approved_usd / standalone.members : 0;
+                    return standalone;
+                });
+                
+                // Note: cumulative/compare KPIs are served from window.lastYtdMap
+                // No need to add YTD entry to periodsData (would create extra chart point)
+                
+                console.log('📊 Client Portal v14: Loaded', periodsData.length, 'periods');
+                
+                rawApiData = { periodsData: periodsData, results: results };
+                updateDashboard(rawApiData, apiClientId);
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+                
+            } catch(e) { console.error('Load data error:', e); }
+            finally { _loadDataInProgress = false; }
         }
         
         function updateDashboard(data, clientId) {
-            if (!data.client_details || !data.periods) return;
+            if (!data.periodsData || data.periodsData.length === 0) return;
             
-            const clientIds = getClientIdsToFilter(clientId || selectedCompanyId);
-            const allPeriods = data.periods || [];
+            const periodsData = data.periodsData;
+            const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
             
-            // Get quarters to filter based on mode
+            // Get quarters to show based on mode
             const quartersToFilter = getQuartersToFilter();
             
-            // Map quarters to period format (e.g., Q1 2025 -> "2025-Q1" or check actual format)
-            // Assume periods are in format like "Q1 2025", "Q2 2025", etc.
-            const selectedPeriods = quartersToFilter.map(q => `${q} ${selectedYear}`);
+            // Get current display data based on mode
+            let c = {};
             
-            // Filter periods to only include selected quarters for the selected year
-            const filteredPeriods = allPeriods.filter(p => {
-                // Check if period matches selected year and quarter
-                const yearMatch = p.includes(selectedYear.toString());
-                const quarterMatch = quartersToFilter.some(q => p.includes(q));
-                return yearMatch && quarterMatch;
-            });
-            
-            // If no matching periods, use all periods for that year
-            const periodsForYear = allPeriods.filter(p => p.includes(selectedYear.toString()));
-            const periodsToUse = filteredPeriods.length > 0 ? filteredPeriods : periodsForYear;
-            
-            // Get the current period (selected quarter) or latest available
-            const currentPeriodStr = `${selectedQuarters[0]} ${selectedYear}`;
-            const latestPeriod = periodsToUse.find(p => p === currentPeriodStr) || 
-                                 periodsToUse[periodsToUse.length - 1] ||
-                                 allPeriods[allPeriods.length - 1];
-            
-            // Get filtered data for current period (or cumulative if enabled)
-            let currentData = [];
             if (cumulativeMode) {
-                // Cumulative: aggregate all quarters from Q1 to selected
-                quartersToFilter.forEach(q => {
-                    const periodStr = `${q} ${selectedYear}`;
-                    const periodData = filterClientData(data.client_details, clientIds, periodStr);
-                    currentData = currentData.concat(periodData);
-                });
-            } else if (quarterCompareMode && selectedQuarters.length > 1) {
-                // Compare mode: aggregate selected quarters
-                selectedQuarters.forEach(q => {
-                    const periodStr = `${q} ${selectedYear}`;
-                    const periodData = filterClientData(data.client_details, clientIds, periodStr);
-                    currentData = currentData.concat(periodData);
-                });
-            } else {
-                // Single quarter
-                currentData = filterClientData(data.client_details, clientIds, latestPeriod);
-            }
-            
-            const c = aggregateClientData(currentData);
-            
-            // Get filtered data for previous period (previous quarter)
-            let p = null, ch = null;
-            const qIndex = ['Q1', 'Q2', 'Q3', 'Q4'].indexOf(selectedQuarters[0]);
-            let prevPeriod = null;
-            
-            if (qIndex > 0) {
-                prevPeriod = `Q${qIndex} ${selectedYear}`;
-            } else {
-                prevPeriod = `Q4 ${selectedYear - 1}`;
-            }
-            
-            const prevData = filterClientData(data.client_details, clientIds, prevPeriod);
-            if (prevData.length > 0) {
-                p = aggregateClientData(prevData);
-                
-                // Calculate changes
-                ch = {
-                    members: { 
-                        percentage: p.members > 0 ? ((c.members - p.members) / p.members * 100) : null 
-                    },
-                    claims: { 
-                        percentage: p.claims > 0 ? ((c.claims - p.claims) / p.claims * 100) : null 
-                    }
-                };
-            }
-            
-            // Update period badge via updateQuarterUI
-            updateQuarterUI();
-            
-            if (p) {
-                const cmpLabel = document.getElementById('cmpPeriodLabel');
-                if (cmpLabel) {
-                    if (cumulativeMode) {
-                        cmpLabel.textContent = `YTD ${selectedYear} vs Previous`;
-                    } else {
-                        cmpLabel.textContent = `${selectedQuarters[0]} ${selectedYear} vs ${prevPeriod}`;
-                    }
+                // CUMULATIVE: use YTD of selected quarter from ytdMap
+                const activeQ = selectedQuarters[0] || 'Q4';
+                const ytdEntry = window.lastYtdMap && window.lastYtdMap[activeQ];
+                if (ytdEntry) {
+                    c = {
+                        members: ytdEntry.members,
+                        claims: ytdEntry.claims,
+                        approved_usd: ytdEntry.approved_usd,
+                        total_fees: ytdEntry.total_fees,
+                        inpatient_cases: ytdEntry.inpatient_cases,
+                        outpatient_cases: ytdEntry.outpatient_cases,
+                        exgratia_cases: ytdEntry.exgratia_cases,
+                        new_enrollments: ytdEntry.new_enrollments,
+                        cancellations: ytdEntry.cancellations,
+                        net_change: ytdEntry.net_change,
+                        principal_members: ytdEntry.principal_members,
+                        dependent_members: ytdEntry.dependent_members,
+                    };
+                    c.cost_per_member = c.members > 0 ? c.approved_usd / c.members : 0;
+                } else {
+                    const cur = periodsData.find(p => p.quarter === activeQ) || periodsData[periodsData.length - 1];
+                    c = { ...cur };
                 }
+                
+            } else if (quarterCompareMode && selectedQuarters.length > 1) {
+                // COMPARE: use YTD of the HIGHEST selected quarter (Q4 > Q3 > Q2 > Q1)
+                // Sort quarters by order and pick the last one
+                const qOrder = {'Q1':1,'Q2':2,'Q3':3,'Q4':4};
+                const sortedSel = [...selectedQuarters].sort((a,b) => qOrder[a] - qOrder[b]);
+                const lastSelectedQ = sortedSel[sortedSel.length - 1];
+                const ytdEntry = window.lastYtdMap && window.lastYtdMap[lastSelectedQ];
+                if (ytdEntry) {
+                    c = {
+                        members: ytdEntry.members,
+                        claims: ytdEntry.claims,
+                        approved_usd: ytdEntry.approved_usd,
+                        total_fees: ytdEntry.total_fees,
+                        inpatient_cases: ytdEntry.inpatient_cases,
+                        outpatient_cases: ytdEntry.outpatient_cases,
+                        exgratia_cases: ytdEntry.exgratia_cases,
+                        new_enrollments: ytdEntry.new_enrollments,
+                        cancellations: ytdEntry.cancellations,
+                        net_change: ytdEntry.net_change,
+                        principal_members: ytdEntry.principal_members,
+                        dependent_members: ytdEntry.dependent_members,
+                    };
+                    c.cost_per_member = c.members > 0 ? c.approved_usd / c.members : 0;
+                } else {
+                    // Fallback to last periodsData entry
+                    const lastP = periodsData[periodsData.length - 1];
+                    c = { ...lastP };
+                }
+                
+            } else {
+                // SINGLE PERIOD: show selected quarter only
+                const activeQ = selectedQuarters[0] || 'Q4';
+                const cur = periodsData.find(p => p.quarter === activeQ) || periodsData[periodsData.length - 1];
+                c = { ...cur };
+                c.cost_per_member = cur.cost_per_member || (cur.members > 0 ? cur.approved_usd / cur.members : 0);
             }
             
-            // Update KPIs with REAL data
-            // COST PER MEMBER - Big green number
-            document.getElementById('kpiCostPerMember').textContent = '$' + c.cost_per_member.toFixed(2);
+            // Previous period (previous quarter)
+            const curQIdx = allQuarters.indexOf(selectedQuarters[0] || 'Q4');
+            const prevQ = curQIdx > 0 ? allQuarters[curQIdx - 1] : null;
+            const prevPeriod = prevQ ? periodsData.find(p => p.quarter === prevQ) : null;
             
-            document.getElementById('kpiMembers').textContent = fmt(c.members);
-            document.getElementById('kpiClaims').textContent = fmt(c.claims);
+            // Period comparison label
+            updateQuarterUI();
+            if (prevPeriod) {
+                const cmpLabel = document.getElementById('cmpPeriodLabel');
+                if (cmpLabel) cmpLabel.textContent = `${selectedQuarters[0]} ${selectedYear} vs ${prevQ} ${selectedYear}`;
+            }
+            
+            // ── TOP KPI CARDS ──
+            document.getElementById('kpiCostPerMember').textContent = '$' + c.cost_per_member.toFixed(2);
+            document.getElementById('kpiMembers').textContent = c.members.toLocaleString();
+            document.getElementById('kpiClaims').textContent = c.claims.toLocaleString();
             const util = c.members > 0 ? (c.claims / c.members * 100) : 0;
             document.getElementById('kpiUtilization').textContent = util.toFixed(1) + '%';
-            document.getElementById('totalActive').textContent = fmt(c.members);
+            document.getElementById('totalActive').textContent = c.members.toLocaleString();
             
-            if (ch) {
+            // Trends vs previous period
+            if (prevPeriod) {
+                const ch = {
+                    members: { percentage: prevPeriod.members > 0 ? ((c.members - prevPeriod.members) / prevPeriod.members * 100) : null },
+                    claims:  { percentage: prevPeriod.claims > 0  ? ((c.claims  - prevPeriod.claims)  / prevPeriod.claims  * 100) : null }
+                };
                 setTrend('kpiMembersTrend', ch.members);
                 setTrend('kpiClaimsTrend', ch.claims);
-            }
-            
-            // Period comparison
-            if (p && ch) {
-                document.getElementById('cmpClaims').textContent = fmt(c.claims);
-                document.getElementById('cmpClaimsPrev').textContent = fmt(p.claims);
+                
+                // Period comparison
+                document.getElementById('cmpClaims').textContent = c.claims.toLocaleString();
+                document.getElementById('cmpClaimsPrev').textContent = prevPeriod.claims.toLocaleString();
                 setChange('cmpClaimsChange', ch.claims);
-                document.getElementById('cmpMembers').textContent = fmt(c.members);
-                document.getElementById('cmpMembersPrev').textContent = fmt(p.members);
+                document.getElementById('cmpMembers').textContent = c.members.toLocaleString();
+                document.getElementById('cmpMembersPrev').textContent = prevPeriod.members.toLocaleString();
                 setChange('cmpMembersChange', ch.members);
             }
             
-            // REAL Inpatient/Outpatient/Ex Gratia data from API
-            const inpatientCases = c.inpatient_cases || 0;
-            const outpatientCases = c.outpatient_cases || 0;
-            const exGratiaCases = c.exgratia_cases || 0;
+            // ── INPATIENT / OUTPATIENT ──
+            document.getElementById('inpatientCases').textContent = c.inpatient_cases.toLocaleString();
+            document.getElementById('outpatientCases').textContent = c.outpatient_cases.toLocaleString();
+            document.getElementById('exGratiaCases').textContent = c.exgratia_cases.toLocaleString();
             
-            document.getElementById('inpatientCases').textContent = fmt(inpatientCases);
-            document.getElementById('outpatientCases').textContent = fmt(outpatientCases);
-            document.getElementById('exGratiaCases').textContent = fmt(exGratiaCases);
+            // ── PRINCIPAL / DEPENDENT (real from API) ──
+            const principalMembers = c.principal_members > 0 ? c.principal_members : Math.round(c.members * 0.4);
+            const dependentMembers = c.dependent_members > 0 ? c.dependent_members : (c.members - principalMembers);
+            document.getElementById('principalCount').textContent = principalMembers.toLocaleString();
+            document.getElementById('dependentCount').textContent = dependentMembers.toLocaleString();
             
-            // Principal/Dependent data (still estimate until CBMS provides)
-            const principalMembers = c.principal_members > 0 ? c.principal_members : Math.round(c.members * 0.6);
-            const dependentMembers = c.dependent_members > 0 ? c.dependent_members : c.members - principalMembers;
+            // ── MEMBER MOVEMENT ──
+            document.getElementById('newEnrollments').textContent = '+' + c.new_enrollments.toLocaleString();
+            document.getElementById('cancellations').textContent = '-' + c.cancellations.toLocaleString();
+            const net = c.new_enrollments - c.cancellations;
+            document.getElementById('netChange').textContent = (net >= 0 ? '+' : '') + net.toLocaleString();
             
-            document.getElementById('principalCount').textContent = fmt(principalMembers);
-            document.getElementById('dependentCount').textContent = fmt(dependentMembers);
-            
-            // REAL Member Movement from API
-            const newEnroll = c.new_enrollments || 0;
-            const cancelled = c.cancellations || 0;
-            document.getElementById('newEnrollments').textContent = '+' + newEnroll;
-            document.getElementById('cancellations').textContent = '-' + cancelled;
-            document.getElementById('netChange').textContent = (newEnroll - cancelled >= 0 ? '+' : '') + (newEnroll - cancelled);
-            
-            // Build periods data for charts (all periods for the year, for trend charts)
-            const periodsData = periodsForYear.length > 0 ? periodsForYear.map(period => {
-                const periodFiltered = filterClientData(data.client_details, clientIds, period);
-                const agg = aggregateClientData(periodFiltered);
-                return {
-                    period_label: period,
-                    members: agg.members,
-                    claims: agg.claims,
-                    inpatient_cases: agg.inpatient_cases,
-                    outpatient_cases: agg.outpatient_cases,
-                    exgratia_cases: agg.exgratia_cases,
-                    new_enrollments: agg.new_enrollments,
-                    cancellations: agg.cancellations
-                };
-            }) : allPeriods.map(period => {
-                const periodFiltered = filterClientData(data.client_details, clientIds, period);
-                const agg = aggregateClientData(periodFiltered);
-                return {
-                    period_label: period,
-                    members: agg.members,
-                    claims: agg.claims,
-                    inpatient_cases: agg.inpatient_cases,
-                    outpatient_cases: agg.outpatient_cases,
-                    exgratia_cases: agg.exgratia_cases,
-                    new_enrollments: agg.new_enrollments,
-                    cancellations: agg.cancellations
-                };
-            });
+            // ── CHARTS ──
+            window.lastPeriodsData = periodsData;
             
             try { createCharts(periodsData, c); } catch(e) { console.error('createCharts error:', e); }
-            try { createInOutCharts(periodsData, inpatientCases, outpatientCases, exGratiaCases); } catch(e) { console.error('createInOutCharts error:', e); }
-            try { createMemberTypeCharts(principalMembers, dependentMembers, c.claims, c.principal_claims, c.dependent_claims); } catch(e) { console.error('createMemberTypeCharts error:', e); }
+            try { createInOutCharts(periodsData, c.inpatient_cases, c.outpatient_cases, c.exgratia_cases); } catch(e) { console.error('createInOutCharts error:', e); }
+            try { createMemberTypeCharts(principalMembers, dependentMembers, c.claims); } catch(e) { console.error('createMemberTypeCharts error:', e); }
             try { createMovementChartsReal(periodsData); } catch(e) { console.error('createMovementCharts error:', e); }
-            
-            // Additional charts - each in separate try-catch
             try { createCategoryCharts(c); } catch(e) { console.error('createCategoryCharts error:', e); }
             try { createYoYCharts(periodsData); } catch(e) { console.error('createYoYCharts error:', e); }
             try { createHospitalCharts(); } catch(e) { console.error('createHospitalCharts error:', e); }
             try { createGeoCharts(); } catch(e) { console.error('createGeoCharts error:', e); }
             
             updateMetrics(util);
-            updateInsights(ch);
+            updateInsights(prevPeriod ? {
+                members: { percentage: prevPeriod.members > 0 ? ((c.members - prevPeriod.members) / prevPeriod.members * 100) : null },
+                claims:  { percentage: prevPeriod.claims > 0  ? ((c.claims  - prevPeriod.claims)  / prevPeriod.claims  * 100) : null }
+            } : null);
             updateTableReal(periodsData);
         }
         
-        // Real movement charts with actual data
         function createMovementChartsReal(periods) {
             // Movement Compare Chart
             const ctx1 = safeGetContext('movementCompareChart');
@@ -4999,7 +4998,7 @@
             }
         }
         
-        function createMemberTypeCharts(principal, dependent, claims, principalClaimsData, dependentClaimsData) {
+        function createMemberTypeCharts(principal, dependent, claims) {
             // Member Type Pie - Doughnut
             const ctx1 = safeGetContext('memberTypePieChart');
             if (ctx1) {
@@ -5042,8 +5041,8 @@
                 if (ctx2) {
                     if (charts.memberClaims) charts.memberClaims.destroy();
                     
-                    const principalClaims = (principalClaimsData > 0 || dependentClaimsData > 0) ? principalClaimsData : Math.round(claims * 0.55);
-                    const dependentClaims = (principalClaimsData > 0 || dependentClaimsData > 0) ? dependentClaimsData : claims - principalClaims;
+                    const principalClaims = Math.round(claims * 0.55);
+                    const dependentClaims = claims - principalClaims;
                     
                     // Update stat values
                     const principalClaimsEl = document.getElementById('principalClaims');
@@ -5081,33 +5080,60 @@
         
         // ============ NEW SECTIONS CHARTS ============
         
-        function createCategoryCharts(current) {
-            // Mock data - will come from Excel/CBMS (NO COST DATA for client portal)
-            const categories = [
-                { name: 'Medical', cases: 450, color: '#4CAF50' },
-                { name: 'Dental', cases: 180, color: '#2196F3' },
-                { name: 'Maternity', cases: 45, color: '#E91E63' },
-                { name: 'Optical', cases: 120, color: '#FF9800' },
-                { name: 'Laboratory', cases: 280, color: '#D4AF37' },
-                { name: 'Other', cases: 95, color: '#607D8B' }
-            ];
+        async function createCategoryCharts(current) {
+            // v12: Use real getCategoriesBreakdown API data
+            const colors = {
+                'Medical': '#4CAF50', 'Dental': '#2196F3', 'Maternity': '#E91E63',
+                'Optical': '#FF9800', 'Laboratory': '#D4AF37', 'Other': '#607D8B'
+            };
             
-            // Update stat values (with null checks)
-            const catMedical = document.getElementById('catMedical');
-            const catDental = document.getElementById('catDental');
-            const catMaternity = document.getElementById('catMaternity');
-            const catOptical = document.getElementById('catOptical');
-            const catLab = document.getElementById('catLab');
-            const catOther = document.getElementById('catOther');
+            let categories = [];
+            try {
+                const clientId = (selectedCompanyId || 'ALL').replace('GROUP:', '');
+                const quarter = selectedQuarters[0] || 'Q1';
+                const params = new URLSearchParams({
+                    action: 'getCategoriesBreakdown',
+                    clientId: clientId,
+                    quarter: quarter,
+                    year: selectedYear.toString()
+                });
+                const r = await fetch(`${API_URL}?${params.toString()}`);
+                const d = await r.json();
+                if (d.success && d.data && d.data.length > 0) {
+                    categories = d.data.map(c => ({
+                        name: c.category,
+                        cases: c.cases || 0,
+                        color: colors[c.category] || '#607D8B'
+                    }));
+                    console.log('✅ Category data from API:', categories.length, 'categories');
+                } else {
+                    throw new Error('No category data');
+                }
+            } catch(e) {
+                console.warn('⚠️ getCategoriesBreakdown failed, using inpatient/outpatient fallback:', e.message);
+                // Fallback: derive from inpatient/outpatient/exgratia totals
+                const total = (current.inpatient_cases || 0) + (current.outpatient_cases || 0) + (current.exgratia_cases || 0);
+                if (total > 0) {
+                    categories = [
+                        { name: 'Inpatient', cases: current.inpatient_cases || 0, color: '#E91E63' },
+                        { name: 'Outpatient', cases: current.outpatient_cases || 0, color: '#2196F3' },
+                        { name: 'Ex Gratia', cases: current.exgratia_cases || 0, color: '#D4AF37' }
+                    ];
+                }
+            }
             
-            if (catMedical) catMedical.textContent = categories[0].cases;
-            if (catDental) catDental.textContent = categories[1].cases;
-            if (catMaternity) catMaternity.textContent = categories[2].cases;
-            if (catOptical) catOptical.textContent = categories[3].cases;
-            if (catLab) catLab.textContent = categories[4].cases;
-            if (catOther) catOther.textContent = categories[5].cases;
+            if (categories.length === 0) return;
             
-            // Category Pie Chart (with null check)
+            // Update stat values
+            const catMap = { Medical: 'catMedical', Dental: 'catDental', Maternity: 'catMaternity',
+                             Optical: 'catOptical', Laboratory: 'catLab', Other: 'catOther',
+                             Inpatient: 'catMedical', Outpatient: 'catDental', 'Ex Gratia': 'catMaternity' };
+            categories.forEach(cat => {
+                const el = document.getElementById(catMap[cat.name]);
+                if (el) el.textContent = fmt(cat.cases);
+            });
+            
+            // Category Pie Chart
             const canvas1 = document.getElementById('categoryPieChart');
             if (canvas1) {
                 const ctx1 = canvas1.getContext('2d');
@@ -5116,61 +5142,54 @@
                     type: 'doughnut',
                     data: {
                         labels: categories.map(c => c.name),
-                        datasets: [{
-                            data: categories.map(c => c.cases),
+                        datasets: [{ data: categories.map(c => c.cases),
                             backgroundColor: categories.map(c => c.color),
-                            borderWidth: 2,
-                            borderColor: '#0a1a0a',
-                            hoverOffset: 10
-                        }]
+                            borderWidth: 2, borderColor: '#0a1a0a', hoverOffset: 10 }]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '55%',
-                        plugins: { legend: { display: true, position: 'right', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } }
-                    }
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '55%',
+                        plugins: { legend: { display: true, position: 'right',
+                            labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } } }
                 });
             }
             
-            // Category Trend Chart (with null check)
+            // Category Trend Chart - use real quarterly data from periodsData
             const canvas3 = document.getElementById('categoryTrendChart');
             if (canvas3) {
                 const ctx3 = canvas3.getContext('2d');
                 if (charts.categoryTrend) charts.categoryTrend.destroy();
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                // Use actual quarterly periods instead of mock months
+                const periodLabels = (window.lastPeriodsData || []).map(p => p.period_label);
+                const quarterlyInpatient = (window.lastPeriodsData || []).map(p => p.inpatient_cases || 0);
+                const quarterlyOutpatient = (window.lastPeriodsData || []).map(p => p.outpatient_cases || 0);
+                const quarterlyExGratia = (window.lastPeriodsData || []).map(p => p.exgratia_cases || 0);
                 charts.categoryTrend = new Chart(ctx3, {
                     type: 'line',
                     data: {
-                        labels: months,
-                        datasets: categories.slice(0, 4).map(cat => ({
-                            label: cat.name,
-                            data: months.map(() => Math.round(cat.cases / 6 * (0.8 + Math.random() * 0.4))),
-                            borderColor: cat.color,
-                            backgroundColor: cat.color + '20',
-                            fill: false,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointRadius: 4
-                        }))
+                        labels: periodLabels.length > 0 ? periodLabels : ['Q1', 'Q2', 'Q3', 'Q4'],
+                        datasets: [
+                            { label: 'Inpatient', data: quarterlyInpatient, borderColor: '#E91E63', backgroundColor: '#E91E6320', fill: false, tension: 0.4, borderWidth: 3, pointRadius: 4 },
+                            { label: 'Outpatient', data: quarterlyOutpatient, borderColor: '#2196F3', backgroundColor: '#2196F320', fill: false, tension: 0.4, borderWidth: 3, pointRadius: 4 },
+                            { label: 'Ex Gratia', data: quarterlyExGratia, borderColor: '#D4AF37', backgroundColor: '#D4AF3720', fill: false, tension: 0.4, borderWidth: 3, pointRadius: 4 }
+                        ]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                    options: { responsive: true, maintainAspectRatio: false,
                         plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
-                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
-                        }
-                    }
+                        scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
+                                  y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } } }
                 });
             }
         }
         
         function createYoYCharts(periods) {
-            // Mock YoY data (NO COST DATA for client portal)
-            const data2024 = { claims: 3850, members: 980 };
-            const data2025 = { claims: 4320, members: 1127 };
+            // YoY: use real periodsData across years
+            if (!periods || periods.length === 0) return;
+            
+            // Get quarters from actual data (standalone claims per Q for bar chart)
+            const quarterLabels = periods.map(p => p.period_label);
+            const claimsData = periods.map(p => p.claims || 0);
+            // YTD total = use ytdMap[Q4] (true running total), fallback to sum
+            const ytdQ4data = window.lastYtdMap && window.lastYtdMap['Q4'];
+            const totalClaims2025 = ytdQ4data ? ytdQ4data.claims : claimsData.reduce((a, b) => a + b, 0);
             
             // Update YoY stats (with null checks)
             const yoyClaims2025 = document.getElementById('yoyClaims2025');
@@ -5178,16 +5197,28 @@
             const yoyClaimsChange = document.getElementById('yoyClaimsChange');
             const yoyMemberChange = document.getElementById('yoyMemberChange');
             
-            if (yoyClaims2025) yoyClaims2025.textContent = fmt(data2025.claims);
-            if (yoyClaims2024) yoyClaims2024.textContent = fmt(data2024.claims);
+            if (yoyClaims2025) yoyClaims2025.textContent = fmt(totalClaims2025);
+            if (yoyClaims2024) yoyClaims2024.textContent = '-';
+            if (yoyClaimsChange) yoyClaimsChange.textContent = 'N/A';
+            if (yoyMemberChange) yoyMemberChange.textContent = 'N/A';
             
-            const claimsChange = ((data2025.claims - data2024.claims) / data2024.claims * 100).toFixed(0);
-            const memberChange = ((data2025.members - data2024.members) / data2024.members * 100).toFixed(0);
+            // Populate Annual Performance Summary cards using YTD data
+            const ytdQ4perf = window.lastYtdMap && window.lastYtdMap['Q4'];
+            if (ytdQ4perf) {
+                const cpm = ytdQ4perf.members > 0 ? ytdQ4perf.approved_usd / ytdQ4perf.members : 0;
+                const util = ytdQ4perf.members > 0 ? ytdQ4perf.claims / ytdQ4perf.members * 100 : 0;
+                const totalCases = (ytdQ4perf.inpatient_cases||0) + (ytdQ4perf.outpatient_cases||0) + (ytdQ4perf.exgratia_cases||0);
+                const el = id => document.getElementById(id);
+                if(el('ytdApproved')) el('ytdApproved').textContent = '$' + (ytdQ4perf.approved_usd||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+                if(el('ytdCPM')) el('ytdCPM').textContent = '$' + cpm.toFixed(2);
+                if(el('ytdInpatient')) el('ytdInpatient').textContent = fmt(ytdQ4perf.inpatient_cases||0);
+                if(el('ytdUtil')) el('ytdUtil').textContent = util.toFixed(1) + '%';
+                if(el('ytdInpPct') && totalCases > 0) el('ytdInpPct').textContent = ((ytdQ4perf.inpatient_cases/totalCases)*100).toFixed(1)+'%';
+                if(el('ytdOutPct') && totalCases > 0) el('ytdOutPct').textContent = ((ytdQ4perf.outpatient_cases/totalCases)*100).toFixed(1)+'%';
+                if(el('ytdExgPct') && totalCases > 0) el('ytdExgPct').textContent = ((ytdQ4perf.exgratia_cases/totalCases)*100).toFixed(1)+'%';
+            }
             
-            if (yoyClaimsChange) yoyClaimsChange.textContent = (claimsChange > 0 ? '+' : '') + claimsChange + '%';
-            if (yoyMemberChange) yoyMemberChange.textContent = (memberChange > 0 ? '+' : '') + memberChange + '%';
-            
-            // YoY Claims Chart (with null check)
+            // YoY Claims Chart - use real quarterly claims
             const canvas1 = document.getElementById('yoyClaimsChart');
             if (canvas1) {
                 const ctx1 = canvas1.getContext('2d');
@@ -5195,234 +5226,37 @@
                 charts.yoyClaims = new Chart(ctx1, {
                     type: 'bar',
                     data: {
-                        labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                        labels: quarterLabels,
                         datasets: [
-                            { label: '2024', data: [920, 980, 1050, 900], backgroundColor: 'rgba(122,143,122,0.7)', borderRadius: 4 },
-                            { label: '2025', data: [1080, 1150, 1090, null], backgroundColor: 'rgba(212,175,55,0.8)', borderRadius: 4 }
+                            { label: '2025', data: claimsData, backgroundColor: 'rgba(212,175,55,0.8)', borderRadius: 4 }
                         ]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                    options: { responsive: true, maintainAspectRatio: false,
                         plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
-                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
-                        }
-                    }
-                });
-            }
-            
-            // YoY Trend Chart (with null check)
-            const canvas3 = document.getElementById('yoyTrendChart');
-            if (canvas3) {
-                const ctx3 = canvas3.getContext('2d');
-                if (charts.yoyTrend) charts.yoyTrend.destroy();
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
-                charts.yoyTrend = new Chart(ctx3, {
-                    type: 'line',
-                    data: {
-                        labels: months,
-                        datasets: [
-                            { 
-                                label: '2025', 
-                                data: [320, 380, 410, 350, 420, 380, 390, 410, 360],
-                                borderColor: '#D4AF37',
-                                backgroundColor: 'rgba(212,175,55,0.2)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 3,
-                                pointRadius: 5
-                            },
-                            { 
-                                label: '2024', 
-                                data: [280, 320, 350, 310, 380, 340, 360, 390, 320],
-                                borderColor: '#7a8f7a',
-                                backgroundColor: 'rgba(122,143,122,0.1)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 2,
-                                borderDash: [5, 5],
-                                pointRadius: 4
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: true, position: 'top', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20 } } },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
-                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } }
-                        }
-                    }
+                        scales: { x: { grid: { display: false }, ticks: { color: '#b8c9b8' } },
+                                  y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } } }
                 });
             }
         }
-        
+
         function createHospitalCharts() {
-            // Mock hospital data - will come from CBMS (NO COST DATA for client portal)
-            const hospitals = [
-                { name: 'St. Luke\'s BGC', claims: 185 },
-                { name: 'Makati Medical', claims: 156 },
-                { name: 'The Medical City', claims: 142 },
-                { name: 'Asian Hospital', claims: 128 },
-                { name: 'Manila Doctors', claims: 115 },
-                { name: 'Cardinal Santos', claims: 98 },
-                { name: 'Chong Hua Cebu', claims: 87 },
-                { name: 'UERM', claims: 76 },
-                { name: 'PGH', claims: 68 },
-                { name: 'Others', claims: 315 }
-            ];
-            
-            const totalClaims = hospitals.reduce((a, h) => a + h.claims, 0);
-            
-            // Top Hospitals by Claims (with null check)
-            const canvas1 = document.getElementById('topHospitalsChart');
-            if (canvas1) {
-                const ctx1 = canvas1.getContext('2d');
-                if (charts.topHospitals) charts.topHospitals.destroy();
-                charts.topHospitals = new Chart(ctx1, {
-                    type: 'bar',
-                    data: {
-                        labels: hospitals.map(h => h.name),
-                        datasets: [{
-                            data: hospitals.map(h => h.claims),
-                            backgroundColor: 'rgba(76,175,80,0.7)',
-                            borderColor: '#4CAF50',
-                            borderWidth: 1,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        indexAxis: 'y',
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } },
-                            y: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 9 } } }
-                        }
-                    }
-                });
-            }
-            
-            // Hospital Table (NO COST DATA for client portal)
-            const tbody = document.getElementById('hospitalsTableBody');
-            if (tbody) {
-                tbody.innerHTML = hospitals.map((h, i) => `
-                    <tr>
-                        <td><span style="background:${i < 3 ? '#D4AF37' : '#2E7D32'};color:#000;padding:2px 8px;border-radius:10px;font-weight:bold">${i + 1}</span></td>
-                        <td><strong>${h.name}</strong></td>
-                        <td>${h.claims}</td>
-                        <td>${(h.claims / totalClaims * 100).toFixed(1)}%</td>
-                    </tr>
-                `).join('');
-            }
+            // Replaced with Coming Soon section - no mock data
         }
         
         function createGeoCharts() {
-            // Mock geographic data - will come from CBMS (NO COST DATA for client portal)
-            const regions = [
-                { name: 'NCR', claims: 580, color: '#4CAF50' },
-                { name: 'Central Visayas', claims: 245, color: '#2196F3' },
-                { name: 'Davao Region', claims: 165, color: '#FF9800' },
-                { name: 'Western Visayas', claims: 125, color: '#D4AF37' },
-                { name: 'Central Luzon', claims: 95, color: '#E91E63' },
-                { name: 'Other Regions', claims: 160, color: '#607D8B' }
-            ];
-            
-            // Update city stats (with null checks)
-            const geoManila = document.getElementById('geoManila');
-            const geoCebu = document.getElementById('geoCebu');
-            const geoDavao = document.getElementById('geoDavao');
-            const geoIloilo = document.getElementById('geoIloilo');
-            const geoOther = document.getElementById('geoOther');
-            
-            if (geoManila) geoManila.textContent = '580';
-            if (geoCebu) geoCebu.textContent = '185';
-            if (geoDavao) geoDavao.textContent = '165';
-            if (geoIloilo) geoIloilo.textContent = '95';
-            if (geoOther) geoOther.textContent = '345';
-            
-            // Region Pie Chart (with null check)
-            const canvas1 = document.getElementById('geoRegionChart');
-            if (canvas1) {
-                const ctx1 = canvas1.getContext('2d');
-                if (charts.geoRegion) charts.geoRegion.destroy();
-                charts.geoRegion = new Chart(ctx1, {
-                    type: 'doughnut',
-                    data: {
-                        labels: regions.map(r => r.name),
-                        datasets: [{
-                            data: regions.map(r => r.claims),
-                            backgroundColor: regions.map(r => r.color),
-                            borderWidth: 2,
-                            borderColor: '#0a1a0a',
-                            hoverOffset: 10
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '55%',
-                        plugins: { legend: { display: true, position: 'right', labels: { color: '#b8c9b8', font: { size: 14, weight: 'bold' }, padding: 20, boxWidth: 16, boxHeight: 16 } } }
-                    }
-                });
-            }
-            
-            // Cities Bar Chart (with null check)
-            const canvas3 = document.getElementById('geoCitiesChart');
-            if (canvas3) {
-                const ctx3 = canvas3.getContext('2d');
-                if (charts.geoCities) charts.geoCities.destroy();
-                const cities = [
-                    { name: 'Manila', claims: 285 },
-                    { name: 'Quezon City', claims: 165 },
-                    { name: 'Cebu City', claims: 145 },
-                    { name: 'Davao City', claims: 125 },
-                    { name: 'Makati', claims: 95 },
-                    { name: 'Pasig', claims: 85 },
-                    { name: 'Iloilo City', claims: 75 },
-                    { name: 'Taguig', claims: 65 }
-                ];
-                charts.geoCities = new Chart(ctx3, {
-                    type: 'bar',
-                    data: {
-                        labels: cities.map(c => c.name),
-                        datasets: [{
-                            data: cities.map(c => c.claims),
-                            backgroundColor: [
-                                '#4CAF50', '#66BB6A', '#2196F3', '#FF9800', 
-                                '#D4AF37', '#E91E63', '#00BCD4', '#607D8B'
-                            ],
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { color: '#b8c9b8', font: { size: 13, weight: 'bold' } } },
-                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a', font: { size: 12 } } }
-                        }
-                    }
-                });
-            }
+            // Replaced with Coming Soon section - no mock data
         }
-        
         function setTrend(id, ch) {
             const el = document.getElementById(id);
             if (!ch || ch.percentage === null) { el.textContent = 'N/A'; return; }
-            el.innerHTML = `${ch.percentage > 0 ? 'â†‘' : 'â†“'} ${Math.abs(ch.percentage).toFixed(1)}%`;
+            el.innerHTML = `${ch.percentage > 0 ? '↑' : '↓'} ${Math.abs(ch.percentage).toFixed(1)}%`;
             el.className = `kpi-trend ${ch.percentage <= 0 ? 'down' : 'up'}`;
         }
         
         function setChange(id, ch) {
             const el = document.getElementById(id);
             if (!ch || ch.percentage === null) { el.textContent = 'N/A'; return; }
-            el.innerHTML = `${ch.percentage > 0 ? 'â†‘' : 'â†“'} ${Math.abs(ch.percentage).toFixed(1)}%`;
+            el.innerHTML = `${ch.percentage > 0 ? '↑' : '↓'} ${Math.abs(ch.percentage).toFixed(1)}%`;
             el.className = `cmp-change ${ch.percentage >= 0 ? 'positive' : 'negative'}`;
         }
         
@@ -5506,6 +5340,50 @@
                 });
             }
             
+            // Claims Trend - Cumulative line chart
+            const canvasCT = document.getElementById('claimsTrendChart');
+            if (canvasCT) {
+                const ctxCT = canvasCT.getContext('2d');
+                if (charts.claimsTrend) charts.claimsTrend.destroy();
+                const trendGrad = ctxCT.createLinearGradient(0, 0, 0, 250);
+                trendGrad.addColorStop(0, 'rgba(76,175,80,0.5)');
+                trendGrad.addColorStop(1, 'rgba(76,175,80,0.02)');
+                // Build cumulative claims for trend line
+                const cumulativeClaims = [];
+                let runningTotal = 0;
+                periods.forEach(p => {
+                    runningTotal += p.claims || 0;
+                    cumulativeClaims.push(runningTotal);
+                });
+                charts.claimsTrend = new Chart(ctxCT, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Cumulative Claims',
+                            data: cumulativeClaims,
+                            borderColor: '#4CAF50',
+                            backgroundColor: trendGrad,
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#4CAF50',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: { ...opts, 
+                        plugins: { ...opts.plugins, legend: { display: false } },
+                        scales: { 
+                            x: { grid: { display: false }, ticks: { color: '#b8c9b8' } }, 
+                            y: { grid: { color: 'rgba(30,58,30,0.3)' }, ticks: { color: '#7a8f7a' } } 
+                        } 
+                    }
+                });
+            }
+            
             // NOTE: Avg Claim chart removed (uses financial data)
             
             // Plan Pie - 3D Doughnut (with null check)
@@ -5583,19 +5461,19 @@
             if (ch) {
                 // Check cost - good if decreased (negative percentage)
                 if (ch.cost && ch.cost.percentage !== null) {
-                    if (ch.cost.percentage < 0) insights.push({ type: 'success', icon: 'âœ“', title: 'Cost Improvement', desc: `Cost decreased by ${Math.abs(ch.cost.percentage).toFixed(1)}%` });
-                    else if (ch.cost.percentage > 10) insights.push({ type: 'danger', icon: 'âš ', title: 'Cost Alert', desc: `Cost increased by ${ch.cost.percentage.toFixed(1)}%` });
+                    if (ch.cost.percentage < 0) insights.push({ type: 'success', icon: '✓', title: 'Cost Improvement', desc: `Cost decreased by ${Math.abs(ch.cost.percentage).toFixed(1)}%` });
+                    else if (ch.cost.percentage > 10) insights.push({ type: 'danger', icon: '⚠', title: 'Cost Alert', desc: `Cost increased by ${ch.cost.percentage.toFixed(1)}%` });
                 }
                 // Check members - good if increased
                 if (ch.members && ch.members.percentage !== null && ch.members.percentage > 0) {
-                    insights.push({ type: 'success', icon: 'ðŸ“ˆ', title: 'Growth', desc: `Members grew by ${ch.members.percentage.toFixed(1)}%` });
+                    insights.push({ type: 'success', icon: '📈', title: 'Growth', desc: `Members grew by ${ch.members.percentage.toFixed(1)}%` });
                 }
                 // Check claims - warning if increased significantly
                 if (ch.claims && ch.claims.percentage !== null && ch.claims.percentage > 5) {
                     insights.push({ type: 'warning', icon: '!', title: 'Claims Up', desc: `Claims increased by ${ch.claims.percentage.toFixed(1)}%` });
                 }
             }
-            while (insights.length < 3) insights.push({ type: 'info', icon: 'â„¹', title: 'Analysis', desc: 'Continue monitoring trends' });
+            while (insights.length < 3) insights.push({ type: 'info', icon: 'ℹ', title: 'Analysis', desc: 'Continue monitoring trends' });
             list.innerHTML = insights.slice(0, 3).map(i => `
                 <div class="insight-item ${i.type}">
                     <div class="insight-icon">${i.icon}</div>
