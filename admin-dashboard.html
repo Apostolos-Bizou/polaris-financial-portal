@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-19 v3.60 - OCR parsing: T/M prefix, name filter, address+city, company regex -->
+<!-- VERSION: 2026-02-19 v3.56 - Added Business Card Scanner with OCR auto-fill -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -34278,89 +34278,59 @@ function refreshCEODashboard(clientId) {
 }
 
 // v3.26: Load CBMS Report Data for Report Summary section
-// v3.60: Timeout wrapper for all fetch calls
-function fetchWithTimeout(url, ms = 15000) {
-    return new Promise((resolve, reject) => {
-        const t = setTimeout(() => reject(new Error('Timed out after ' + ms/1000 + 's')), ms);
-        fetch(url).then(r => { clearTimeout(t); resolve(r); }).catch(e => { clearTimeout(t); reject(e); });
-    });
-}
-
-// Separated display logic so it can be called standalone
-function updateCBMSDisplay(result) {
-    if (!result.success || !result.data || result.data.length === 0) {
-        showCBMSErrorBanner('No data in CBMS_Report sheet. Add data or check the sheet name.');
-        return false;
-    }
-    const fmt = (val) => '₱' + (parseFloat(val) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const totalRow = result.data.find(r => r.organisation === 'Report Total') || result.data[0];
-    const orgCount = result.data.filter(r => r.organisation !== 'Report Total').length;
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set('cbmsOrganisations', orgCount);
-    set('cbmsClaims',        (totalRow.claims || 0).toLocaleString());
-    set('cbmsMembers',       (totalRow.members || 0).toLocaleString());
-    set('cbmsApproved',      fmt(totalRow.approved_amount));
-    set('cbmsInvoiced',      fmt(totalRow.invoiced_amount));
-    set('cbmsTotalAmount',   fmt(totalRow.total_amount));
-    set('cbmsExGratia',      fmt(totalRow.ex_gratia));
-    set('cbmsTotalInclExGratia', fmt(totalRow.total_incl_exgratia));
-    set('cbmsAvgInclExGr',   fmt(totalRow.average_incl_exgr));
-    set('cbmsNetAvg',        fmt(totalRow.net_average));
-    set('cbmsPerCapita',     fmt(totalRow.per_capita));
-    set('cbmsPaidToHM',      fmt(totalRow.paid_to_hm));
-    set('cbmsChargedCustomer', fmt(totalRow.charged_to_customer));
-    set('cbmsFeesCustomer',  fmt(totalRow.fees_to_customer));
-    set('cbmsTotalToCustomer', fmt(totalRow.total_to_customer));
-    hideCBMSErrorBanner();
-    console.log('✅ CBMS updated —', result.data.length, 'records');
-    return true;
-}
-
-function showCBMSErrorBanner(msg) {
-    let b = document.getElementById('cbmsErrorBanner');
-    if (!b) {
-        b = document.createElement('div');
-        b.id = 'cbmsErrorBanner';
-        b.style.cssText = 'background:rgba(231,76,60,0.15);border:1px solid #e74c3c;border-radius:10px;padding:12px 16px;margin:0 0 16px 0;color:#e74c3c;font-size:0.85rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
-        const anchor = document.getElementById('cbmsOrganisations');
-        if (anchor) anchor.closest('section')?.insertAdjacentElement('beforebegin', b);
-    }
-    b.innerHTML = '⚠️ <span style="flex:1">' + msg + '</span>'
-        + '<button onclick="loadCBMSReportData(true)" style="background:#e74c3c;color:#fff;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem;white-space:nowrap;">🔄 Retry</button>';
-    b.style.display = 'flex';
-}
-function hideCBMSErrorBanner() {
-    const b = document.getElementById('cbmsErrorBanner');
-    if (b) b.style.display = 'none';
-}
-
-async function loadCBMSReportData(isRetry = false) {
-    console.log(isRetry ? '🔄 CBMS retry...' : '🔄 Loading CBMS data...');
+async function loadCBMSReportData() {
+    console.log('🔄 Loading CBMS Report Data...');
+    
     try {
-        const response = await fetchWithTimeout(API_URL + '?action=getCBMSReportData', 15000);
-        if (!response.ok) throw new Error('HTTP ' + response.status + ' ' + response.statusText);
+        const response = await fetch(API_URL + '?action=getCBMSReportData');
         const result = await response.json();
-        updateCBMSDisplay(result);
-    } catch (err) {
-        const s = err.message || String(err);
-        let msg;
-        if (s.includes('Failed to fetch') || s.includes('NetworkError') || s.includes('Load failed')) {
-            msg = 'Cannot reach Google Apps Script. Fix: re-deploy the script (New Version) and confirm access is set to "Anyone".';
-        } else if (s.includes('Timed out')) {
-            msg = 'Request timed out (15s). Apps Script may be slow — click Retry in a moment.';
-        } else if (s.includes('HTTP 4') || s.includes('HTTP 5')) {
-            msg = 'Server error: ' + s + '. Re-deploy the Apps Script with a new version.';
-        } else {
-            msg = 'Error: ' + s;
+        
+        if (!result.success || !result.data || result.data.length === 0) {
+            console.warn('⚠️ No CBMS data available');
+            return;
         }
-        console.error('❌ CBMS failed:', s);
-        showCBMSErrorBanner(msg);
-        if (!isRetry) setTimeout(() => loadCBMSReportData(true), 10000); // auto-retry once
+        
+        console.log('✅ CBMS Report data loaded:', result.data.length, 'records');
+        
+        // Find the "Report Total" row for summary
+        const totalRow = result.data.find(r => r.organisation === 'Report Total') || result.data[0];
+        
+        // Format PHP currency
+        const fmtPHP = (val) => '₱' + (parseFloat(val) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        // Update Report Summary cards
+        const orgCount = result.data.filter(r => r.organisation !== 'Report Total').length;
+        document.getElementById('cbmsOrganisations').textContent = orgCount;
+        document.getElementById('cbmsClaims').textContent = (totalRow.claims || 0).toLocaleString();
+        document.getElementById('cbmsMembers').textContent = (totalRow.members || 0).toLocaleString();
+        document.getElementById('cbmsApproved').textContent = fmtPHP(totalRow.approved_amount);
+        document.getElementById('cbmsInvoiced').textContent = fmtPHP(totalRow.invoiced_amount);
+        document.getElementById('cbmsTotalAmount').textContent = fmtPHP(totalRow.total_amount);
+        
+        // Update Financial Breakdown
+        document.getElementById('cbmsExGratia').textContent = fmtPHP(totalRow.ex_gratia);
+        document.getElementById('cbmsTotalInclExGratia').textContent = fmtPHP(totalRow.total_incl_exgratia);
+        document.getElementById('cbmsAvgInclExGr').textContent = fmtPHP(totalRow.average_incl_exgr);
+        document.getElementById('cbmsNetAvg').textContent = fmtPHP(totalRow.net_average);
+        
+        // Update Per Capita & Payments
+        document.getElementById('cbmsPerCapita').textContent = fmtPHP(totalRow.per_capita);
+        document.getElementById('cbmsPaidToHM').textContent = fmtPHP(totalRow.paid_to_hm);
+        document.getElementById('cbmsChargedCustomer').textContent = fmtPHP(totalRow.charged_to_customer);
+        document.getElementById('cbmsFeesCustomer').textContent = fmtPHP(totalRow.fees_to_customer);
+        
+        // Update Total to Customer banner
+        document.getElementById('cbmsTotalToCustomer').textContent = fmtPHP(totalRow.total_to_customer);
+        
+        console.log('✅ CBMS Report Summary updated!');
+        
+    } catch (error) {
+        console.error('❌ Error loading CBMS data:', error);
     }
 }
 
-// Load after page settles (delayed so other API calls go first)
-setTimeout(loadCBMSReportData, 3000);
+// Call CBMS loading after page loads
+setTimeout(loadCBMSReportData, 2000);
 
 console.log('✅ CEO Dashboard API Integration loaded!');
 
@@ -35168,14 +35138,14 @@ function parseBusinessCard(rawText) {
         if (/\d{3}\s?\d{2}/.test(line)) return true;
         if (/(ave|street|road|floor|blvd)/i.test(line)) return true;
         if (/(tel|fax|mob|mos|direct|e-?mail|phone)/i.test(line)) return true;
-        if (/(ltd|s\.a\.?|\bsa\b|inc|corp|llc|gmbh|shipping|maritime|marine|navigation|management|progress|services|group|tankers|carriers|logistics)/i.test(line)) return true;
+        if (/(ltd|s\.a|inc|corp|llc|gmbh|shipping|maritime|marine|management|progress|services|group)/i.test(line)) return true;
         if (/(greece|athens|maroussi|piraeus|cyprus|london)/i.test(line)) return true;
         if (/www\./i.test(line)) return true;
         // Person names: 2-4 capitalized words (e.g. "Charalampos Gkionis")
         if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(line.trim())) return true;
         // Job title / department lines
-        if (/(department|manager|director|officer|crew|fleet|operations|chartering|superintendent)/i.test(line)) return true;
-        // T/M/E single-letter prefix lines (ANOSIS card format)
+        if (/(department|manager|director|officer|crew|fleet|superintendent)/i.test(line)) return true;
+        // T / M / E single-letter prefix (ANOSIS format: "T +30...", "M +30...")
         if (/^[TtMmEe]\s+[\+\d]/.test(line.trim())) return true;
         
         // Noise detection for remaining lines
@@ -35193,6 +35163,20 @@ function parseBusinessCard(rawText) {
         return true;
     });
     
+    // ─── SPLIT "T +30..., M +30..." combined lines (ANOSIS format) ───
+    const expandedLines = [];
+    for (const line of lines) {
+        const tmMatch = line.match(/^T\s+(\+?[\d][\d\s.\-]{6,}?),?\s+M\s+(\+?[\d][\d\s.\-]+?)(?:\s*$|,)/i);
+        if (tmMatch) {
+            expandedLines.push('T ' + tmMatch[1].trim());
+            expandedLines.push('M ' + tmMatch[2].trim());
+        } else {
+            expandedLines.push(line);
+        }
+    }
+    lines.length = 0;
+    expandedLines.forEach(l => lines.push(l));
+
     const fullText = lines.join(' ');
     console.log('📷 Cleaned lines:', lines);
     
@@ -35218,18 +35202,6 @@ function parseBusinessCard(rawText) {
         return s;
     };
     
-    // Split "T +30..., M +30..." combined phone lines (ANOSIS format: T and M on same line)
-    const expandedLines = [];
-    for (const line of lines) {
-        const tmMatch = line.match(/^T\s+(\+?[\d][\d\s.-]{6,}?),?\s+M\s+(\+?[\d][\d\s.-]+?)(?:\s*$|,)/i);
-        if (tmMatch) {
-            expandedLines.push('T ' + tmMatch[1].trim());
-            expandedLines.push('M ' + tmMatch[2].trim());
-            console.log('\uD83D\uDCF7 Split T/M line:', tmMatch[1].trim(), '|', tmMatch[2].trim());
-        } else { expandedLines.push(line); }
-    }
-    lines.length = 0; expandedLines.forEach(l => lines.push(l));
-
     // ─── EMAIL ───
     // First try standard email match
     let emailMatch = fullText.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
@@ -35271,8 +35243,7 @@ function parseBusinessCard(rawText) {
             if (!data.fax) data.fax = phoneNum;
         }
         // MOBILE (MOB, Mob., Mos., ΚΙΝ, etc. - OCR may read Mob as Mos)
-        // Also: single-letter "M +30..." prefix (ANOSIS card format)
-        else if (/^(mob|mos|κιν|cell|gsm)/i.test(label) || /\b(mob|mos|κιν|cell)\s*[:.]?\s*/i.test(label) || /^m\s+\+?\d/.test(label)) {
+        else if (/^(mob|mos|κιν|cell|gsm)/i.test(label) || /\b(mob|mos|κιν|cell)\s*[:.]\s*/i.test(label) || /^m\s+\+?\d/.test(label)) {
             if (!data.mobile) data.mobile = phoneNum;
         }
         // DIRECT line
@@ -35281,7 +35252,6 @@ function parseBusinessCard(rawText) {
             else if (!data.mobile) data.mobile = phoneNum;
         }
         // TEL (TEL, Tel., ΤΗΛ, PHONE, PH, etc.)
-        // Also: single-letter "T +30..." prefix (ANOSIS card format)
         else if (/^(tel|τηλ|phone|ph)/i.test(label) || /\b(tel|τηλ|phone)\s*[:.]\s*/i.test(label) || /^t\s+\+?\d/.test(label)) {
             if (!data.phone) data.phone = phoneNum;
         }
@@ -35313,12 +35283,10 @@ function parseBusinessCard(rawText) {
         // Address indicators: postal code, street keywords, numbers with street names
         const isAddress = 
             /\d{3}\s?\d{2}/.test(l) ||  // postal code (xxxxx or xxx xx)
-            /\d+\s+[\w,&\s]+\s+(ave|avenue|str|street|road|rd|blvd|way|drive|dr|lane|ln)/i.test(l) ||
+            /\d+\s+\w+\s+(ave|avenue|str|street|road|rd|blvd|way|drive|dr|lane|ln)/i.test(l) ||
             /\w+\s+\d+/.test(l) && l.length > 8 && !/[+@]/.test(l) ||  // "Kifissias 44" pattern
             /(floor|flr|suite|ste|office|bldg|building)/i.test(l) ||
-            /gr\s*-\s*\d{3}/i.test(l) ||  // GR-151 25 Greek postal format
-            /[\w]+\s*&\s*[\w]+\s+str/i.test(l) ||  // "Pandoras & Kyprou str." format
-            /(glyfada|hellas|athens|maroussi|piraeus)/i.test(l);  // city names in address
+            /gr\s*-\s*\d{3}/i.test(l);  // GR-151 25 Greek postal format
         
         if (isAddress) {
             addressLines.push(l);
@@ -35574,7 +35542,7 @@ function showScanSuccessNotification(count) {
     }, 3000);
 }
 
-console.log('📷 v3.60: Business Card Scanner - T/M prefix + name/dept filter + address city');
+console.log('📷 v3.56: Business Card Scanner with Tesseract.js OCR loaded');
 </script>
 
 <!-- v3.55: Add Contact button restored to Client Portfolio view -->
