@@ -35030,62 +35030,113 @@ function parseBusinessCard(rawText) {
         website: ''
     };
     
-    // EMAIL
+    // Helper: clean OCR artifacts from phone numbers
+    // OCR often reads + as « or » or ~ or * or even doubles the first digit
+    const cleanOcrPhone = (str) => {
+        let s = str.replace(/[«»~*]/g, '+').replace(/\s+/g, ' ').trim();
+        // Fix: if number starts with 33021 or 33069 etc (OCR doubled the 3 instead of +3)
+        s = s.replace(/\b33(0\d{1,2}\s)/g, '+3$1');
+        return s;
+    };
+    
+    // ─── EMAIL ───
     const emailMatch = fullText.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
     if (emailMatch) data.email = emailMatch[0].toLowerCase();
     
-    // PHONE NUMBERS
-    const phonePatterns = fullText.match(/(?:(?:\+|00)\s?\d{1,3}[\s\-.]?)?\(?\d{2,4}\)?[\s\-.]?\d{3,4}[\s\-.]?\d{3,4}/g) || [];
-    const cleanPhones = phonePatterns.map(p => p.trim()).filter(p => p.replace(/\D/g, '').length >= 7);
-    
-    cleanPhones.forEach((phone, i) => {
-        const idx = fullText.indexOf(phone);
-        const context = fullText.substring(Math.max(0, idx - 30), idx).toLowerCase();
-        
-        if (/fax|\u03c6\u03b1\u03be|faks/i.test(context)) {
-            if (!data.fax) data.fax = phone;
-        } else if (/mob|\u03ba\u03b9\u03bd|cell|gsm/i.test(context)) {
-            if (!data.mobile) data.mobile = phone;
-        } else if (/tel|\u03c4\u03b7\u03bb|phone|ph/i.test(context) || i === 0) {
-            if (!data.phone) data.phone = phone;
-            else if (!data.mobile) data.mobile = phone;
-        } else {
-            if (!data.phone) data.phone = phone;
-            else if (!data.mobile) data.mobile = phone;
-        }
-    });
-    
-    // WEBSITE
-    const webMatch = fullText.match(/(?:www\.)[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?/i);
-    if (webMatch) data.website = webMatch[0];
-    
-    // ADDRESS - look for postal codes or street patterns
+    // ─── LINE-BY-LINE LABELED FIELD EXTRACTION ───
+    // Business cards often have labels like TEL:, FAX:, MOB:, E-MAIL:, DIRECT:
     for (const line of lines) {
-        if (line.match(/\d{3}\s?\d{2}/) && !line.match(/@/) && !line.match(/tel|fax|mob/i)) {
-            if (!data.address) {
-                data.address = line.replace(/^[,.\s]+|[,.\s]+$/g, '');
-            }
+        const cleaned = cleanOcrPhone(line);
+        
+        // Extract phone-like number from the line
+        const phoneInLine = cleaned.match(/[+]?\d[\d\s\-().]{6,}/);
+        const phoneNum = phoneInLine ? phoneInLine[0].trim() : '';
+        
+        if (!phoneNum) continue;
+        
+        const label = cleaned.toLowerCase();
+        
+        // FAX (OCR may read as EAX, FAK, ΕΑΧ, etc.)
+        if (/^(fax|faks|eax|εαχ|φαξ)/i.test(label) || /\b(fax|faks|eax|εαχ)\s*[:.]?\s*/i.test(label)) {
+            if (!data.fax) data.fax = phoneNum;
+        }
+        // MOBILE (MOB, Mob., Mos., ΚΙΝ, etc. - OCR may read Mob as Mos)
+        else if (/^(mob|mos|κιν|cell|gsm)/i.test(label) || /\b(mob|mos|κιν|cell)\s*[:.]\s*/i.test(label)) {
+            if (!data.mobile) data.mobile = phoneNum;
+        }
+        // DIRECT line
+        else if (/^direct/i.test(label) || /\bdirect\s*[:.]?\s*/i.test(label)) {
+            if (!data.phone) data.phone = phoneNum;
+            else if (!data.mobile) data.mobile = phoneNum;
+        }
+        // TEL (TEL, Tel., ΤΗΛ, PHONE, PH, etc.)
+        else if (/^(tel|τηλ|phone|ph)/i.test(label) || /\b(tel|τηλ|phone)\s*[:.]\s*/i.test(label)) {
+            if (!data.phone) data.phone = phoneNum;
         }
     }
     
-    // COUNTRY
+    // ─── FALLBACK: if no labeled phones found, collect all phone-like patterns ───
+    if (!data.phone && !data.mobile && !data.fax) {
+        const allText = cleanOcrPhone(fullText);
+        const phonePatterns = allText.match(/[+]?\d[\d\s\-().]{6,}/g) || [];
+        const validPhones = phonePatterns.map(p => p.trim()).filter(p => p.replace(/\D/g, '').length >= 7);
+        if (validPhones.length >= 1) data.phone = validPhones[0];
+        if (validPhones.length >= 2) data.mobile = validPhones[1];
+        if (validPhones.length >= 3) data.fax = validPhones[2];
+    }
+    
+    // ─── WEBSITE ───
+    const webMatch = fullText.match(/(?:www\.)[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?/i);
+    if (webMatch) data.website = webMatch[0];
+    
+    // ─── ADDRESS ───
+    // Collect address lines: look for street numbers, postal codes, city names
+    const addressLines = [];
+    for (const line of lines) {
+        const l = line.trim();
+        // Skip lines that are clearly phone/email/fax
+        if (/@/.test(l)) continue;
+        if (/^(tel|fax|mob|eax|εαχ|direct|e-?mail|phone|κιν|τηλ|φαξ)/i.test(l)) continue;
+        
+        // Address indicators: postal code, street keywords, numbers with street names
+        const isAddress = 
+            /\d{3}\s?\d{2}/.test(l) ||  // postal code (xxxxx or xxx xx)
+            /\d+\s+\w+\s+(ave|avenue|str|street|road|rd|blvd|way|drive|dr|lane|ln)/i.test(l) ||
+            /\w+\s+\d+/.test(l) && l.length > 8 && !/[+@]/.test(l) ||  // "Kifissias 44" pattern
+            /(floor|flr|suite|ste|office|bldg|building)/i.test(l) ||
+            /gr\s*-\s*\d{3}/i.test(l);  // GR-151 25 Greek postal format
+        
+        if (isAddress) {
+            addressLines.push(l);
+        }
+    }
+    if (addressLines.length > 0) {
+        data.address = addressLines.join(', ');
+    }
+    
+    // ─── COUNTRY ───
     const countryPatterns = {
-        'Greece': /greece|\u03b5\u03bb\u03bb\u03ac\u03b4\u03b1|hellas/i,
-        'Cyprus': /cyprus/i,
-        'United Kingdom': /united kingdom|\buk\b|england/i,
-        'Germany': /germany|deutschland/i,
-        'France': /france/i,
-        'Italy': /italy|italia/i,
-        'Netherlands': /netherlands|holland/i,
-        'Norway': /norway|norge/i,
+        'Greece': /greece|\u03b5\u03bb\u03bb\u03ac\u03b4\u03b1|hellas|athens|piraeus|thessaloniki|maroussi|glyfada|vouliagmeni/i,
+        'Cyprus': /cyprus|limassol|nicosia|larnaca/i,
+        'United Kingdom': /united kingdom|\buk\b|england|london/i,
+        'Germany': /germany|deutschland|hamburg|munich|berlin/i,
+        'France': /france|paris|marseille/i,
+        'Italy': /italy|italia|genoa|rome|milan|naples/i,
+        'Netherlands': /netherlands|holland|amsterdam|rotterdam/i,
+        'Norway': /norway|norge|oslo|bergen/i,
         'Singapore': /singapore/i,
         'Monaco': /monaco/i,
-        'Malta': /malta/i,
-        'Marshall Islands': /marshall islands/i,
-        'Liberia': /liberia/i,
+        'Malta': /malta|valletta/i,
+        'Marshall Islands': /marshall islands|majuro/i,
+        'Liberia': /liberia|monrovia/i,
         'Panama': /panama/i,
-        'Bahamas': /bahamas/i,
-        'USA': /\busa\b|united states|america/i
+        'Bahamas': /bahamas|nassau/i,
+        'USA': /\busa\b|united states|america|new york|houston/i,
+        'UAE': /\buae\b|dubai|abu dhabi/i,
+        'Hong Kong': /hong kong/i,
+        'Japan': /japan|tokyo/i,
+        'South Korea': /south korea|korea|seoul|busan/i,
+        'China': /china|shanghai|beijing/i
     };
     
     for (const [country, regex] of Object.entries(countryPatterns)) {
@@ -35095,18 +35146,30 @@ function parseBusinessCard(rawText) {
         }
     }
     
-    // COMPANY NAME - look for Ltd, S.A., Inc, etc.
-    const companyRegex = /(?:ltd|l\.t\.d|limited|s\.a\.|\bsa\b|inc|corp|llc|gmbh|shipping|maritime|marine|navigation|management|services|enterprises|holdings|group)/i;
+    // ─── COMPANY NAME ───
+    // Look for company suffixes (S.A., Ltd, etc.) - also handle multi-line company names
+    const companyRegex = /(?:ltd|l\.t\.d|limited|s\.a\.?|\bsa\b|n\.a\.?|\bna\b|inc|corp|llc|gmbh|a\.e\.?|e\.p\.e\.?|o\.e\.?|shipping|maritime|marine|navigation|management|services|enterprises|holdings|group|tankers|bulk|carriers)/i;
     
-    for (const line of lines) {
+    let companyLines = [];
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         if (companyRegex.test(line) && !line.match(/@/) && line.length > 3) {
-            data.companyName = line.replace(/^[,.\s]+|[,.\s]+$/g, '');
+            companyLines.push(line);
+            // Check if previous line is also part of company name (multi-line like "Common Progress\nCo Na S.A.")
+            if (i > 0 && lines[i-1].length > 2 && lines[i-1].length < 40 && 
+                !lines[i-1].match(/@/) && !lines[i-1].match(/tel|fax|mob|direct/i) &&
+                !lines[i-1].match(/\d{3}\s?\d{2}/)) {
+                companyLines.unshift(lines[i-1]);
+            }
             break;
         }
     }
+    if (companyLines.length > 0) {
+        data.companyName = companyLines.join(' ').replace(/^[,.\s]+|[,.\s]+$/g, '');
+    }
     
-    // TITLE - common business titles
-    const titleRegex = /\b(ceo|cfo|coo|cto|director|manager|president|chairman|partner|captain|chief|officer|head|vp|vice president|fleet manager|crew manager|general manager|managing director|commercial manager|operations manager|financial controller|superintendent|marine superintendent|technical manager|chartering manager|claims manager|hr manager|insurance manager)\b/i;
+    // ─── TITLE ───
+    const titleRegex = /\b(ceo|cfo|coo|cto|director|manager|president|chairman|partner|captain|chief|officer|head|vp|vice president|fleet manager|crew manager|general manager|managing director|commercial manager|operations manager|financial controller|superintendent|marine superintendent|technical manager|chartering manager|claims manager|hr manager|insurance manager|broker|consultant|associate|analyst|coordinator|secretary|administrator|representative)\b/i;
     
     for (const line of lines) {
         if (titleRegex.test(line)) {
@@ -35115,17 +35178,31 @@ function parseBusinessCard(rawText) {
         }
     }
     
-    // CONTACT PERSON - line with 2-3 capitalized words, no numbers
+    // ─── CONTACT PERSON ───
+    // Name: a line with 2-5 words that are all letters, not matching other fields
+    // Also handle names with mixed scripts (OCR might garble Greek)
+    const usedLines = new Set([data.companyName, data.title, data.address, data.email]);
+    
     for (const line of lines) {
         const cleaned = line.trim();
-        if (cleaned === data.companyName || cleaned === data.title || cleaned === data.address) continue;
+        // Skip if this line was already identified as something else
+        if (usedLines.has(cleaned)) continue;
+        // Skip if part of multi-line company name
+        if (data.companyName && data.companyName.includes(cleaned)) continue;
         if (/@/.test(cleaned) || /www\./i.test(cleaned)) continue;
-        if (/tel|fax|mob|phone/i.test(cleaned)) continue;
+        if (/^(tel|fax|mob|eax|direct|e-?mail|phone|κιν|τηλ|φαξ)/i.test(cleaned)) continue;
+        // Skip lines with too many digits (phone numbers)
         if (cleaned.replace(/\D/g, '').length > 3) continue;
+        // Skip address-like lines
+        if (/\d{3}\s?\d{2}/.test(cleaned)) continue;
+        if (/(ave|avenue|str|street|road|floor|flr|suite)/i.test(cleaned)) continue;
+        // Skip country lines
+        if (/^(greece|athens|cyprus|uk|usa)/i.test(cleaned)) continue;
         
         const words = cleaned.split(/\s+/);
-        if (words.length >= 2 && words.length <= 5 && cleaned.length >= 5 && cleaned.length <= 50) {
-            const allLetterWords = words.every(w => /^[A-Za-z\u0391-\u03C9\u03AC-\u03CE\u00C0-\u00FF.\-']+$/.test(w));
+        if (words.length >= 2 && words.length <= 5 && cleaned.length >= 5 && cleaned.length <= 60) {
+            // Allow letters from any script (Latin, Greek, accented, etc.)
+            const allLetterWords = words.every(w => /^[\p{L}.\-']+$/u.test(w));
             if (allLetterWords) {
                 data.contactPerson = cleaned;
                 break;
