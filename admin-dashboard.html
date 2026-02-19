@@ -35121,8 +35121,44 @@ async function preprocessAndOCR(imageData) {
 }
 
 function parseBusinessCard(rawText) {
-    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 1);
+    // ─── STEP 0: CLEAN OCR NOISE ───
+    // Business card photos often have background noise that OCR reads as garbage
+    const rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 1);
+    
+    const lines = rawLines.filter(line => {
+        if (line.length < 4) return false;
+        
+        // Remove lines mostly dots, punctuation, special chars
+        const meaningful = line.replace(/[^a-zA-Z0-9@.+\-(),/]/g, '');
+        if (meaningful.length < 3) return false;
+        
+        // KEEP lines with recognized business card patterns (high confidence)
+        if (/@/.test(line)) return true;
+        if (/\+?\d[\d\s\-]{6,}/.test(line)) return true;
+        if (/\d{3}\s?\d{2}/.test(line)) return true;
+        if (/(ave|street|road|floor|blvd)/i.test(line)) return true;
+        if (/(tel|fax|mob|mos|direct|e-?mail|phone)/i.test(line)) return true;
+        if (/(ltd|s\.a|inc|corp|llc|gmbh|shipping|maritime|marine|management|progress|services|group)/i.test(line)) return true;
+        if (/(greece|athens|maroussi|piraeus|cyprus|london)/i.test(line)) return true;
+        if (/www\./i.test(line)) return true;
+        
+        // Noise detection for remaining lines
+        const words = line.split(/\s+/);
+        const shortWords = words.filter(w => w.replace(/[^a-zA-Z]/g, '').length <= 2).length;
+        if (words.length > 3 && shortWords / words.length > 0.5) return false;
+        if (/^[.:;\-|¥©®°<>{}[\]!#$%&*=~]/.test(line)) return false;
+        if (words.length > 4) {
+            const noiseWords = words.filter(w => /^[A-Z]{1,3}$/.test(w)).length;
+            if (noiseWords / words.length > 0.4) return false;
+        }
+        const hasRealWord = words.some(w => w.replace(/[^a-zA-Z]/g, '').length >= 4);
+        if (!hasRealWord && words.length > 2) return false;
+        
+        return true;
+    });
+    
     const fullText = lines.join(' ');
+    console.log('📷 Cleaned lines:', lines);
     
     const data = {
         companyName: '',
@@ -35147,8 +35183,27 @@ function parseBusinessCard(rawText) {
     };
     
     // ─── EMAIL ───
-    const emailMatch = fullText.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
-    if (emailMatch) data.email = emailMatch[0].toLowerCase();
+    // First try standard email match
+    let emailMatch = fullText.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+    if (emailMatch) {
+        data.email = emailMatch[0].toLowerCase();
+    } else {
+        // OCR sometimes splits words with spaces: "fcc@common rogress.gr"
+        // Look for E-MAIL: label and extract everything after it
+        const emailLineMatch = fullText.match(/e-?mail\s*[:.]?\s*([^\s]+@[^\s]+)/i);
+        if (emailLineMatch) {
+            // Try to reconstruct: remove spaces between @ and .tld
+            let candidate = emailLineMatch[1];
+            // Look ahead for more parts: "fcc@common rogress.gr" -> grab next words until .tld
+            const afterAt = fullText.indexOf(emailLineMatch[1]) + emailLineMatch[1].length;
+            const rest = fullText.substring(afterAt, afterAt + 30);
+            const moreParts = rest.match(/^\s+([a-zA-Z]+\.[a-zA-Z]{2,})/);
+            if (moreParts) {
+                candidate = candidate + moreParts[1];
+            }
+            data.email = candidate.replace(/\s+/g, '').toLowerCase();
+        }
+    }
     
     // ─── LINE-BY-LINE LABELED FIELD EXTRACTION ───
     // Business cards often have labels like TEL:, FAX:, MOB:, E-MAIL:, DIRECT:
@@ -35201,9 +35256,9 @@ function parseBusinessCard(rawText) {
     const addressLines = [];
     for (const line of lines) {
         const l = line.trim();
-        // Skip lines that are clearly phone/email/fax
+        // Skip lines that contain phone/email/fax labels anywhere
         if (/@/.test(l)) continue;
-        if (/^(tel|fax|mob|eax|εαχ|direct|e-?mail|phone|κιν|τηλ|φαξ)/i.test(l)) continue;
+        if (/\b(tel|fax|mob|mos|eax|εαχ|direct|e-?mail|phone|κιν|τηλ|φαξ)\b/i.test(l)) continue;
         
         // Address indicators: postal code, street keywords, numbers with street names
         const isAddress = 
@@ -35218,7 +35273,11 @@ function parseBusinessCard(rawText) {
         }
     }
     if (addressLines.length > 0) {
-        data.address = addressLines.join(', ');
+        // Clean OCR artifacts from address lines
+        data.address = addressLines
+            .map(l => l.replace(/^[|;:.\s\-i¥]+/, '').replace(/[|;:.\s]+$/, '').trim())
+            .filter(l => l.length > 3)
+            .join(', ');
     }
     
     // ─── COUNTRY ───
@@ -35255,11 +35314,13 @@ function parseBusinessCard(rawText) {
     
     // ─── COMPANY NAME ───
     // Look for company suffixes (S.A., Ltd, etc.) - also handle multi-line company names
-    const companyRegex = /(?:ltd|l\.t\.d|limited|s\.a\.?|\bsa\b|n\.a\.?|\bna\b|inc|corp|llc|gmbh|a\.e\.?|e\.p\.e\.?|o\.e\.?|shipping|maritime|marine|navigation|management|services|enterprises|holdings|group|tankers|bulk|carriers)/i;
+    const companyRegex = /(?:ltd|l\.t\.d|limited|s\.a\.?|\bsa\b|n\.a\.?|\bna\b|inc|corp|llc|gmbh|a\.e\.?|e\.p\.e\.?|o\.e\.?|shipping|maritime|marine|navigation|management|services|enterprises|holdings|group|tankers|bulk|carriers|progress|logistics|trading|consulting)/i;
     
     let companyLines = [];
     for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+        let line = lines[i];
+        // Strip phone label suffixes: "Common Pro ress - TEL.: +30210 61 050" → "Common Pro ress"
+        line = line.replace(/\s*[-–—]\s*(tel|fax|mob|mos|direct|phone).*$/i, '').trim();
         if (companyRegex.test(line) && !line.match(/@/) && line.length > 3) {
             companyLines.push(line);
             // Check if previous line is also part of company name (multi-line like "Common Progress\nCo Na S.A.")
