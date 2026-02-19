@@ -35319,8 +35319,11 @@ function parseBusinessCard(rawText) {
     let companyLines = [];
     for (let i = 0; i < lines.length; i++) {
         let line = lines[i];
-        // Strip phone label suffixes: "Common Pro ress - TEL.: +30210 61 050" → "Common Pro ress"
-        line = line.replace(/\s*[-–—]\s*(tel|fax|mob|mos|direct|phone).*$/i, '').trim();
+        // Strip phone label suffixes and everything after
+        // Handles: "Common Pro ress - TEL.: +30210" or "Common Progress. Te: +30210" etc.
+        line = line.replace(/\s*[-–—.]\s*(tel|te|fax|mob|mos|direct|phone)\b.*$/i, '').trim();
+        // Also strip if phone number appears directly: "Company Name +30210..."
+        line = line.replace(/\s*[+]\d{3,}.*$/, '').trim();
         if (companyRegex.test(line) && !line.match(/@/) && line.length > 3) {
             companyLines.push(line);
             // Check if previous line is also part of company name (multi-line like "Common Progress\nCo Na S.A.")
@@ -35333,7 +35336,12 @@ function parseBusinessCard(rawText) {
         }
     }
     if (companyLines.length > 0) {
-        data.companyName = companyLines.join(' ').replace(/^[,.\s]+|[,.\s]+$/g, '');
+        let compName = companyLines.join(' ').replace(/^[,.\s]+/, '').trim();
+        // Remove trailing dots/punctuation but preserve "S.A." style endings
+        compName = compName.replace(/[,.\s]+$/, '');
+        // If it ends with S.A, add back the dot
+        if (/s\.a$/i.test(compName)) compName += '.';
+        data.companyName = compName;
     }
     
     // ─── TITLE ───
