@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-19 v3.57 - OCR improvements: low-contrast cards, T/M phone prefix, name/crew detection -->
+<!-- VERSION: 2026-02-19 v3.57 - CBMS robust fetch: timeout, retry, error banner + OCR improvements -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -34278,59 +34278,113 @@ function refreshCEODashboard(clientId) {
 }
 
 // v3.26: Load CBMS Report Data for Report Summary section
-async function loadCBMSReportData() {
-    console.log('🔄 Loading CBMS Report Data...');
+// v3.57: fetchWithTimeout helper — prevents hanging requests
+function fetchWithTimeout(url, timeoutMs = 15000) {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('Request timed out after ' + timeoutMs/1000 + 's')), timeoutMs);
+        fetch(url)
+            .then(res => { clearTimeout(timer); resolve(res); })
+            .catch(err => { clearTimeout(timer); reject(err); });
+    });
+}
+
+// v3.57: updateCBMSDisplay — separated so it can be called from diagnostics too
+function updateCBMSDisplay(result) {
+    if (!result.success || !result.data || result.data.length === 0) {
+        console.warn('⚠️ No CBMS data available:', result.error || 'empty data');
+        showCBMSErrorBanner('No CBMS data in sheet. Check that "CBMS_Report" sheet exists and has data.');
+        return false;
+    }
+    const fmtPHP = (val) => '₱' + (parseFloat(val) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const totalRow = result.data.find(r => r.organisation === 'Report Total') || result.data[0];
+    const orgCount = result.data.filter(r => r.organisation !== 'Report Total').length;
+    const safe = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    safe('cbmsOrganisations', orgCount);
+    safe('cbmsClaims', (totalRow.claims || 0).toLocaleString());
+    safe('cbmsMembers', (totalRow.members || 0).toLocaleString());
+    safe('cbmsApproved', fmtPHP(totalRow.approved_amount));
+    safe('cbmsInvoiced', fmtPHP(totalRow.invoiced_amount));
+    safe('cbmsTotalAmount', fmtPHP(totalRow.total_amount));
+    safe('cbmsExGratia', fmtPHP(totalRow.ex_gratia));
+    safe('cbmsTotalInclExGratia', fmtPHP(totalRow.total_incl_exgratia));
+    safe('cbmsAvgInclExGr', fmtPHP(totalRow.average_incl_exgr));
+    safe('cbmsNetAvg', fmtPHP(totalRow.net_average));
+    safe('cbmsPerCapita', fmtPHP(totalRow.per_capita));
+    safe('cbmsPaidToHM', fmtPHP(totalRow.paid_to_hm));
+    safe('cbmsChargedCustomer', fmtPHP(totalRow.charged_to_customer));
+    safe('cbmsFeesCustomer', fmtPHP(totalRow.fees_to_customer));
+    safe('cbmsTotalToCustomer', fmtPHP(totalRow.total_to_customer));
+    console.log('✅ CBMS Report Summary updated! Records:', result.data.length);
+    hideCBMSErrorBanner();
+    return true;
+}
+
+function showCBMSErrorBanner(msg) {
+    let banner = document.getElementById('cbmsErrorBanner');
+    if (!banner) {
+        // Find the CBMS section to inject banner
+        const cbmsSection = document.getElementById('cbmsOrganisations');
+        if (!cbmsSection) return;
+        banner = document.createElement('div');
+        banner.id = 'cbmsErrorBanner';
+        banner.style.cssText = 'background:rgba(231,76,60,0.15);border:1px solid #e74c3c;border-radius:10px;padding:12px 16px;margin:12px 0;color:#e74c3c;font-size:0.85rem;display:flex;align-items:center;gap:10px;';
+        cbmsSection.closest('section')?.insertAdjacentElement('beforebegin', banner);
+    }
+    banner.innerHTML = `⚠️ <span>${msg}</span> <button onclick="loadCBMSReportData(true)" style="margin-left:auto;background:#e74c3c;color:white;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.8rem;">🔄 Retry</button>`;
+    banner.style.display = 'flex';
+}
+
+function hideCBMSErrorBanner() {
+    const banner = document.getElementById('cbmsErrorBanner');
+    if (banner) banner.style.display = 'none';
+}
+
+async function loadCBMSReportData(isRetry = false) {
+    console.log(isRetry ? '🔄 Retrying CBMS data load...' : '🔄 Loading CBMS Report Data...');
     
     try {
-        const response = await fetch(API_URL + '?action=getCBMSReportData');
-        const result = await response.json();
+        // v3.57: 15s timeout + descriptive error messages
+        const response = await fetchWithTimeout(API_URL + '?action=getCBMSReportData', 15000);
         
-        if (!result.success || !result.data || result.data.length === 0) {
-            console.warn('⚠️ No CBMS data available');
-            return;
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} ${response.statusText}`);
         }
         
-        console.log('✅ CBMS Report data loaded:', result.data.length, 'records');
-        
-        // Find the "Report Total" row for summary
-        const totalRow = result.data.find(r => r.organisation === 'Report Total') || result.data[0];
-        
-        // Format PHP currency
-        const fmtPHP = (val) => '₱' + (parseFloat(val) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        
-        // Update Report Summary cards
-        const orgCount = result.data.filter(r => r.organisation !== 'Report Total').length;
-        document.getElementById('cbmsOrganisations').textContent = orgCount;
-        document.getElementById('cbmsClaims').textContent = (totalRow.claims || 0).toLocaleString();
-        document.getElementById('cbmsMembers').textContent = (totalRow.members || 0).toLocaleString();
-        document.getElementById('cbmsApproved').textContent = fmtPHP(totalRow.approved_amount);
-        document.getElementById('cbmsInvoiced').textContent = fmtPHP(totalRow.invoiced_amount);
-        document.getElementById('cbmsTotalAmount').textContent = fmtPHP(totalRow.total_amount);
-        
-        // Update Financial Breakdown
-        document.getElementById('cbmsExGratia').textContent = fmtPHP(totalRow.ex_gratia);
-        document.getElementById('cbmsTotalInclExGratia').textContent = fmtPHP(totalRow.total_incl_exgratia);
-        document.getElementById('cbmsAvgInclExGr').textContent = fmtPHP(totalRow.average_incl_exgr);
-        document.getElementById('cbmsNetAvg').textContent = fmtPHP(totalRow.net_average);
-        
-        // Update Per Capita & Payments
-        document.getElementById('cbmsPerCapita').textContent = fmtPHP(totalRow.per_capita);
-        document.getElementById('cbmsPaidToHM').textContent = fmtPHP(totalRow.paid_to_hm);
-        document.getElementById('cbmsChargedCustomer').textContent = fmtPHP(totalRow.charged_to_customer);
-        document.getElementById('cbmsFeesCustomer').textContent = fmtPHP(totalRow.fees_to_customer);
-        
-        // Update Total to Customer banner
-        document.getElementById('cbmsTotalToCustomer').textContent = fmtPHP(totalRow.total_to_customer);
-        
-        console.log('✅ CBMS Report Summary updated!');
+        const result = await response.json();
+        updateCBMSDisplay(result);
         
     } catch (error) {
-        console.error('❌ Error loading CBMS data:', error);
+        // Categorize the error for a useful message
+        let userMsg = '';
+        const errStr = error.message || String(error);
+        
+        if (errStr.includes('Failed to fetch') || errStr.includes('NetworkError') || errStr.includes('Load failed')) {
+            userMsg = 'Cannot reach Google Apps Script. Check: (1) Script is deployed as "Execute as: Me, Who has access: Anyone", (2) Re-deploy with new version after code changes.';
+        } else if (errStr.includes('timed out')) {
+            userMsg = 'Request timed out (15s). Apps Script may be slow — try again in a moment.';
+        } else if (errStr.includes('HTTP 4') || errStr.includes('HTTP 5')) {
+            userMsg = `Server error: ${errStr}. Re-deploy the Apps Script.`;
+        } else if (errStr.includes('CBMS_Report sheet not found') || errStr.includes('not found')) {
+            userMsg = 'Sheet "CBMS_Report" not found in Google Spreadsheet. Create the sheet or check the sheet name.';
+        } else {
+            userMsg = `Error: ${errStr}`;
+        }
+        
+        console.error('❌ CBMS load failed:', errStr);
+        console.error('   URL:', API_URL + '?action=getCBMSReportData');
+        console.error('   Fix:', userMsg);
+        showCBMSErrorBanner(userMsg);
+        
+        // Auto-retry once after 10s (only on initial load, not manual retry)
+        if (!isRetry) {
+            console.log('⏳ Will retry CBMS in 10s...');
+            setTimeout(() => loadCBMSReportData(true), 10000);
+        }
     }
 }
 
-// Call CBMS loading after page loads
-setTimeout(loadCBMSReportData, 2000);
+// Call CBMS loading after page loads (delayed to let other API calls go first)
+setTimeout(loadCBMSReportData, 3000);
 
 console.log('✅ CEO Dashboard API Integration loaded!');
 
@@ -35002,59 +35056,16 @@ function preprocessImage(imageData) {
                 pixels[i] = pixels[i+1] = pixels[i+2] = gray;
             }
             
-            // Step 2: Increase contrast (stretch histogram with gamma for low-contrast cards)
+            // Step 2: Increase contrast (stretch histogram)
             let minVal = 255, maxVal = 0;
-            let totalGray = 0;
             for (let i = 0; i < pixels.length; i += 4) {
                 if (pixels[i] < minVal) minVal = pixels[i];
                 if (pixels[i] > maxVal) maxVal = pixels[i];
-                totalGray += pixels[i];
             }
-            const avgGray = totalGray / (pixels.length / 4);
             const range = maxVal - minVal || 1;
-            
-            // Detect low-contrast cards (like ANOSIS gray card): range < 100 means text is faint
-            const isLowContrast = range < 120;
-            console.log('📷 Contrast range:', range, '| Avg brightness:', avgGray.toFixed(0), '| Low contrast:', isLowContrast);
-            
             for (let i = 0; i < pixels.length; i += 4) {
-                let stretched = ((pixels[i] - minVal) / range) * 255;
-                // Extra S-curve contrast boost for low-contrast cards
-                if (isLowContrast) {
-                    // Apply sigmoid-like curve to amplify mid-range differences
-                    stretched = stretched / 255;
-                    stretched = 1 / (1 + Math.exp(-8 * (stretched - 0.5)));
-                    stretched = stretched * 255;
-                }
-                pixels[i] = pixels[i+1] = pixels[i+2] = Math.min(255, Math.max(0, Math.round(stretched)));
-            }
-            
-            // Step 2b: Unsharp masking for low-contrast cards to sharpen text edges
-            if (isLowContrast) {
-                const w2 = canvas.width, h2 = canvas.height;
-                const blurred = new Float32Array(w2 * h2);
-                // Simple box blur 3x3 for unsharp mask
-                for (let y = 0; y < h2; y++) {
-                    for (let x = 0; x < w2; x++) {
-                        let sum = 0, cnt = 0;
-                        for (let dy = -1; dy <= 1; dy++) {
-                            for (let dx = -1; dx <= 1; dx++) {
-                                const ny = y + dy, nx = x + dx;
-                                if (ny >= 0 && ny < h2 && nx >= 0 && nx < w2) {
-                                    sum += pixels[(ny * w2 + nx) * 4];
-                                    cnt++;
-                                }
-                            }
-                        }
-                        blurred[y * w2 + x] = sum / cnt;
-                    }
-                }
-                const strength = 1.5; // unsharp mask strength
-                for (let i = 0; i < pixels.length; i += 4) {
-                    const idx = i / 4;
-                    const sharpened = Math.min(255, Math.max(0, Math.round(pixels[i] + strength * (pixels[i] - blurred[idx]))));
-                    pixels[i] = pixels[i+1] = pixels[i+2] = sharpened;
-                }
+                const stretched = ((pixels[i] - minVal) / range) * 255;
+                pixels[i] = pixels[i+1] = pixels[i+2] = Math.round(stretched);
             }
             
             // Step 3: Adaptive threshold (Sauvola-inspired)
@@ -35179,16 +35190,11 @@ function parseBusinessCard(rawText) {
         if (/@/.test(line)) return true;
         if (/\+?\d[\d\s\-]{6,}/.test(line)) return true;
         if (/\d{3}\s?\d{2}/.test(line)) return true;
-        if (/(ave|street|road|floor|blvd|str\.)/i.test(line)) return true;
+        if (/(ave|street|road|floor|blvd)/i.test(line)) return true;
         if (/(tel|fax|mob|mos|direct|e-?mail|phone)/i.test(line)) return true;
-        if (/(^T\s+\+?\d|^M\s+\+?\d|^E\s+\w+@|\bT:\s+\+?\d|\bM:\s+\+?\d)/i.test(line)) return true; // T +30.., M +30.., E email@...
         if (/(ltd|s\.a|inc|corp|llc|gmbh|shipping|maritime|marine|management|progress|services|group)/i.test(line)) return true;
-        if (/(greece|athens|maroussi|piraeus|glyfada|cyprus|london)/i.test(line)) return true;
+        if (/(greece|athens|maroussi|piraeus|cyprus|london)/i.test(line)) return true;
         if (/www\./i.test(line)) return true;
-        // Keep lines that look like a person's name: 2-4 capitalized words, no digits
-        if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(line.trim())) return true;
-        // Keep department/title lines
-        if (/(department|manager|director|officer|crew|fleet|operations|commercial|chartering)/i.test(line)) return true;
         
         // Noise detection for remaining lines
         const words = line.split(/\s+/);
@@ -35230,20 +35236,6 @@ function parseBusinessCard(rawText) {
         return s;
     };
     
-    // Split combined "T +30..., M +30..." lines (ANOSIS card format)
-    const expandedLines = [];
-    for (const line of lines) {
-        const tmMatch = line.match(/^T\s+(\+?[\d][\d\s.-]+?),?\s+M\s+(\+?[\d][\d\s.-]+?)(?:\s*$|,)/i);
-        if (tmMatch) {
-            expandedLines.push('T ' + tmMatch[1].trim());
-            expandedLines.push('M ' + tmMatch[2].trim());
-        } else {
-            expandedLines.push(line);
-        }
-    }
-    lines.length = 0;
-    expandedLines.forEach(l => lines.push(l));
-
     // ─── EMAIL ───
     // First try standard email match
     let emailMatch = fullText.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
@@ -35285,8 +35277,7 @@ function parseBusinessCard(rawText) {
             if (!data.fax) data.fax = phoneNum;
         }
         // MOBILE (MOB, Mob., Mos., ΚΙΝ, etc. - OCR may read Mob as Mos)
-        // Also: "M +30..." single-letter prefix (ANOSIS style)
-        else if (/^(mob|mos|κιν|cell|gsm)/i.test(label) || /\b(mob|mos|κιν|cell)\s*[:.]?\s*/i.test(label) || /^m\s+\+?\d/.test(label)) {
+        else if (/^(mob|mos|κιν|cell|gsm)/i.test(label) || /\b(mob|mos|κιν|cell)\s*[:.]\s*/i.test(label)) {
             if (!data.mobile) data.mobile = phoneNum;
         }
         // DIRECT line
@@ -35295,8 +35286,7 @@ function parseBusinessCard(rawText) {
             else if (!data.mobile) data.mobile = phoneNum;
         }
         // TEL (TEL, Tel., ΤΗΛ, PHONE, PH, etc.)
-        // Also: "T +30..." single-letter prefix (ANOSIS style)
-        else if (/^(tel|τηλ|phone|ph)/i.test(label) || /\b(tel|τηλ|phone)\s*[:.]\s*/i.test(label) || /^t\s+\+?\d/.test(label)) {
+        else if (/^(tel|τηλ|phone|ph)/i.test(label) || /\b(tel|τηλ|phone)\s*[:.]\s*/i.test(label)) {
             if (!data.phone) data.phone = phoneNum;
         }
     }
@@ -35327,11 +35317,10 @@ function parseBusinessCard(rawText) {
         // Address indicators: postal code, street keywords, numbers with street names
         const isAddress = 
             /\d{3}\s?\d{2}/.test(l) ||  // postal code (xxxxx or xxx xx)
-            /\d+\s+[\w&,\s]+\s+(ave|avenue|str|street|road|rd|blvd|way|drive|dr|lane|ln)/i.test(l) ||
+            /\d+\s+\w+\s+(ave|avenue|str|street|road|rd|blvd|way|drive|dr|lane|ln)/i.test(l) ||
             /\w+\s+\d+/.test(l) && l.length > 8 && !/[+@]/.test(l) ||  // "Kifissias 44" pattern
             /(floor|flr|suite|ste|office|bldg|building)/i.test(l) ||
-            /gr\s*-\s*\d{3}/i.test(l) ||  // GR-151 25 Greek postal format
-            /[\w]+\s*&\s*[\w]+\s+str/i.test(l);  // "Pandoras & Kyprou str." format
+            /gr\s*-\s*\d{3}/i.test(l);  // GR-151 25 Greek postal format
         
         if (isAddress) {
             addressLines.push(l);
@@ -35587,7 +35576,7 @@ function showScanSuccessNotification(count) {
     }, 3000);
 }
 
-console.log('📷 v3.57: Business Card Scanner - Enhanced OCR for low-contrast cards + T/M phone prefix');
+console.log('📷 v3.56: Business Card Scanner with Tesseract.js OCR loaded');
 </script>
 
 <!-- v3.55: Add Contact button restored to Client Portfolio view -->
