@@ -34967,30 +34967,137 @@ function handleBusinessCardUpload(event) {
         document.getElementById('scanPreviewImage').src = e.target.result;
         document.getElementById('scanUploadArea').style.display = 'none';
         document.getElementById('scanPreviewContainer').style.display = 'block';
-        runOCR(e.target.result);
+        preprocessAndOCR(e.target.result);
     };
     reader.readAsDataURL(file);
 }
 
-async function runOCR(imageData) {
+// ─── IMAGE PREPROCESSING ───
+// Business card photos from phones need cleanup before OCR
+function preprocessImage(imageData) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Scale up small images for better OCR (Tesseract works best at 300+ DPI)
+            let scale = 1;
+            if (img.width < 1000) scale = 1500 / img.width;
+            if (scale > 3) scale = 3;
+            
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            
+            // Draw scaled image
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Get pixel data
+            const imageDataObj = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageDataObj.data;
+            
+            // Step 1: Convert to grayscale
+            for (let i = 0; i < pixels.length; i += 4) {
+                const gray = 0.299 * pixels[i] + 0.587 * pixels[i+1] + 0.114 * pixels[i+2];
+                pixels[i] = pixels[i+1] = pixels[i+2] = gray;
+            }
+            
+            // Step 2: Increase contrast (stretch histogram)
+            let minVal = 255, maxVal = 0;
+            for (let i = 0; i < pixels.length; i += 4) {
+                if (pixels[i] < minVal) minVal = pixels[i];
+                if (pixels[i] > maxVal) maxVal = pixels[i];
+            }
+            const range = maxVal - minVal || 1;
+            for (let i = 0; i < pixels.length; i += 4) {
+                const stretched = ((pixels[i] - minVal) / range) * 255;
+                pixels[i] = pixels[i+1] = pixels[i+2] = Math.round(stretched);
+            }
+            
+            // Step 3: Adaptive threshold (Sauvola-inspired)
+            // This converts to sharp black text on white background
+            const w = canvas.width;
+            const h = canvas.height;
+            const blockSize = Math.max(15, Math.round(Math.min(w, h) / 30));
+            const halfBlock = Math.floor(blockSize / 2);
+            const k = 0.15; // sensitivity
+            
+            // Create integral image for fast local mean
+            const integral = new Float64Array((w + 1) * (h + 1));
+            const integralSq = new Float64Array((w + 1) * (h + 1));
+            
+            for (let y = 0; y < h; y++) {
+                let rowSum = 0, rowSumSq = 0;
+                for (let x = 0; x < w; x++) {
+                    const val = pixels[(y * w + x) * 4];
+                    rowSum += val;
+                    rowSumSq += val * val;
+                    integral[(y + 1) * (w + 1) + (x + 1)] = integral[y * (w + 1) + (x + 1)] + rowSum;
+                    integralSq[(y + 1) * (w + 1) + (x + 1)] = integralSq[y * (w + 1) + (x + 1)] + rowSumSq;
+                }
+            }
+            
+            const output = new Uint8ClampedArray(pixels.length);
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const x1 = Math.max(0, x - halfBlock);
+                    const y1 = Math.max(0, y - halfBlock);
+                    const x2 = Math.min(w - 1, x + halfBlock);
+                    const y2 = Math.min(h - 1, y + halfBlock);
+                    const count = (x2 - x1 + 1) * (y2 - y1 + 1);
+                    
+                    const sum = integral[(y2+1)*(w+1)+(x2+1)] - integral[(y1)*(w+1)+(x2+1)] - integral[(y2+1)*(w+1)+(x1)] + integral[(y1)*(w+1)+(x1)];
+                    const sumSq = integralSq[(y2+1)*(w+1)+(x2+1)] - integralSq[(y1)*(w+1)+(x2+1)] - integralSq[(y2+1)*(w+1)+(x1)] + integralSq[(y1)*(w+1)+(x1)];
+                    
+                    const mean = sum / count;
+                    const variance = (sumSq / count) - (mean * mean);
+                    const std = Math.sqrt(Math.max(0, variance));
+                    
+                    const threshold = mean * (1 - k * (1 - std / 128));
+                    const idx = (y * w + x) * 4;
+                    const val = pixels[idx] > threshold ? 255 : 0;
+                    output[idx] = output[idx+1] = output[idx+2] = val;
+                    output[idx+3] = 255;
+                }
+            }
+            
+            // Write back
+            const newImageData = new ImageData(output, w, h);
+            ctx.putImageData(newImageData, 0, 0);
+            
+            console.log('📷 Preprocessing done: ' + w + 'x' + h + ' (scale: ' + scale.toFixed(1) + 'x)');
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.src = imageData;
+    });
+}
+
+async function preprocessAndOCR(imageData) {
     const progressContainer = document.getElementById('scanProgressContainer');
     const progressText = document.getElementById('scanProgressText');
     const progressBar = document.getElementById('scanProgressBar');
     
     progressContainer.style.display = 'block';
-    progressText.textContent = 'Initializing OCR engine...';
-    progressBar.style.width = '10%';
+    progressText.textContent = 'Enhancing image...';
+    progressBar.style.width = '5%';
     
     try {
-        const result = await Tesseract.recognize(imageData, 'eng+ell', {
+        // Preprocess the image
+        const processedImage = await preprocessImage(imageData);
+        progressBar.style.width = '15%';
+        progressText.textContent = 'Image enhanced. Starting OCR...';
+        
+        // Run OCR with English only (business cards are mostly English/Latin)
+        // Greek characters in names will be handled as Latin approximations
+        const result = await Tesseract.recognize(processedImage, 'eng', {
             logger: function(m) {
                 if (m.status === 'recognizing text') {
-                    const pct = Math.round(m.progress * 100);
+                    const pct = 15 + Math.round(m.progress * 85);
                     progressBar.style.width = pct + '%';
-                    progressText.textContent = 'Reading card... ' + pct + '%';
+                    progressText.textContent = 'Reading card... ' + Math.round(m.progress * 100) + '%';
                 } else if (m.status === 'loading language traineddata') {
                     progressText.textContent = 'Loading language data...';
-                    progressBar.style.width = '25%';
+                    progressBar.style.width = '20%';
                 }
             }
         });
