@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-19 v3.58 - OCR: auto-crop card from background, percentile contrast, T/M prefix -->
+<!-- VERSION: 2026-02-19 v3.59 - OCR: crop+global threshold, no Sauvola, T/M prefix, name filter -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -34974,192 +34974,131 @@ function handleBusinessCardUpload(event) {
 
 // ─── IMAGE PREPROCESSING ───
 // Business card photos from phones need cleanup before OCR
-// v3.58: Auto-detect and crop the business card from the photo
-// Finds the largest bright rectangular region (the card) and crops to it
+// v3.59: Auto-detect and crop the business card from the photo background
 function detectCardRegion(pixels, w, h) {
-    // Build a brightness map: is each pixel "bright" (card) or "dark" (background)?
-    // Card is typically light gray/white (>160 brightness)
-    const isBright = new Uint8Array(w * h);
+    // Build brightness map: card is light (>170), wooden table/background is dark (<140)
+    let rowBrightCount = new Float32Array(h);
+    let colBrightCount = new Float32Array(w);
+    
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
             const i = (y * w + x) * 4;
             const gray = 0.299 * pixels[i] + 0.587 * pixels[i+1] + 0.114 * pixels[i+2];
-            isBright[y * w + x] = gray > 150 ? 1 : 0;
+            if (gray > 170) {
+                rowBrightCount[y]++;
+                colBrightCount[x]++;
+            }
         }
     }
     
-    // Scan rows and columns to find the bounding box of the bright region
-    // Use a sliding window: for each row, count bright pixels
-    // Card rows will have >50% bright pixels
-    const rowBright = new Float32Array(h);
-    const colBright = new Float32Array(w);
-    for (let y = 0; y < h; y++) {
-        let cnt = 0;
-        for (let x = 0; x < w; x++) cnt += isBright[y * w + x];
-        rowBright[y] = cnt / w;
-    }
-    for (let x = 0; x < w; x++) {
-        let cnt = 0;
-        for (let y = 0; y < h; y++) cnt += isBright[y * w + x];
-        colBright[x] = cnt / h;
-    }
+    // Normalize to fraction
+    for (let y = 0; y < h; y++) rowBrightCount[y] /= w;
+    for (let x = 0; x < w; x++) colBrightCount[x] /= h;
     
-    // Find card boundaries: first/last row/col with >40% bright pixels
-    const threshold = 0.40;
-    let top = 0, bottom = h - 1, left = 0, right = w - 1;
-    for (let y = 0; y < h; y++) { if (rowBright[y] > threshold) { top = y; break; } }
-    for (let y = h - 1; y >= 0; y--) { if (rowBright[y] > threshold) { bottom = y; break; } }
-    for (let x = 0; x < w; x++) { if (colBright[x] > threshold) { left = x; break; } }
-    for (let x = w - 1; x >= 0; x--) { if (colBright[x] > threshold) { right = x; break; } }
+    // Card rows/cols have >35% bright pixels
+    const rowThresh = 0.35, colThresh = 0.35;
+    let top = -1, bottom = -1, left = -1, right = -1;
+    for (let y = 0; y < h; y++) { if (rowBrightCount[y] > rowThresh) { top = y; break; } }
+    for (let y = h-1; y >= 0; y--) { if (rowBrightCount[y] > rowThresh) { bottom = y; break; } }
+    for (let x = 0; x < w; x++) { if (colBrightCount[x] > colThresh) { left = x; break; } }
+    for (let x = w-1; x >= 0; x--) { if (colBrightCount[x] > colThresh) { right = x; break; } }
     
-    const cardW = right - left;
-    const cardH = bottom - top;
-    const imageArea = w * h;
-    const cardArea = cardW * cardH;
+    if (top < 0 || bottom < 0 || left < 0 || right < 0) return null;
     
-    // Only use crop if: card is at least 15% of image AND smaller than 90% (i.e., meaningful crop)
-    // AND has reasonable card aspect ratio (width > height, roughly)
-    const isValidCrop = cardArea > imageArea * 0.15 && cardArea < imageArea * 0.92 && cardW > cardH * 0.8;
+    const cardW = right - left, cardH = bottom - top;
+    const cardArea = (cardW * cardH) / (w * h);
+    const validRatio = cardW > 50 && cardH > 30 && cardArea > 0.10 && cardArea < 0.95;
     
-    console.log('📷 Card detect: top=' + top + ' bottom=' + bottom + ' left=' + left + ' right=' + right +
-                ' cardArea=' + Math.round(cardArea/imageArea*100) + '% valid=' + isValidCrop);
+    console.log('📷 Card detect: [' + left + ',' + top + ' → ' + right + ',' + bottom + '] area=' + Math.round(cardArea*100) + '% valid=' + validRatio);
     
-    if (isValidCrop) {
-        // Add small padding (2% of card size)
-        const padX = Math.round(cardW * 0.02);
-        const padY = Math.round(cardH * 0.02);
-        return {
-            x: Math.max(0, left - padX),
-            y: Math.max(0, top - padY),
-            w: Math.min(w, right + padX) - Math.max(0, left - padX),
-            h: Math.min(h, bottom + padY) - Math.max(0, top - padY)
-        };
-    }
-    return null; // No valid card region found — use full image
+    if (!validRatio) return null;
+    
+    // Add 1% padding
+    const px = Math.round(cardW * 0.01), py = Math.round(cardH * 0.01);
+    return {
+        x: Math.max(0, left - px),   y: Math.max(0, top - py),
+        w: Math.min(w, right + px) - Math.max(0, left - px),
+        h: Math.min(h, bottom + py) - Math.max(0, top - py)
+    };
 }
 
 function preprocessImage(imageData) {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = function() {
-            // ── Step 0: Initial draw at full size to detect card region ──
-            const detectCanvas = document.createElement('canvas');
-            const detectCtx = detectCanvas.getContext('2d');
-            // Use a downscaled version for fast detection
-            const detectScale = Math.min(1, 600 / Math.max(img.width, img.height));
-            detectCanvas.width = Math.round(img.width * detectScale);
-            detectCanvas.height = Math.round(img.height * detectScale);
-            detectCtx.drawImage(img, 0, 0, detectCanvas.width, detectCanvas.height);
-            const detectData = detectCtx.getImageData(0, 0, detectCanvas.width, detectCanvas.height);
             
-            // Detect card region at downscaled resolution
-            const cropRegionSmall = detectCardRegion(detectData.data, detectCanvas.width, detectCanvas.height);
+            // ── Phase 1: Detect card region at reduced size ──
+            const dCanvas = document.createElement('canvas');
+            const dCtx = dCanvas.getContext('2d');
+            const dScale = Math.min(1, 800 / Math.max(img.width, img.height));
+            dCanvas.width  = Math.round(img.width  * dScale);
+            dCanvas.height = Math.round(img.height * dScale);
+            dCtx.drawImage(img, 0, 0, dCanvas.width, dCanvas.height);
+            const dData = dCtx.getImageData(0, 0, dCanvas.width, dCanvas.height);
+            const cropSmall = detectCardRegion(dData.data, dCanvas.width, dCanvas.height);
             
-            // Scale crop back to full image coordinates
-            let cropRegion = null;
-            if (cropRegionSmall) {
-                cropRegion = {
-                    x: Math.round(cropRegionSmall.x / detectScale),
-                    y: Math.round(cropRegionSmall.y / detectScale),
-                    w: Math.round(cropRegionSmall.w / detectScale),
-                    h: Math.round(cropRegionSmall.h / detectScale)
-                };
+            // Scale crop back to full resolution
+            let sx = 0, sy = 0, sw = img.width, sh = img.height;
+            if (cropSmall) {
+                sx = Math.round(cropSmall.x / dScale);
+                sy = Math.round(cropSmall.y / dScale);
+                sw = Math.round(cropSmall.w / dScale);
+                sh = Math.round(cropSmall.h / dScale);
             }
             
-            // ── Step 1: Draw crop region to canvas at 2x scale for OCR ──
+            // ── Phase 2: Draw cropped region, scaled up for OCR ──
             const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+            const ctx    = canvas.getContext('2d');
+            const ocrScale = Math.min(3, Math.max(1.5, 1800 / sw));
+            canvas.width  = Math.round(sw * ocrScale);
+            canvas.height = Math.round(sh * ocrScale);
             
-            const srcX = cropRegion ? cropRegion.x : 0;
-            const srcY = cropRegion ? cropRegion.y : 0;
-            const srcW = cropRegion ? cropRegion.w : img.width;
-            const srcH = cropRegion ? cropRegion.h : img.height;
+            // White background first (in case of transparent areas)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
             
-            // Scale up for OCR quality (target ~1500px wide)
-            const ocrScale = Math.min(3, Math.max(1, 1500 / srcW));
-            canvas.width = Math.round(srcW * ocrScale);
-            canvas.height = Math.round(srcH * ocrScale);
+            console.log('📷 Crop+Scale: src=[' + sx + ',' + sy + ' ' + sw + 'x' + sh + '] → ' + canvas.width + 'x' + canvas.height + ' (' + ocrScale.toFixed(1) + 'x)' + (cropSmall ? ' [CROPPED]' : ' [FULL]'));
             
-            // Draw only the cropped card region, scaled up
-            ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
-            console.log('📷 Crop: src=' + srcX + ',' + srcY + ' ' + srcW + 'x' + srcH +
-                        ' → canvas=' + canvas.width + 'x' + canvas.height + ' (scale ' + ocrScale.toFixed(1) + 'x)');
+            // ── Phase 3: Grayscale + gentle contrast boost (NO aggressive threshold) ──
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pix = imgData.data;
             
-            // ── Step 2: Grayscale ──
-            const imageDataObj = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const pixels = imageDataObj.data;
-            for (let i = 0; i < pixels.length; i += 4) {
-                const gray = 0.299 * pixels[i] + 0.587 * pixels[i+1] + 0.114 * pixels[i+2];
-                pixels[i] = pixels[i+1] = pixels[i+2] = gray;
+            // Grayscale
+            for (let i = 0; i < pix.length; i += 4) {
+                const g = Math.round(0.299 * pix[i] + 0.587 * pix[i+1] + 0.114 * pix[i+2]);
+                pix[i] = pix[i+1] = pix[i+2] = g;
             }
             
-            // ── Step 3: Percentile contrast stretch (robust to remaining dark edges) ──
-            const grayValues = [];
-            for (let i = 0; i < pixels.length; i += 4) grayValues.push(pixels[i]);
-            grayValues.sort((a, b) => a - b);
-            const p2  = grayValues[Math.floor(grayValues.length * 0.02)];
-            const p98 = grayValues[Math.floor(grayValues.length * 0.98)];
-            const stretchRange = Math.max(p98 - p2, 30);
-            for (let i = 0; i < pixels.length; i += 4) {
-                const s = Math.min(255, Math.max(0, Math.round(((pixels[i] - p2) / stretchRange) * 255)));
-                pixels[i] = pixels[i+1] = pixels[i+2] = s;
-            }
-            console.log('📷 Contrast: p2=' + p2 + ' p98=' + p98 + ' range=' + stretchRange);
-            ctx.putImageData(imageDataObj, 0, 0);
+            // Percentile contrast stretch — robust against dark edges
+            const vals = [];
+            for (let i = 0; i < pix.length; i += 4) vals.push(pix[i]);
+            vals.sort((a, b) => a - b);
+            const lo = vals[Math.floor(vals.length * 0.05)];  // 5th percentile
+            const hi = vals[Math.floor(vals.length * 0.95)];  // 95th percentile
+            const rng = Math.max(hi - lo, 20);
+            console.log('📷 Contrast: lo=' + lo + ' hi=' + hi + ' range=' + rng);
             
-            // ── Step 4: Adaptive threshold (Sauvola) on the cropped+stretched image ──
+            for (let i = 0; i < pix.length; i += 4) {
+                const v = Math.min(255, Math.max(0, Math.round((pix[i] - lo) / rng * 255)));
+                pix[i] = pix[i+1] = pix[i+2] = v;
+            }
+            
+            ctx.putImageData(imgData, 0, 0);
+            
+            // ── Phase 4: Simple global threshold (NOT Sauvola) ──
+            // After percentile stretch, card text is dark (~0-80) on white background (~200-255)
+            // A simple threshold at 150 cleanly separates them without noise amplification
             const finalData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const fp = finalData.data;
-            const w = canvas.width;
-            const h = canvas.height;
-            const blockSize = Math.max(21, Math.round(Math.min(w, h) / 20));
-            const halfBlock = Math.floor(blockSize / 2);
-            const k = 0.10; // sensitivity
-            
-            // Create integral image for fast local mean
-            const integral = new Float64Array((w + 1) * (h + 1));
-            const integralSq = new Float64Array((w + 1) * (h + 1));
-            
-            for (let y = 0; y < h; y++) {
-                let rowSum = 0, rowSumSq = 0;
-                for (let x = 0; x < w; x++) {
-                    const val = fp[(y * w + x) * 4];
-                    rowSum += val;
-                    rowSumSq += val * val;
-                    integral[(y + 1) * (w + 1) + (x + 1)] = integral[y * (w + 1) + (x + 1)] + rowSum;
-                    integralSq[(y + 1) * (w + 1) + (x + 1)] = integralSq[y * (w + 1) + (x + 1)] + rowSumSq;
-                }
+            for (let i = 0; i < fp.length; i += 4) {
+                const v = fp[i] < 150 ? 0 : 255;  // dark pixels → black, light → white
+                fp[i] = fp[i+1] = fp[i+2] = v;
+                fp[i+3] = 255;
             }
+            ctx.putImageData(finalData, 0, 0);
             
-            const output = new Uint8ClampedArray(fp.length);
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    const x1 = Math.max(0, x - halfBlock);
-                    const y1 = Math.max(0, y - halfBlock);
-                    const x2 = Math.min(w - 1, x + halfBlock);
-                    const y2 = Math.min(h - 1, y + halfBlock);
-                    const count = (x2 - x1 + 1) * (y2 - y1 + 1);
-                    
-                    const sum = integral[(y2+1)*(w+1)+(x2+1)] - integral[(y1)*(w+1)+(x2+1)] - integral[(y2+1)*(w+1)+(x1)] + integral[(y1)*(w+1)+(x1)];
-                    const sumSq = integralSq[(y2+1)*(w+1)+(x2+1)] - integralSq[(y1)*(w+1)+(x2+1)] - integralSq[(y2+1)*(w+1)+(x1)] + integralSq[(y1)*(w+1)+(x1)];
-                    
-                    const mean = sum / count;
-                    const variance = (sumSq / count) - (mean * mean);
-                    const std = Math.sqrt(Math.max(0, variance));
-                    
-                    const threshold = mean * (1 - k * (1 - std / 128));
-                    const idx = (y * w + x) * 4;
-                    const val = fp[idx] > threshold ? 255 : 0;
-                    output[idx] = output[idx+1] = output[idx+2] = val;
-                    output[idx+3] = 255;
-                }
-            }
-            
-            // Write back
-            const newImageData = new ImageData(output, w, h);
-            ctx.putImageData(newImageData, 0, 0);
-            
-            console.log('📷 Preprocessing done: ' + w + 'x' + h + (cropRegion ? ' [CROPPED]' : ' [FULL]'));
+            console.log('📷 v3.59 preprocessing done');
             resolve(canvas.toDataURL('image/png'));
         };
         img.src = imageData;
@@ -35236,7 +35175,7 @@ function parseBusinessCard(rawText) {
         if (/(greece|athens|maroussi|piraeus|cyprus|london)/i.test(line)) return true;
         if (/www\./i.test(line)) return true;
         if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(line.trim())) return true; // Person names
-        if (/(department|manager|director|officer|crew|fleet|operations|chartering)/i.test(line)) return true; // Job titles
+        if (/(department|manager|director|officer|crew|fleet|operations|chartering)/i.test(line)) return true;
         
         // Noise detection for remaining lines
         const words = line.split(/\s+/);
@@ -35278,7 +35217,7 @@ function parseBusinessCard(rawText) {
         return s;
     };
     
-    // Split "T +30..., M +30..." combined phone lines (ANOSIS card format)
+    // Split "T +30..., M +30..." combined lines (ANOSIS format)
     const expandedLines = [];
     for (const line of lines) {
         const tmMatch = line.match(/^T\s+(\+?[\d][\d\s.-]+?),?\s+M\s+(\+?[\d][\d\s.-]+?)(?:\s*$|,)/i);
@@ -35330,7 +35269,6 @@ function parseBusinessCard(rawText) {
             if (!data.fax) data.fax = phoneNum;
         }
         // MOBILE (MOB, Mob., Mos., ΚΙΝ, etc. - OCR may read Mob as Mos)
-        // Also: "M +30..." prefix (ANOSIS style)
         else if (/^(mob|mos|κιν|cell|gsm)/i.test(label) || /\b(mob|mos|κιν|cell)\s*[:.]?\s*/i.test(label) || /^m\s+\+?\d/.test(label)) {
             if (!data.mobile) data.mobile = phoneNum;
         }
@@ -35340,7 +35278,6 @@ function parseBusinessCard(rawText) {
             else if (!data.mobile) data.mobile = phoneNum;
         }
         // TEL (TEL, Tel., ΤΗΛ, PHONE, PH, etc.)
-        // Also: "T +30..." prefix (ANOSIS style)
         else if (/^(tel|τηλ|phone|ph)/i.test(label) || /\b(tel|τηλ|phone)\s*[:.]\s*/i.test(label) || /^t\s+\+?\d/.test(label)) {
             if (!data.phone) data.phone = phoneNum;
         }
@@ -35631,7 +35568,7 @@ function showScanSuccessNotification(count) {
     }, 3000);
 }
 
-console.log('📷 v3.58: Business Card Scanner - Auto-crop + T/M prefix + name filter');
+console.log('📷 v3.59: Business Card Scanner - Crop+GlobalThreshold+T/M+NameFilter');
 </script>
 
 <!-- v3.55: Add Contact button restored to Client Portfolio view -->
