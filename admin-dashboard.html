@@ -35064,6 +35064,23 @@ function preprocessImage(imageData) {
                 pixels[i] = pixels[i+1] = pixels[i+2] = gray;
             }
             
+            // Step 1b: Auto-detect dark background and invert
+            // Sample center pixels to determine if background is dark (white text on dark bg)
+            let brightCount = 0, darkCount = 0;
+            const sampleStep = Math.max(1, Math.floor(pixels.length / 4 / 2000));
+            for (let i = 0; i < pixels.length; i += 4 * sampleStep) {
+                if (pixels[i] > 128) brightCount++; else darkCount++;
+            }
+            const isDarkBackground = darkCount > brightCount;
+            if (isDarkBackground) {
+                console.log('📷 Dark background detected — inverting image');
+                for (let i = 0; i < pixels.length; i += 4) {
+                    pixels[i] = 255 - pixels[i];
+                    pixels[i+1] = 255 - pixels[i+1];
+                    pixels[i+2] = 255 - pixels[i+2];
+                }
+            }
+
             // Step 2: Increase contrast (stretch histogram)
             let minVal = 255, maxVal = 0;
             for (let i = 0; i < pixels.length; i += 4) {
