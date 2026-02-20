@@ -35365,8 +35365,20 @@ function parseBusinessCard(rawText) {
         }
     }
     if (addressLines.length > 0) {
-        // Clean OCR artifacts from address lines
-        data.address = addressLines
+        // Keep only the first contiguous address block (stop at gap or second address)
+        // Find first address line index in original lines array
+        const firstAddrLine = addressLines[0];
+        const firstIdx = lines.indexOf(firstAddrLine);
+        const firstBlock = [];
+        for (let i = firstIdx; i < lines.length && i < firstIdx + 4; i++) {
+            if (addressLines.includes(lines[i])) {
+                firstBlock.push(lines[i]);
+            } else {
+                break; // stop at first non-address line (gap between two addresses)
+            }
+        }
+        const block = firstBlock.length > 0 ? firstBlock : [addressLines[0]];
+        data.address = block
             .map(l => l.replace(/^[|;:.\s\-i¥]+/, '').replace(/[|;:.\s]+$/, '').trim())
             .filter(l => l.length > 3)
             .join(', ');
