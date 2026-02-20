@@ -35261,6 +35261,10 @@ function parseBusinessCard(rawText) {
         let s = str.replace(/[«»~*]/g, '+').replace(/\s+/g, ' ').trim();
         // Fix: if number starts with 33021 or 33069 etc (OCR doubled the 3 instead of +3)
         s = s.replace(/\b33(0\d{1,2}\s)/g, '+3$1');
+        // Fix: "+30212..." → "+30 212..." (missing space after Greek country code)
+        s = s.replace(/(\+30)([2-9]\d)/g, '$1 $2');
+        // Fix: "+302..." → "+30 2..." more broadly
+        s = s.replace(/(\+30)(\d{3,})/g, (m, cc, num) => cc + ' ' + num);
         return s;
     };
     
@@ -35343,10 +35347,14 @@ function parseBusinessCard(rawText) {
         if (/\b(tel|fax|mob|mos|eax|εαχ|direct|e-?mail|phone|κιν|τηλ|φαξ)\b/i.test(l)) continue;
         
         // Address indicators: postal code, street keywords, numbers with street names
+        // Skip brand/logo lines that look like address but aren't
+        const isBrandLine = /(^next\s+\d|^doctor\s|^a\s+doctor)/i.test(l);
+        if (isBrandLine) continue;
+
         const isAddress = 
             /\d{3}\s?\d{2}/.test(l) ||  // postal code (xxxxx or xxx xx)
             /\d+\s+\w+\s+(ave|avenue|str|street|road|rd|blvd|way|drive|dr|lane|ln)/i.test(l) ||
-            /\w+\s+\d+/.test(l) && l.length > 8 && !/[+@]/.test(l) ||  // "Kifissias 44" pattern
+            /\d+\s+\w+/.test(l) && l.length > 8 && !/[+@]/.test(l) && !/^next\s/i.test(l) ||  // "44 Kifissias" pattern (number first)
             /(floor|flr|suite|ste|office|bldg|building)/i.test(l) ||
             /gr\s*-\s*\d{3}/i.test(l) ||  // GR-151 25 Greek postal format
             /[\w]+\s*&\s*[\w]+\s+str/i.test(l) ||  // "Pandoras & Kyprou str." format
