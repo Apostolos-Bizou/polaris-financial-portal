@@ -35394,11 +35394,15 @@ function parseBusinessCard(rawText) {
         // Also strip if phone number appears directly: "Company Name +30210..."
         line = line.replace(/\s*[+]\d{3,}.*$/, '').trim();
         if (companyRegex.test(line) && !line.match(/@/) && line.length > 3) {
-            companyLines.push(line);
+            // Strip leading title words before the actual company name
+            // e.g. "CEO & Founder DN2ME UK LTD" → "DN2ME UK LTD"
+            let cleanLine = line.replace(/^(ceo|cfo|coo|cto|director|manager|founder|president|partner|general manager|managing director)[\s&,]+/i, '').trim();
+            companyLines.push(cleanLine || line);
             // Check if previous line is also part of company name (multi-line like "Common Progress\nCo Na S.A.")
             if (i > 0 && lines[i-1].length > 2 && lines[i-1].length < 40 && 
                 !lines[i-1].match(/@/) && !lines[i-1].match(/tel|fax|mob|direct/i) &&
-                !lines[i-1].match(/\d{3}\s?\d{2}/)) {
+                !lines[i-1].match(/\d{3}\s?\d{2}/) &&
+                !titleRegex.test(lines[i-1])) {
                 companyLines.unshift(lines[i-1]);
             }
             break;
@@ -35449,7 +35453,11 @@ function parseBusinessCard(rawText) {
             // Allow letters from any script (Latin, Greek, accented, etc.)
             const allLetterWords = words.every(w => /^[\p{L}.\-']+$/u.test(w));
             if (allLetterWords) {
-                data.contactPerson = cleaned;
+                // Normalize ALL-CAPS names: "APOSTOLOS KAGELARIS" → "Apostolos Kagelaris"
+                const isAllCaps = cleaned === cleaned.toUpperCase() && /[A-Z]{3}/.test(cleaned);
+                data.contactPerson = isAllCaps
+                    ? cleaned.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')
+                    : cleaned;
                 break;
             }
         }
