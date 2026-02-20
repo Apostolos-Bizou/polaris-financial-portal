@@ -35415,9 +35415,8 @@ function parseBusinessCard(rawText) {
             companyLines.push(cleanLine || line);
             // Check if previous line is also part of company name (multi-line like "Common Progress\nCo Na S.A.")
             if (i > 0 && lines[i-1].length > 2 && lines[i-1].length < 40 && 
-                !lines[i-1].match(/@/) && !lines[i-1].match(/tel|fax|mob|direct/i) &&
-                !lines[i-1].match(/\d{3}\s?\d{2}/) &&
-                !titleRegex.test(lines[i-1])) {
+                !lines[i-1].match(/@/) && !lines[i-1].match(/tel|fax|mob|direct|ceo|cfo|founder|manager/i) &&
+                !lines[i-1].match(/\d{3}\s?\d{2}/)) {
                 companyLines.unshift(lines[i-1]);
             }
             break;
