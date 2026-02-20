@@ -34981,27 +34981,42 @@ function handleBusinessCardUpload(event) {
 
     // PDF: render first page to canvas via PDF.js, then OCR
     if (file.type === 'application/pdf') {
+        const pdfLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+        if (!pdfLib) {
+            alert('PDF support is loading... Please wait a moment and try again, or use a JPG/PNG image instead.');
+            return;
+        }
+        // Ensure worker is set
+        if (!pdfLib.GlobalWorkerOptions.workerSrc) {
+            pdfLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
         const reader = new FileReader();
         reader.onload = function(e) {
             const pdfData = new Uint8Array(e.target.result);
-            pdfjsLib.getDocument({ data: pdfData }).promise.then(function(pdf) {
-                pdf.getPage(1).then(function(page) {
-                    const scale = 3; // high-res render for OCR
-                    const viewport = page.getViewport({ scale });
-                    const canvas = document.createElement('canvas');
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
-                    const ctx = canvas.getContext('2d');
-                    page.render({ canvasContext: ctx, viewport }).promise.then(function() {
-                        const imgData = canvas.toDataURL('image/png');
-                        document.getElementById('scanPreviewImage').src = imgData;
-                        document.getElementById('scanUploadArea').style.display = 'none';
-                        document.getElementById('scanPreviewContainer').style.display = 'block';
-                        preprocessAndOCR(imgData);
-                    });
+            console.log('📄 Loading PDF, size:', pdfData.length, 'bytes');
+            pdfLib.getDocument({ data: pdfData }).promise.then(function(pdf) {
+                console.log('📄 PDF loaded, pages:', pdf.numPages);
+                return pdf.getPage(1);
+            }).then(function(page) {
+                const scale = 3;
+                const viewport = page.getViewport({ scale: scale });
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d');
+                console.log('📄 Rendering page at', canvas.width + 'x' + canvas.height);
+                return page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function() {
+                    return canvas.toDataURL('image/png');
                 });
+            }).then(function(imgData) {
+                console.log('📄 PDF rendered to image, starting OCR');
+                document.getElementById('scanPreviewImage').src = imgData;
+                document.getElementById('scanUploadArea').style.display = 'none';
+                document.getElementById('scanPreviewContainer').style.display = 'block';
+                preprocessAndOCR(imgData);
             }).catch(function(err) {
-                alert('Could not read PDF: ' + err.message);
+                console.error('PDF error:', err);
+                alert('Could not read PDF: ' + err.message + '\nTry saving as JPG or PNG instead.');
             });
         };
         reader.readAsArrayBuffer(file);
