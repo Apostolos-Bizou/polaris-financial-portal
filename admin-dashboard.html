@@ -12,6 +12,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- PDF.js for Business Card PDF support -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>if (typeof pdfjsLib !== "undefined") pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
     <!-- Tesseract.js for Business Card OCR -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- Google Identity Services for Gmail API -->
@@ -34854,11 +34857,24 @@ console.log('✅ Recipients Management (v3.27) loaded!');
         <div style="padding:1.75rem;">
             
             <!-- Upload Area -->
-            <div id="scanUploadArea" onclick="document.getElementById('businessCardFileInput').click()" style="border:3px dashed #4a5568; border-radius:16px; padding:2.5rem 1.5rem; text-align:center; cursor:pointer; transition:all 0.3s; background:rgba(212,175,55,0.03); margin-bottom:1.5rem;" onmouseover="this.style.borderColor='#D4AF37'; this.style.background='rgba(212,175,55,0.08)'" onmouseout="this.style.borderColor='#4a5568'; this.style.background='rgba(212,175,55,0.03)'">
-                <div style="font-size:3.5rem; margin-bottom:0.75rem;">🪪</div>
-                <p style="color:#fff; font-size:1.15rem; font-weight:600; margin-bottom:0.5rem;">Tap to take photo or select image</p>
-                <p style="color:#718096; font-size:0.9rem;">Supports JPG, PNG, HEIC</p>
-                <input type="file" id="businessCardFileInput" accept="image/*" capture="environment" style="display:none;" onchange="handleBusinessCardUpload(event)">
+            <div id="scanUploadArea" style="margin-bottom:1.5rem;">
+                <!-- Two buttons: Camera + File Upload -->
+                <div style="display:flex; gap:12px; margin-bottom:12px;">
+                    <!-- CAMERA BUTTON -->
+                    <div onclick="document.getElementById('businessCardCameraInput').click()" style="flex:1; border:3px dashed #4a5568; border-radius:16px; padding:1.5rem 1rem; text-align:center; cursor:pointer; transition:all 0.3s; background:rgba(212,175,55,0.03);" onmouseover="this.style.borderColor='#D4AF37'; this.style.background='rgba(212,175,55,0.08)'" onmouseout="this.style.borderColor='#4a5568'; this.style.background='rgba(212,175,55,0.03)'">
+                        <div style="font-size:2.5rem; margin-bottom:0.5rem;">📷</div>
+                        <p style="color:#fff; font-size:0.95rem; font-weight:600; margin-bottom:0.25rem;">Take Photo</p>
+                        <p style="color:#718096; font-size:0.8rem;">Use camera</p>
+                        <input type="file" id="businessCardCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleBusinessCardUpload(event)">
+                    </div>
+                    <!-- FILE UPLOAD BUTTON -->
+                    <div onclick="document.getElementById('businessCardFileInput').click()" style="flex:1; border:3px dashed #4a5568; border-radius:16px; padding:1.5rem 1rem; text-align:center; cursor:pointer; transition:all 0.3s; background:rgba(212,175,55,0.03);" onmouseover="this.style.borderColor='#D4AF37'; this.style.background='rgba(212,175,55,0.08)'" onmouseout="this.style.borderColor='#4a5568'; this.style.background='rgba(212,175,55,0.03)'">
+                        <div style="font-size:2.5rem; margin-bottom:0.5rem;">📁</div>
+                        <p style="color:#fff; font-size:0.95rem; font-weight:600; margin-bottom:0.25rem;">Upload File</p>
+                        <p style="color:#718096; font-size:0.8rem;">JPG, PNG, PDF</p>
+                        <input type="file" id="businessCardFileInput" accept="image/jpeg,image/png,image/heic,application/pdf" style="display:none;" onchange="handleBusinessCardUpload(event)">
+                    </div>
+                </div>
             </div>
             
             <!-- Image Preview -->
@@ -34951,6 +34967,7 @@ function resetScannerState() {
     document.getElementById('scanRawTextContainer').style.display = 'none';
     document.getElementById('scanApplyBtn').style.display = 'none';
     document.getElementById('businessCardFileInput').value = '';
+    const cam = document.getElementById('businessCardCameraInput'); if(cam) cam.value = '';
     scannedCardData = {};
 }
 
@@ -34961,7 +34978,37 @@ function clearBusinessCardImage() {
 function handleBusinessCardUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
+    // PDF: render first page to canvas via PDF.js, then OCR
+    if (file.type === 'application/pdf') {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const pdfData = new Uint8Array(e.target.result);
+            pdfjsLib.getDocument({ data: pdfData }).promise.then(function(pdf) {
+                pdf.getPage(1).then(function(page) {
+                    const scale = 3; // high-res render for OCR
+                    const viewport = page.getViewport({ scale });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
+                    page.render({ canvasContext: ctx, viewport }).promise.then(function() {
+                        const imgData = canvas.toDataURL('image/png');
+                        document.getElementById('scanPreviewImage').src = imgData;
+                        document.getElementById('scanUploadArea').style.display = 'none';
+                        document.getElementById('scanPreviewContainer').style.display = 'block';
+                        preprocessAndOCR(imgData);
+                    });
+                });
+            }).catch(function(err) {
+                alert('Could not read PDF: ' + err.message);
+            });
+        };
+        reader.readAsArrayBuffer(file);
+        return;
+    }
+
+    // Image (JPG/PNG/HEIC)
     const reader = new FileReader();
     reader.onload = function(e) {
         document.getElementById('scanPreviewImage').src = e.target.result;
@@ -35138,8 +35185,8 @@ function parseBusinessCard(rawText) {
         if (/\d{3}\s?\d{2}/.test(line)) return true;
         if (/(ave|street|road|floor|blvd)/i.test(line)) return true;
         if (/(tel|fax|mob|mos|direct|e-?mail|phone)/i.test(line)) return true;
-        if (/(ltd|s\.a|inc|corp|llc|gmbh|shipping|maritime|marine|management|progress|services|group)/i.test(line)) return true;
-        if (/(greece|athens|maroussi|piraeus|cyprus|london)/i.test(line)) return true;
+        if (/(ltd|s\.a|inc|corp|llc|gmbh|shipping|maritime|marine|management|progress|services|group|anosis)/i.test(line)) return true;
+        if (/(greece|athens|maroussi|piraeus|glyfada|voula|hellas|cyprus|london)/i.test(line)) return true;
         if (/www\./i.test(line)) return true;
         // Person names: 2-4 capitalized words (e.g. "Charalampos Gkionis")
         if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(line.trim())) return true;
@@ -35286,7 +35333,9 @@ function parseBusinessCard(rawText) {
             /\d+\s+\w+\s+(ave|avenue|str|street|road|rd|blvd|way|drive|dr|lane|ln)/i.test(l) ||
             /\w+\s+\d+/.test(l) && l.length > 8 && !/[+@]/.test(l) ||  // "Kifissias 44" pattern
             /(floor|flr|suite|ste|office|bldg|building)/i.test(l) ||
-            /gr\s*-\s*\d{3}/i.test(l);  // GR-151 25 Greek postal format
+            /gr\s*-\s*\d{3}/i.test(l) ||  // GR-151 25 Greek postal format
+            /[\w]+\s*&\s*[\w]+\s+str/i.test(l) ||  // "Pandoras & Kyprou str." format
+            /(glyfada|voula|hellas|maroussi|piraeus)/i.test(l);  // Greek city names
         
         if (isAddress) {
             addressLines.push(l);
