@@ -35467,6 +35467,10 @@ function parseBusinessCard(rawText) {
             // Allow letters from any script (Latin, Greek, accented, etc.)
             const allLetterWords = words.every(w => /^[\p{L}.\-']+$/u.test(w));
             if (allLetterWords) {
+                // Skip logo/brand fragments: single letter first word (e.g. "A Doctor", "A Company")
+                if (words.length === 2 && words[0].replace(/[^a-zA-Z]/g,'').length === 1) continue;
+                // Skip generic non-name words
+                if (/(doctor|next|me|new|the|for|and|ltd|inc|co|mr|ms|dr)/i.test(cleaned) && words.length <= 3) continue;
                 // Normalize ALL-CAPS names: "APOSTOLOS KAGELARIS" → "Apostolos Kagelaris"
                 const isAllCaps = cleaned === cleaned.toUpperCase() && /[A-Z]{3}/.test(cleaned);
                 data.contactPerson = isAllCaps
