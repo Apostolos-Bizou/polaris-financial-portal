@@ -34979,6 +34979,15 @@ function handleBusinessCardUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
+    // HEIC: not supported by browsers — ask user to convert first
+    const fileName = file.name || '';
+    if (file.type === 'image/heic' || file.type === 'image/heif' || 
+        /\.heic$/i.test(fileName) || /\.heif$/i.test(fileName)) {
+        alert('❌ HEIC format is not supported by browsers.\n\nPlease convert the photo first:\n• iPhone: Share → Save as JPEG\n• Samsung: Gallery → Edit → Save as JPG\n• Online: heictojpg.com\n\nThen upload the JPG file.');
+        event.target.value = '';
+        return;
+    }
+
     // PDF: render first page to canvas via PDF.js, then OCR
     if (file.type === 'application/pdf') {
         const pdfLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
