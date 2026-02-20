@@ -35043,10 +35043,14 @@ function preprocessImage(imageData) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Scale up small images for better OCR (Tesseract works best at 300+ DPI)
+            // Cap large images (phone photos can be 4000+ px → memory crash)
+            // Max 1800px on longest side for Sauvola to work in browser
+            const MAX_PX = 1800;
             let scale = 1;
-            if (img.width < 1000) scale = 1500 / img.width;
-            if (scale > 3) scale = 3;
+            const longest = Math.max(img.width, img.height);
+            if (longest > MAX_PX) scale = MAX_PX / longest;
+            // Scale up only if image is too small
+            else if (img.width < 1000) scale = Math.min(3, 1500 / img.width);
             
             canvas.width = Math.round(img.width * scale);
             canvas.height = Math.round(img.height * scale);
