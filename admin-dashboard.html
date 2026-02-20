@@ -7419,38 +7419,52 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 <span class="polaris-text">POLARIS</span>
             </div>
             <div class="user-section">
-                <button onclick="openEmailCenter()" class="header-action-btn">
-                    <span>📧</span> Email Center
-                </button>
-                <button onclick="openOffersCenter()" class="header-action-btn">
-                    <span>📋</span> All Offers
-                </button>
+                <!-- ★ TOOLS DROPDOWN MENU ★ -->
+                <div style="position:relative; display:inline-block;" id="toolsMenuWrapper">
+                    <button onclick="toggleToolsMenu()" style="background:linear-gradient(135deg, #D4AF37, #c9a227); border:none; color:#000; padding:0.5rem 1rem; border-radius:8px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 4px 15px rgba(212,175,55,0.4); white-space:nowrap;" id="toolsMenuBtn">
+                        ☰ Tools <span id="toolsMenuArrow" style="font-size:0.7rem; transition:transform 0.2s;">▼</span>
+                    </button>
+                    <div id="toolsDropdown" style="display:none; position:absolute; top:calc(100% + 6px); left:0; background:#1a2035; border:1px solid #D4AF37; border-radius:12px; min-width:200px; z-index:99999; box-shadow:0 8px 32px rgba(0,0,0,0.5); overflow:hidden;">
+                        <button onclick="openEmailCenter(); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'">
+                            <span>📧</span> Email Center
+                        </button>
+                        <button onclick="openOffersCenter(); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'">
+                            <span>📋</span> All Offers
+                        </button>
+                        <button onclick="openContractCenter(); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'">
+                            <span>📄</span> Contracts
+                        </button>
+                        <button onclick="openReportBuilder(); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'">
+                            <span>📊</span> Reports
+                        </button>
+                        <button onclick="window.open('https://polaris.cfserver3.net/', '_blank'); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'">
+                            <span>👥</span> Active Members
+                        </button>
+                        <button onclick="openRenewals(); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'">
+                            <span>📋</span> Follow Up
+                        </button>
+                        <button onclick="runKPITest(); toggleToolsMenu();" id="kpiTestBtn" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'">
+                            <span>🧪</span> KPI Test
+                        </button>
+                        <div style="border-top:1px solid rgba(212,175,55,0.2); margin:0.25rem 0;"></div>
+                        <button onclick="toggleCompareMode(); toggleToolsMenu();" id="compareModeBtn" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px; transition:background 0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'">
+                            <span>⚖️</span> Compare
+                        </button>
+                    </div>
+                </div>
+
+                <!-- New Client button - stays outside -->
                 <button onclick="openAddClientModal()" class="header-action-btn" style="background: linear-gradient(135deg, #1a5276, #2471a3);">
                     <span>🏢</span> + New Client
                 </button>
-                <button onclick="openContractCenter()" class="header-action-btn">
-                    <span>📄</span> Contracts
-                </button>
-                <button onclick="openReportBuilder()" class="header-action-btn">
-                    <span>📊</span> Reports
-                </button>
-                <button onclick="window.open('https://polaris.cfserver3.net/', '_blank')" class="header-action-btn">
-                    <span>👥</span> Active Members
-                </button>
-                <button onclick="openRenewals()" class="header-action-btn" style="background: linear-gradient(135deg, #1B5E20, #2E7D32); color: white;">
-                    <span>📋</span> Follow Up
-                </button>
-                <button onclick="runKPITest()" class="header-action-btn kpi-test-btn" id="kpiTestBtn" title="Run KPI Diagnostic Test">
-                    <span>🧪</span> KPI Test
-                </button>
+
+                <!-- Client Selector - stays outside -->
                 <div class="client-selector-wrapper">
                     <select id="clientSelector" class="client-selector" onchange="handleClientChange()">
                         <option value="all">🏢 All Clients (Company Total)</option>
                     </select>
-                    <button class="compare-btn" onclick="toggleCompareMode()" id="compareModeBtn">
-                        <span>⚖️</span> Compare
-                    </button>
                 </div>
+
                 <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
             </div>
         </div>
@@ -35666,6 +35680,25 @@ function showScanSuccessNotification(count) {
         setTimeout(() => notif.remove(), 500);
     }, 3000);
 }
+
+// ─── TOOLS DROPDOWN MENU ───
+function toggleToolsMenu() {
+    const dropdown = document.getElementById('toolsDropdown');
+    const arrow = document.getElementById('toolsMenuArrow');
+    const isOpen = dropdown.style.display !== 'none';
+    dropdown.style.display = isOpen ? 'none' : 'block';
+    arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const wrapper = document.getElementById('toolsMenuWrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+        const dropdown = document.getElementById('toolsDropdown');
+        const arrow = document.getElementById('toolsMenuArrow');
+        if (dropdown) dropdown.style.display = 'none';
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+    }
+});
 
 console.log('📷 v3.56: Business Card Scanner with Tesseract.js OCR loaded');
 </script>
