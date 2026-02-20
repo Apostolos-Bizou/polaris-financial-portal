@@ -7419,32 +7419,37 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 <span class="polaris-text">POLARIS</span>
             </div>
             <div class="user-section">
-                <!-- ☰ TOOLS DROPDOWN -->
-                <div style="position:relative; display:inline-block;" id="toolsMenuWrapper">
-                    <button onclick="toggleToolsMenu()" style="background:linear-gradient(135deg, #D4AF37, #c9a227); border:none; color:#000; padding:0.5rem 1rem; border-radius:8px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 4px 15px rgba(212,175,55,0.4); white-space:nowrap;">
-                        ☰ Tools <span id="toolsMenuArrow" style="font-size:0.7rem; transition:transform 0.2s;">▼</span>
-                    </button>
-                    <div id="toolsDropdown" style="display:none; position:absolute; top:calc(100% + 6px); left:0; background:#1a2035; border:1px solid #D4AF37; border-radius:12px; min-width:200px; z-index:99999; box-shadow:0 8px 32px rgba(0,0,0,0.5); overflow:hidden;">
-                        <button onclick="openEmailCenter(); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'"><span>📧</span> Email Center</button>
-                        <button onclick="openOffersCenter(); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'"><span>📋</span> All Offers</button>
-                        <button onclick="openContractCenter(); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'"><span>📄</span> Contracts</button>
-                        <button onclick="openReportBuilder(); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'"><span>📊</span> Reports</button>
-                        <button onclick="window.open('https://polaris.cfserver3.net/', '_blank'); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'"><span>👥</span> Active Members</button>
-                        <button onclick="openRenewals(); toggleToolsMenu();" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'"><span>📋</span> Follow Up</button>
-                        <button onclick="runKPITest(); toggleToolsMenu();" id="kpiTestBtn" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'"><span>🧪</span> KPI Test</button>
-                        <div style="border-top:1px solid rgba(212,175,55,0.2); margin:0.25rem 0;"></div>
-                        <button onclick="toggleCompareMode(); toggleToolsMenu();" id="compareModeBtn" style="width:100%; text-align:left; padding:0.75rem 1rem; background:none; border:none; color:#fff; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:0.9rem; display:flex; align-items:center; gap:10px;" onmouseover="this.style.background='rgba(212,175,55,0.15)'" onmouseout="this.style.background='none'"><span>⚖️</span> Compare</button>
-                    </div>
-                </div>
-                <!-- + New Client stays outside -->
+                <button onclick="openEmailCenter()" class="header-action-btn">
+                    <span>📧</span> Email Center
+                </button>
+                <button onclick="openOffersCenter()" class="header-action-btn">
+                    <span>📋</span> All Offers
+                </button>
                 <button onclick="openAddClientModal()" class="header-action-btn" style="background: linear-gradient(135deg, #1a5276, #2471a3);">
                     <span>🏢</span> + New Client
                 </button>
-                <!-- Client Selector stays outside -->
+                <button onclick="openContractCenter()" class="header-action-btn">
+                    <span>📄</span> Contracts
+                </button>
+                <button onclick="openReportBuilder()" class="header-action-btn">
+                    <span>📊</span> Reports
+                </button>
+                <button onclick="window.open('https://polaris.cfserver3.net/', '_blank')" class="header-action-btn">
+                    <span>👥</span> Active Members
+                </button>
+                <button onclick="openRenewals()" class="header-action-btn" style="background: linear-gradient(135deg, #1B5E20, #2E7D32); color: white;">
+                    <span>📋</span> Follow Up
+                </button>
+                <button onclick="runKPITest()" class="header-action-btn kpi-test-btn" id="kpiTestBtn" title="Run KPI Diagnostic Test">
+                    <span>🧪</span> KPI Test
+                </button>
                 <div class="client-selector-wrapper">
                     <select id="clientSelector" class="client-selector" onchange="handleClientChange()">
                         <option value="all">🏢 All Clients (Company Total)</option>
                     </select>
+                    <button class="compare-btn" onclick="toggleCompareMode()" id="compareModeBtn">
+                        <span>⚖️</span> Compare
+                    </button>
                 </div>
                 <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
             </div>
@@ -10592,10 +10597,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 
                 // v4.0: getClientKPISummary gets GROUP: prefix, others get clean ID
                 const [kpiResponse, categoriesResponse, hospitalsResponse, geoResponse] = await Promise.all([
-                    fetch(`${API_URL}?action=getClientKPISummary&${kpiParams.toString()}`),
-                    fetch(`${API_URL}?action=getCategoriesBreakdown&${baseParams.toString()}`),
-                    fetch(`${API_URL}?action=getHospitalsData&${baseParams.toString()}`),
-                    fetch(`${API_URL}?action=getGeographicData&${baseParams.toString()}`)
+                    apiFetch(`${API_URL}?action=getClientKPISummary&${kpiParams.toString()}`),
+                    apiFetch(`${API_URL}?action=getCategoriesBreakdown&${baseParams.toString()}`),
+                    apiFetch(`${API_URL}?action=getHospitalsData&${baseParams.toString()}`),
+                    apiFetch(`${API_URL}?action=getGeographicData&${baseParams.toString()}`)
                 ]);
                 
                 const [kpiData, categoriesData, hospitalsData, geoData] = await Promise.all([
@@ -10747,7 +10752,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     quarter: q,
                     year: selectedYear.toString()
                 });
-                const response = await fetch(`${API_URL}?${analyticsParams.toString()}`);
+                const response = await apiFetch(`${API_URL}?${analyticsParams.toString()}`);
                 const data = await response.json();
                 
                 if (data.error) {
@@ -11162,7 +11167,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 aggregateParams.append('endDate', lastRange.end);
                 aggregateParams.append('year', selectedYear.toString());
                 
-                const aggregatePromise = fetch(`${API_URL}?${aggregateParams.toString()}`)
+                const aggregatePromise = apiFetch(`${API_URL}?${aggregateParams.toString()}`)
                     .then(r => r.json())
                     .catch(e => null);
                 
@@ -11998,7 +12003,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 }
                 
                 // Fetch from API
-                const response = await fetch(`${API_URL}?action=getClients`);
+                const response = await apiFetch(`${API_URL}?action=getClients`);
                 const result = await response.json();
                 console.log('📦 API response:', result);
                 
@@ -12316,7 +12321,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     params.append('endDate', dateRange.end);
                     params.append('quarter', q);
                     params.append('year', selectedYear.toString());
-                    return fetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
+                    return apiFetch(`${API_URL}?${params.toString()}`).then(r => r.json()).catch(e => null);
                 });
                 
                 const results = await Promise.all(promises);
@@ -12508,7 +12513,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                 });
                 
                 try {
-                    const resp = await fetch(`${API_URL}?${params.toString()}`);
+                    const resp = await apiFetch(`${API_URL}?${params.toString()}`);
                     const data = await resp.json();
                     const k = data.kpis || {};
                     const m = k.total_members || 0;
@@ -12545,7 +12550,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             html += `<div style="margin:15px 0;padding:10px;background:#1a2040;border-radius:8px;border-left:4px solid #6666FF;">`;
             html += `<strong style="color:#6666FF;">📡 getDashboardKPIs (Full Year):</strong>`;
             try {
-                const resp2 = await fetch(`${API_URL}?action=getDashboardKPIs`);
+                const resp2 = await apiFetch(`${API_URL}?action=getDashboardKPIs`);
                 const d2 = await resp2.json();
                 html += `<br>👥 Members: <strong>${(d2.members || d2.data?.total_members || 0).toLocaleString()}</strong>`;
                 html += `<br>📋 Claims: <strong>${(d2.claims || d2.data?.total_claims || 0).toLocaleString()}</strong>`;
@@ -13123,7 +13128,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             errorEl.textContent = '';
             
             try {
-                const response = await fetch(`${API_URL}?action=login&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
+                const response = await apiFetch(`${API_URL}?action=login&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
                 const data = await response.json();
                 
                 const userData = data.user || data.data;
@@ -13608,7 +13613,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         
         async function loadEmailTemplates() {
             try {
-                const response = await fetch(`${API_URL}?action=getEmailTemplates`);
+                const response = await apiFetch(`${API_URL}?action=getEmailTemplates`);
                 const data = await response.json();
                 if (data.success) {
                     emailTemplates = data.data || [];
@@ -13643,7 +13648,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">Loading contacts...</p>';
             
             try {
-                const response = await fetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
+                const response = await apiFetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
                 const data = await response.json();
                 
                 if (data.success && data.data && data.data.length > 0) {
@@ -13843,7 +13848,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             previewBox.innerHTML = '<p style="color: #999; text-align: center;">Loading preview...</p>';
             
             try {
-                const response = await fetch(`${API_URL}?action=previewEmail&templateId=${templateId}&clientId=${clientId}`);
+                const response = await apiFetch(`${API_URL}?action=previewEmail&templateId=${templateId}&clientId=${clientId}`);
                 const data = await response.json();
                 
                 if (data.success && data.preview) {
@@ -13913,7 +13918,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     params.append('signatures_html', buildSignaturesHTML());
                 }
                 
-                const response = await fetch(`${API_URL}?${params.toString()}`);
+                const response = await apiFetch(`${API_URL}?${params.toString()}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -14009,7 +14014,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     });
                 } else {
                     try {
-                        const clientsResp = await fetch(`${API_URL}?action=getClients`);
+                        const clientsResp = await apiFetch(`${API_URL}?action=getClients`);
                         const clientsData = await clientsResp.json();
                         const clientList = clientsData.data || clientsData;
                         if (Array.isArray(clientList)) {
@@ -14028,7 +14033,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     console.log('Using cached email history');
                     historyData = window.cachedEmailHistory;
                 } else {
-                    const response = await fetch(`${API_URL}?action=getEmailHistory`);
+                    const response = await apiFetch(`${API_URL}?action=getEmailHistory`);
                     const data = await response.json();
                     if (data.success && data.data) {
                         historyData = data.data;
@@ -14072,7 +14077,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const container = document.getElementById('teamMembersList');
             
             try {
-                const response = await fetch(`${API_URL}?action=getTeamMembers`);
+                const response = await apiFetch(`${API_URL}?action=getTeamMembers`);
                 const data = await response.json();
                 
                 if (data.success && data.data && data.data.length > 0) {
@@ -14326,7 +14331,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             for (const clientId of selectedBulkClients) {
                 try {
                     // Get contacts for this client
-                    const response = await fetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
+                    const response = await apiFetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
                     const data = await response.json();
                     
                     let recipients = [];
@@ -14354,7 +14359,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         sent_by: currentUser?.username || 'admin'
                     });
                     
-                    const sendResponse = await fetch(`${API_URL}?${params.toString()}`);
+                    const sendResponse = await apiFetch(`${API_URL}?${params.toString()}`);
                     const sendResult = await sendResponse.json();
                     
                     if (sendResult.success) {
@@ -14447,7 +14452,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             contactsList.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">Loading contacts...</p>';
             
             try {
-                const response = await fetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
+                const response = await apiFetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
                 const data = await response.json();
                 
                 if (data.success && data.data && data.data.length > 0) {
@@ -14567,7 +14572,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     created_by: currentUser?.username || 'admin'
                 });
                 
-                const response = await fetch(`${API_URL}?${params.toString()}`);
+                const response = await apiFetch(`${API_URL}?${params.toString()}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -14599,7 +14604,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             const tbody = document.getElementById('scheduledEmailsBody');
             
             try {
-                const response = await fetch(`${API_URL}?action=getScheduledEmails`);
+                const response = await apiFetch(`${API_URL}?action=getScheduledEmails`);
                 const data = await response.json();
                 
                 if (data.success && data.data && data.data.length > 0) {
@@ -14657,7 +14662,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             if (!confirm('Are you sure you want to cancel this scheduled email?')) return;
             
             try {
-                const response = await fetch(`${API_URL}?action=cancelScheduledEmail&schedule_id=${scheduleId}`);
+                const response = await apiFetch(`${API_URL}?action=cancelScheduledEmail&schedule_id=${scheduleId}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -14747,7 +14752,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             // ALWAYS fetch fresh client data from API
             let clientData = null;
             try {
-                const response = await fetch(`${API_URL}?action=getClients`);
+                const response = await apiFetch(`${API_URL}?action=getClients`);
                 const result = await response.json();
                 if (result.success && result.data) {
                     window.cachedClientsData = result.data; // Update cache
@@ -14780,7 +14785,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1rem;">Loading contacts...</p>';
             
             try {
-                const response = await fetch(`${API_URL}?action=getClientContacts&client_id=${clientId}`);
+                const response = await apiFetch(`${API_URL}?action=getClientContacts&client_id=${clientId}`);
                 const result = await response.json();
                 
                 if (result.success && result.contacts && result.contacts.length > 0) {
@@ -15071,7 +15076,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             
             // First try to get from API (Google Drive stored templates)
             try {
-                const response = await fetch(`${API_URL}?action=getEmailTemplateBody&template_id=${templateId}`);
+                const response = await apiFetch(`${API_URL}?action=getEmailTemplateBody&template_id=${templateId}`);
                 const result = await response.json();
                 
                 if (result.success && result.body_html) {
@@ -15173,7 +15178,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             console.log('Saving draft:', data);
             
             try {
-                const response = await fetch(`${API_URL}?action=createEmailDraft`, {
+                const response = await apiFetch(`${API_URL}?action=createEmailDraft`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({
@@ -15226,7 +15231,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             console.log('Sending documents:', data);
             
             try {
-                const response = await fetch(`${API_URL}?action=sendDocumentsEmail`, {
+                const response = await apiFetch(`${API_URL}?action=sendDocumentsEmail`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({
@@ -17733,7 +17738,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         quarter: q,
                         year: year
                     });
-                    return fetch(`${API_URL}?${params.toString()}`)
+                    return apiFetch(`${API_URL}?${params.toString()}`)
                         .then(r => r.json())
                         .then(d => ({ quarter: q, data: d }))
                         .catch(e => ({ quarter: q, data: null, error: e }));
@@ -17749,7 +17754,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                         quarter: 'Q4',
                         year: year
                     });
-                    return fetch(`${API_URL}?${params.toString()}`)
+                    return apiFetch(`${API_URL}?${params.toString()}`)
                         .then(r => r.json())
                         .then(d => ({ clientId, data: d }))
                         .catch(e => ({ clientId, data: null, error: e }));
@@ -21051,7 +21056,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             document.getElementById('addClientStatus').innerHTML = '<p style="color:#d4a843;text-align:center;">⏳ Loading client data...</p>';
             
             try {
-                const response = await fetch(`${API_URL}?action=getClientById&clientId=${encodeURIComponent(clientId)}`);
+                const response = await apiFetch(`${API_URL}?action=getClientById&clientId=${encodeURIComponent(clientId)}`);
                 const result = await response.json();
                 
                 if (result.success && result.data) {
@@ -21153,7 +21158,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     ? { action: 'updateClient', clientId: window._editingClientId, client: clientData }
                     : { action: 'addClient', client: clientData };
                 
-                const response = await fetch(`${API_URL}?action=${isEdit ? 'updateClient' : 'addClient'}`, {
+                const response = await apiFetch(`${API_URL}?action=${isEdit ? 'updateClient' : 'addClient'}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(postData)
@@ -21889,7 +21894,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             } else {
                 // Use Web App API
                 try {
-                    const response = await fetch(`${API_URL}?action=getContractStats`);
+                    const response = await apiFetch(`${API_URL}?action=getContractStats`);
                     const result = await response.json();
                     if (result.success && result.data) {
                         const stats = result.data;
@@ -21917,7 +21922,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
             
             try {
                 // Load contracts from API, use cached clients data (has client_type)
-                const contractsResponse = await fetch(`${API_URL}?action=getContracts`);
+                const contractsResponse = await apiFetch(`${API_URL}?action=getContracts`);
                 const contractsResult = await contractsResponse.json();
                 const contracts = contractsResult.data || contractsResult || [];
                 
@@ -21927,7 +21932,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
                     clients = window.cachedClientsData;
                     console.log('👥 Using cached clients data:', clients.length);
                 } else {
-                    const clientsResponse = await fetch(`${API_URL}?action=getClients`);
+                    const clientsResponse = await apiFetch(`${API_URL}?action=getClients`);
                     const clientsResult = await clientsResponse.json();
                     clients = clientsResult.data || clientsResult || [];
                     console.log('👥 Clients loaded from API:', clients.length);
@@ -24586,7 +24591,7 @@ Email: ${contract.contact_email || '-'}
             
             // Otherwise fetch from database
             try {
-                const response = await fetch(`${API_URL}?action=getOfferDocuments&offerId=${offerId}`);
+                const response = await apiFetch(`${API_URL}?action=getOfferDocuments&offerId=${offerId}`);
                 const result = await response.json();
                 if (result.success && result.documents) {
                     generatedDocuments[offerId] = result.documents;
@@ -27120,7 +27125,7 @@ const clientData = {
             if ((!contactName || !contactEmail) && offer.client_id) {
                 try {
                     console.log('Fetching contact info from API for client:', offer.client_id);
-                    const clientResponse = await fetch(`${API_URL}?action=getClientById&clientId=${encodeURIComponent(offer.client_id)}`);
+                    const clientResponse = await apiFetch(`${API_URL}?action=getClientById&clientId=${encodeURIComponent(offer.client_id)}`);
                     const clientResult = await clientResponse.json();
                     
                     if (clientResult.success && clientResult.data) {
@@ -30010,7 +30015,7 @@ async function selectModalClient(clientId, clientName) {
         
         try {
             console.log('Fetching fresh client data from API for:', clientId);
-            const response = await fetch(`${API_URL}?action=getClients`);
+            const response = await apiFetch(`${API_URL}?action=getClients`);
             const result = await response.json();
             if (result.success && result.data) {
                 // Update cache with fresh data
@@ -30113,7 +30118,7 @@ async function loadClientOffersForSendDocs(clientId, clientName) {
         
         // If no cached data, fetch from API and update cache
         if (offers.length === 0) {
-            const response = await fetch(`${API_URL}?action=getOffers`);
+            const response = await apiFetch(`${API_URL}?action=getOffers`);
             const result = await response.json();
             if (result.success && result.data) {
                 // Update the global offersData cache
@@ -30237,7 +30242,7 @@ async function selectOfferForSendDocs(offerId) {
     
     if (!offer) {
         try {
-            const response = await fetch(`${API_URL}?action=getOffers`);
+            const response = await apiFetch(`${API_URL}?action=getOffers`);
             const result = await response.json();
             if (result.success && result.data) {
                 offer = result.data.find(o => o.offer_id === offerId);
@@ -30303,7 +30308,7 @@ async function loadOfferDocumentsForSendDocs(offerId) {
     } else {
         // Fetch from API
         try {
-            const response = await fetch(`${API_URL}?action=getAllOffersDocuments`);
+            const response = await apiFetch(`${API_URL}?action=getAllOffersDocuments`);
             const result = await response.json();
             if (result.success && result.data && result.data[offerId]) {
                 docs = result.data[offerId];
@@ -30574,7 +30579,7 @@ async function loadModalClientContacts(clientId) {
     
     try {
         // Try to get contacts from API (use clientId parameter)
-        const response = await fetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
+        const response = await apiFetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
         const result = await response.json();
         
         if (result.success && result.data && result.data.length > 0) {
@@ -30921,7 +30926,7 @@ async function loadSendDocsRecipients(offer) {
     // 2. Try to load additional contacts from API
     if (offer.clientId) {
         try {
-            const response = await fetch(`${API_URL}?action=getClientContacts&clientId=${offer.clientId}`);
+            const response = await apiFetch(`${API_URL}?action=getClientContacts&clientId=${offer.clientId}`);
             const result = await response.json();
             
             if (result.success && result.data && result.data.length > 0) {
@@ -31176,7 +31181,7 @@ async function loadDriveTemplates() {
         select.innerHTML = '<option value="">-- Select Email Template --</option><option value="_loading" disabled>⏳ Loading from Drive...</option>';
         if (statusDiv) statusDiv.innerHTML = '⏳ Fetching templates from Drive...';
         
-        const response = await fetch(`${API_URL}?action=getEmailTemplatesFromDrive`);
+        const response = await apiFetch(`${API_URL}?action=getEmailTemplatesFromDrive`);
         const result = await response.json();
         
         if (result.success && result.data) {
@@ -31242,7 +31247,7 @@ async function loadDriveTemplateContent() {
         // Show loading in preview
         if (previewDiv) previewDiv.innerHTML = '<p style="color: #7aa0c0; text-align: center;">⏳ Loading template content...</p>';
         
-        const response = await fetch(`${API_URL}?action=getEmailTemplateContent&templateId=${encodeURIComponent(templateId)}`);
+        const response = await apiFetch(`${API_URL}?action=getEmailTemplateContent&templateId=${encodeURIComponent(templateId)}`);
         const result = await response.json();
         
         if (result.success && result.content) {
@@ -31590,7 +31595,7 @@ async function saveSendDocsDraft() {
     console.log('Saving draft:', draftData);
     
     try {
-        const response = await fetch(`${API_URL}?action=createEmailDraft`, {
+        const response = await apiFetch(`${API_URL}?action=createEmailDraft`, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
@@ -31700,7 +31705,7 @@ async function submitSendDocs() {
     console.log('Sending documents:', sendData);
     
     try {
-        const response = await fetch(`${API_URL}?action=sendDocumentsEmail`, {
+        const response = await apiFetch(`${API_URL}?action=sendDocumentsEmail`, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
@@ -31932,7 +31937,7 @@ async function updateSendDocsPreview() {
     
     // First try to get from API (Google Drive stored templates)
     try {
-        const response = await fetch(`${API_URL}?action=getEmailTemplateBody&template_id=${templateId}`);
+        const response = await apiFetch(`${API_URL}?action=getEmailTemplateBody&template_id=${templateId}`);
         const result = await response.json();
         
         if (result.success && result.body_html) {
@@ -32630,7 +32635,7 @@ async function loadRenewalsData() {
 
 async function loadRenewalsKPIs() {
     try {
-        const response = await fetch(`${API_URL}?action=getDashboardKPIs`);
+        const response = await apiFetch(`${API_URL}?action=getDashboardKPIs`);
         const result = await response.json();
         
         if (result.success && result.data) {
@@ -32666,7 +32671,7 @@ async function loadPipeline() {
     // 3. Fetch from API
     else {
         try {
-            const response = await fetch(`${API_URL}?action=getOffers`);
+            const response = await apiFetch(`${API_URL}?action=getOffers`);
             const result = await response.json();
             if (result.success) offers = result.data || result.offers || [];
         } catch (e) { console.log('Could not fetch offers:', e); }
@@ -32893,7 +32898,7 @@ function printDetailedView() {
 
 async function loadExpiringContracts() {
     try {
-        const response = await fetch(`${API_URL}?action=getExpiringContracts&days=90`);
+        const response = await apiFetch(`${API_URL}?action=getExpiringContracts&days=90`);
         const result = await response.json();
         
         let contracts = result.success ? (result.data || result.contracts || []) : (Array.isArray(result) ? result : []);
@@ -33049,12 +33054,12 @@ async function populateNoteClientDropdown() {
 async function loadEmailTemplatesForRenewals() {
     try {
         // Try new renewal-specific templates first
-        let response = await fetch(`${API_URL}?action=getRenewalEmailTemplates`);
+        let response = await apiFetch(`${API_URL}?action=getRenewalEmailTemplates`);
         let result = await response.json();
         
         // Fallback to general templates if needed
         if (!result.success || !result.templates || result.templates.length === 0) {
-            response = await fetch(`${API_URL}?action=getEmailTemplates`);
+            response = await apiFetch(`${API_URL}?action=getEmailTemplates`);
             result = await response.json();
         }
         
@@ -33093,7 +33098,7 @@ async function loadClientDataForEmail() {
     
     try {
         // Try to fetch contacts from API
-        const response = await fetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
+        const response = await apiFetch(`${API_URL}?action=getClientContacts&clientId=${clientId}`);
         const result = await response.json();
         
         if (result.success && result.data && result.data.length > 0) {
@@ -33178,12 +33183,12 @@ async function loadRenewalEmailTemplate() {
     if (templateSelect.options[templateSelect.selectedIndex]?.dataset?.source === 'drive') {
         try {
             // Try renewal-specific endpoint first
-            let response = await fetch(`${API_URL}?action=getRenewalEmailTemplateBody&template_id=${templateId}`);
+            let response = await apiFetch(`${API_URL}?action=getRenewalEmailTemplateBody&template_id=${templateId}`);
             let result = await response.json();
             
             // Fallback to general endpoint
             if (!result.success) {
-                response = await fetch(`${API_URL}?action=getEmailTemplateBody&template_id=${templateId}`);
+                response = await apiFetch(`${API_URL}?action=getEmailTemplateBody&template_id=${templateId}`);
                 result = await response.json();
             }
             
@@ -33429,7 +33434,7 @@ async function loadNotes() {
     
     try {
         // Fetch notes from backend (FollowUpNotes sheet)
-        const response = await fetch(`${API_URL}?action=getFollowUpNotes&limit=20`);
+        const response = await apiFetch(`${API_URL}?action=getFollowUpNotes&limit=20`);
         const result = await response.json();
         
         if (result.success && result.data && result.data.length > 0) {
@@ -34348,7 +34353,7 @@ async function loadClientRecipients(clientId) {
     container.innerHTML = '<div style="text-align:center;padding:1rem;color:rgba(255,255,255,0.5);">Loading...</div>';
     
     try {
-        const response = await fetch(`${API_URL}?action=getClientContacts&clientId=${encodeURIComponent(clientId)}`);
+        const response = await apiFetch(`${API_URL}?action=getClientContacts&clientId=${encodeURIComponent(clientId)}`);
         const result = await response.json();
         
         if (result.success && result.data && result.data.length > 0) {
@@ -34470,7 +34475,7 @@ async function editRecipient(contactId) {
     }
     
     try {
-        const response = await fetch(`${API_URL}?action=getClientContacts&clientId=${currentRecipientClientId}`);
+        const response = await apiFetch(`${API_URL}?action=getClientContacts&clientId=${currentRecipientClientId}`);
         const result = await response.json();
         
         if (result.success && result.data) {
@@ -35662,23 +35667,10 @@ function showScanSuccessNotification(count) {
     }, 3000);
 }
 
-// ─── TOOLS DROPDOWN ───
-function toggleToolsMenu() {
-    const dd = document.getElementById('toolsDropdown');
-    const ar = document.getElementById('toolsMenuArrow');
-    const open = dd.style.display !== 'none';
-    dd.style.display = open ? 'none' : 'block';
-    ar.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+// ─── API FETCH HELPER (handles Google Apps Script redirects) ───
+function apiFetch(url) {
+    return fetch(url, { redirect: 'follow' });
 }
-document.addEventListener('click', function(e) {
-    const w = document.getElementById('toolsMenuWrapper');
-    if (w && !w.contains(e.target)) {
-        const dd = document.getElementById('toolsDropdown');
-        const ar = document.getElementById('toolsMenuArrow');
-        if (dd) dd.style.display = 'none';
-        if (ar) ar.style.transform = 'rotate(0deg)';
-    }
-});
 
 console.log('📷 v3.56: Business Card Scanner with Tesseract.js OCR loaded');
 </script>
