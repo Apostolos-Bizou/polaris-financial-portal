@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2026-02-19 v3.56 - Added Business Card Scanner with OCR auto-fill -->
+<!-- VERSION: 2026-03-09 v3.57 - CBMS Report layer fix: correct aggregation per period -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -34285,47 +34285,88 @@ async function loadCBMSReportData() {
     console.log('🔄 Loading CBMS Report Data...');
     
     try {
-        const response = await fetch(API_URL + '?action=getCBMSReportData');
+        // API_URL is a const in a different script block — resolve it safely
+        const CBMS_API = (typeof API_URL !== 'undefined' ? API_URL : null)
+            || 'https://script.google.com/macros/s/AKfycbye9XIpC0VLyBLftcN3ew5nw7BvbKd19-_JCR-xfKWEtjbvWYJqdvOSjfoaruI7ixp6/exec';
+        
+        const response = await fetch(CBMS_API + '?action=getCBMSReportData', { redirect: 'follow' });
         const result = await response.json();
         
-        if (!result.success || !result.data || result.data.length === 0) {
-            console.warn('⚠️ No CBMS data available');
+        if (!result.success) {
+            console.warn('⚠️ CBMS API error:', result.error);
             return;
         }
-        
-        console.log('✅ CBMS Report data loaded:', result.data.length, 'records');
-        
-        // Find the "Report Total" row for summary
-        const totalRow = result.data.find(r => r.organisation === 'Report Total') || result.data[0];
-        
-        // Format PHP currency
-        const fmtPHP = (val) => '₱' + (parseFloat(val) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        
-        // Update Report Summary cards
-        const orgCount = result.data.filter(r => r.organisation !== 'Report Total').length;
-        document.getElementById('cbmsOrganisations').textContent = orgCount;
-        document.getElementById('cbmsClaims').textContent = (totalRow.claims || 0).toLocaleString();
-        document.getElementById('cbmsMembers').textContent = (totalRow.members || 0).toLocaleString();
-        document.getElementById('cbmsApproved').textContent = fmtPHP(totalRow.approved_amount);
-        document.getElementById('cbmsInvoiced').textContent = fmtPHP(totalRow.invoiced_amount);
-        document.getElementById('cbmsTotalAmount').textContent = fmtPHP(totalRow.total_amount);
-        
-        // Update Financial Breakdown
-        document.getElementById('cbmsExGratia').textContent = fmtPHP(totalRow.ex_gratia);
-        document.getElementById('cbmsTotalInclExGratia').textContent = fmtPHP(totalRow.total_incl_exgratia);
-        document.getElementById('cbmsAvgInclExGr').textContent = fmtPHP(totalRow.average_incl_exgr);
-        document.getElementById('cbmsNetAvg').textContent = fmtPHP(totalRow.net_average);
-        
-        // Update Per Capita & Payments
-        document.getElementById('cbmsPerCapita').textContent = fmtPHP(totalRow.per_capita);
-        document.getElementById('cbmsPaidToHM').textContent = fmtPHP(totalRow.paid_to_hm);
-        document.getElementById('cbmsChargedCustomer').textContent = fmtPHP(totalRow.charged_to_customer);
-        document.getElementById('cbmsFeesCustomer').textContent = fmtPHP(totalRow.fees_to_customer);
-        
-        // Update Total to Customer banner
-        document.getElementById('cbmsTotalToCustomer').textContent = fmtPHP(totalRow.total_to_customer);
-        
-        console.log('✅ CBMS Report Summary updated!');
+
+        // ── Use the pre-aggregated data from backend ──────────────────────────
+        const aggregated = result.aggregated || [];
+        const latestRow  = result.latest || null;
+
+        if (!latestRow) {
+            console.warn('⚠️ No CBMS aggregated data available');
+            return;
+        }
+
+        console.log('✅ CBMS data loaded:', aggregated.length, 'periods, latest:', latestRow.report_date);
+
+        // Format helpers
+        const fmtPHP  = (val) => '₱' + (parseFloat(val) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const fmtNum  = (val) => Math.round(parseFloat(val) || 0).toLocaleString();
+
+        // ── Report Summary cards (latest period) ─────────────────────────────
+        document.getElementById('cbmsOrganisations').textContent = fmtNum(latestRow.organisations);
+        document.getElementById('cbmsClaims').textContent        = fmtNum(latestRow.claims);
+        document.getElementById('cbmsMembers').textContent       = fmtNum(latestRow.members);
+        document.getElementById('cbmsApproved').textContent      = fmtPHP(latestRow.approved_amount);
+        document.getElementById('cbmsInvoiced').textContent      = fmtPHP(latestRow.invoiced_amount);
+        document.getElementById('cbmsTotalAmount').textContent   = fmtPHP(latestRow.total_amount);
+
+        // ── Financial Breakdown ───────────────────────────────────────────────
+        document.getElementById('cbmsExGratia').textContent         = fmtPHP(latestRow.ex_gratia);
+        document.getElementById('cbmsTotalInclExGratia').textContent = fmtPHP(latestRow.total_incl_exgratia);
+        document.getElementById('cbmsAvgInclExGr').textContent      = fmtPHP(latestRow.average_incl_exgr);
+        document.getElementById('cbmsNetAvg').textContent           = fmtPHP(latestRow.net_average);
+
+        // ── Per Capita & Payments ─────────────────────────────────────────────
+        document.getElementById('cbmsPerCapita').textContent      = fmtPHP(latestRow.per_capita);
+        document.getElementById('cbmsPaidToHM').textContent       = fmtPHP(latestRow.paid_to_hm);
+        document.getElementById('cbmsChargedCustomer').textContent = fmtPHP(latestRow.charged_to_customer);
+        document.getElementById('cbmsFeesCustomer').textContent   = fmtPHP(latestRow.fees_to_customer);
+
+        // ── Total to Customer banner ──────────────────────────────────────────
+        document.getElementById('cbmsTotalToCustomer').textContent = fmtPHP(latestRow.total_to_customer);
+
+        // ── Historical table (all periods, newest first) ──────────────────────
+        const tbody = document.getElementById('historyTable');
+        if (tbody && aggregated.length > 0) {
+            // Sort newest → oldest for display
+            const displayRows = [...aggregated].reverse();
+            const phpUsdRate = 56.20; // approximate constant — update if needed
+
+            tbody.innerHTML = displayRows.map((p, i) => {
+                const rank  = i + 1;
+                const cls   = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+                const usd   = p.approved_amount / phpUsdRate;
+                const cpm   = p.members > 0 ? usd / p.members : 0;
+                const util  = p.members > 0 ? (p.claims / p.members * 100).toFixed(1) : '0.0';
+                return `<tr>
+                    <td><div class="rank-badge ${cls}">${rank}</div></td>
+                    <td><strong>${p.report_date}</strong></td>
+                    <td>${fmtNum(p.members)}</td>
+                    <td>${fmtNum(p.claims)}</td>
+                    <td>₱${Math.round(p.approved_amount).toLocaleString()}</td>
+                    <td class="currency">$${Math.round(usd).toLocaleString()}</td>
+                    <td class="currency">$${cpm.toFixed(2)}</td>
+                    <td>${util}%</td>
+                </tr>`;
+            }).join('');
+            console.log('✅ CBMS Historical table updated:', displayRows.length, 'rows');
+        }
+
+        console.log('✅ CBMS Report Section fully updated! Period:', latestRow.report_date,
+            '| Orgs:', latestRow.organisations,
+            '| Claims:', latestRow.claims,
+            '| Members:', latestRow.members,
+            '| Approved: ₱' + Math.round(latestRow.approved_amount).toLocaleString());
         
     } catch (error) {
         console.error('❌ Error loading CBMS data:', error);
