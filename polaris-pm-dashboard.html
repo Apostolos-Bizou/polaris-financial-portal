@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POLARIS — Project Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+    --navy: #0a1628;
+    --navy-mid: #111f3a;
+    --navy-light: #1a2d4d;
+    --navy-surface: #162240;
+    --gold: #d4af37;
+    --gold-dim: rgba(212,175,55,0.15);
+    --gold-glow: rgba(212,175,55,0.4);
+    --green: #2e7d32;
+    --green-light: #4caf50;
+    --blue: #3498db;
+    --blue-light: #5dade2;
+    --red: #e74c3c;
+    --orange: #f39c12;
+    --purple: #9b59b6;
+    --text: #e8edf3;
+    --text-dim: #8899aa;
+    --text-muted: #556677;
+    --border: rgba(212,175,55,0.12);
+    --radius: 12px;
+    --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ═══════ SCROLLBAR ═══════ */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--gold-dim); border-radius:3px; }
+
+/* ═══════ TOP NAV ═══════ */
+.topnav {
+    position: sticky; top:0; z-index:100;
+    background: rgba(10,22,40,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+}
+.topnav-brand {
+    display:flex; align-items:center; gap:12px;
+    font-family:'Playfair Display',serif; font-weight:900; font-size:1.2rem;
+    letter-spacing:1px; color:var(--gold);
+}
+.topnav-brand .star { font-size:1.6rem; animation: pulse-star 3s infinite; }
+@keyframes pulse-star { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.7;transform:scale(1.15)} }
+
+.topnav-tabs {
+    display:flex; gap:4px;
+}
+.topnav-tab {
+    padding: 8px 18px; border-radius:8px; cursor:pointer;
+    font-size:0.85rem; font-weight:500; color:var(--text-dim);
+    border:none; background:transparent; transition:var(--transition);
+    font-family:'DM Sans',sans-serif;
+}
+.topnav-tab:hover { color:var(--text); background:rgba(255,255,255,0.05); }
+.topnav-tab.active { color:var(--gold); background:var(--gold-dim); font-weight:700; }
+
+.topnav-right { display:flex; align-items:center; gap:12px; }
+.topnav-date { font-size:0.8rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+
+/* ═══════ LAYOUT ═══════ */
+.page { display:none; padding:1.5rem 2rem 3rem; animation:fadeIn .3s ease; }
+.page.active { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ═══════ SECTION HEADERS ═══════ */
+.section-header {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:1.5rem;
+}
+.section-title {
+    font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:700;
+    color:var(--text);
+}
+.section-title span { color:var(--gold); }
+
+/* ═══════ STATS RIBBON ═══════ */
+.stats-ribbon {
+    display:grid; grid-template-columns:repeat(5,1fr); gap:1rem; margin-bottom:2rem;
+}
+.stat-card {
+    background: var(--navy-mid); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.25rem;
+    text-align:center; position:relative; overflow:hidden;
+    transition:var(--transition);
+}
+.stat-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--gold), transparent);
+}
+.stat-card:hover { transform:translateY(-3px); box-shadow:0 8px 30px rgba(0,0,0,.3); }
+.stat-icon { font-size:1.5rem; margin-bottom:.5rem; }
+.stat-value { font-family:'JetBrains Mono',monospace; font-size:1.8rem; font-weight:700; color:var(--gold); }
+.stat-label { font-size:.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-top:.25rem; }
+
+/* ═══════ KANBAN BOARD ═══════ */
+.kanban-wrapper {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:1rem;
+    min-height: 500px;
+}
+.kanban-col {
+    background:var(--navy-mid); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1rem;
+    display:flex; flex-direction:column;
+}
+.kanban-col-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding-bottom:.75rem; margin-bottom:.75rem;
+    border-bottom:1px solid var(--border);
+}
+.kanban-col-title {
+    font-weight:700; font-size:.85rem; text-transform:uppercase;
+    letter-spacing:1px; display:flex; align-items:center; gap:8px;
+}
+.kanban-col-count {
+    background:var(--gold-dim); color:var(--gold);
+    font-family:'JetBrains Mono',monospace; font-size:.75rem; font-weight:600;
+    padding:2px 8px; border-radius:10px;
+}
+.col-backlog .kanban-col-title { color:#8899aa; }
+.col-todo .kanban-col-title { color:var(--blue); }
+.col-progress .kanban-col-title { color:var(--orange); }
+.col-done .kanban-col-title { color:var(--green-light); }
+
+.kanban-cards {
+    flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:.5rem;
+    min-height:100px;
+}
+.kanban-cards.drag-over { background:rgba(212,175,55,0.05); border-radius:8px; }
+
+.kanban-card {
+    background:var(--navy-surface); border:1px solid var(--border);
+    border-radius:10px; padding:.85rem; cursor:grab;
+    transition:var(--transition); position:relative;
+}
+.kanban-card:hover { border-color:var(--gold); box-shadow:0 4px 20px rgba(0,0,0,.2); }
+.kanban-card:active { cursor:grabbing; }
+.kanban-card.dragging { opacity:0.5; transform:rotate(2deg); }
+
+.card-priority {
+    position:absolute; top:0; left:12px; width:3px; height:50%;
+    border-radius:0 0 3px 3px;
+}
+.priority-high { background:var(--red); }
+.priority-medium { background:var(--orange); }
+.priority-low { background:var(--green-light); }
+
+.card-title { font-weight:600; font-size:.82rem; margin-bottom:.5rem; padding-left:8px; }
+.card-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.card-tag {
+    font-size:.65rem; padding:2px 8px; border-radius:6px;
+    font-weight:600; text-transform:uppercase; letter-spacing:.5px;
+}
+.tag-frontend { background:rgba(52,152,219,.2); color:var(--blue-light); }
+.tag-backend { background:rgba(155,89,182,.2); color:var(--purple); }
+.tag-data { background:rgba(46,125,50,.2); color:var(--green-light); }
+.tag-deploy { background:rgba(231,76,60,.2); color:var(--red); }
+.tag-design { background:rgba(243,156,18,.2); color:var(--orange); }
+.tag-api { background:rgba(212,175,55,.2); color:var(--gold); }
+
+.card-assignee {
+    font-size:.7rem; color:var(--text-dim); display:flex; align-items:center; gap:4px;
+}
+.card-assignee .avatar {
+    width:18px; height:18px; border-radius:50%; display:inline-flex;
+    align-items:center; justify-content:center; font-size:.55rem; font-weight:700;
+    color:var(--navy);
+}
+.card-due { font-size:.65rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+
+/* ═══════ ADD TASK ═══════ */
+.add-task-btn {
+    width:100%; padding:.6rem; margin-top:.5rem;
+    background:transparent; border:1px dashed var(--border);
+    border-radius:8px; color:var(--text-muted); cursor:pointer;
+    font-size:.8rem; font-family:'DM Sans',sans-serif;
+    transition:var(--transition);
+}
+.add-task-btn:hover { border-color:var(--gold); color:var(--gold); background:var(--gold-dim); }
+
+/* ═══════ MODAL ═══════ */
+.modal-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+    backdrop-filter:blur(6px); z-index:200;
+    align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+    background:var(--navy-mid); border:1px solid var(--border);
+    border-radius:16px; padding:2rem; width:520px; max-width:92vw;
+    max-height:85vh; overflow-y:auto;
+    animation: modalIn .25s ease;
+}
+@keyframes modalIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+.modal h2 { font-family:'Playfair Display',serif; font-size:1.3rem; margin-bottom:1.25rem; color:var(--gold); }
+.form-group { margin-bottom:1rem; }
+.form-group label { display:block; font-size:.8rem; color:var(--text-dim); margin-bottom:.35rem; font-weight:500; }
+.form-group input, .form-group select, .form-group textarea {
+    width:100%; padding:.65rem .85rem; background:var(--navy);
+    border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-family:'DM Sans',sans-serif; font-size:.85rem;
+    outline:none; transition:var(--transition);
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color:var(--gold);
+}
+.form-group textarea { resize:vertical; min-height:80px; }
+
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.btn {
+    padding:.6rem 1.4rem; border-radius:8px; border:none; cursor:pointer;
+    font-family:'DM Sans',sans-serif; font-weight:600; font-size:.85rem;
+    transition:var(--transition);
+}
+.btn-gold { background:var(--gold); color:var(--navy); }
+.btn-gold:hover { box-shadow:0 4px 20px var(--gold-glow); }
+.btn-ghost { background:transparent; color:var(--text-dim); border:1px solid var(--border); }
+.btn-ghost:hover { border-color:var(--text-dim); }
+.modal-actions { display:flex; gap:.75rem; justify-content:flex-end; margin-top:1.5rem; }
+
+/* ═══════ GANTT CHART ═══════ */
+.gantt-container {
+    background:var(--navy-mid); border:1px solid var(--border);
+    border-radius:var(--radius); overflow:hidden;
+}
+.gantt-header-row {
+    display:grid; grid-template-columns:220px 1fr;
+    border-bottom:1px solid var(--border);
+    background:rgba(212,175,55,0.05);
+}
+.gantt-label-header {
+    padding:1rem; font-weight:700; font-size:.8rem;
+    text-transform:uppercase; letter-spacing:1px; color:var(--gold);
+    border-right:1px solid var(--border);
+}
+.gantt-timeline-header {
+    display:flex; overflow-x:auto;
+}
+.gantt-week {
+    min-width:100px; text-align:center; padding:.75rem .5rem;
+    font-size:.7rem; font-family:'JetBrains Mono',monospace; color:var(--text-dim);
+    border-right:1px solid var(--border);
+    flex-shrink:0;
+}
+.gantt-week.current { background:rgba(212,175,55,0.08); color:var(--gold); font-weight:600; }
+
+.gantt-row {
+    display:grid; grid-template-columns:220px 1fr;
+    border-bottom:1px solid rgba(255,255,255,.03);
+    transition:var(--transition);
+}
+.gantt-row:hover { background:rgba(255,255,255,.02); }
+.gantt-task-label {
+    padding:.75rem 1rem; font-size:.82rem; font-weight:500;
+    border-right:1px solid var(--border);
+    display:flex; align-items:center; gap:8px;
+}
+.gantt-task-label .dot {
+    width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+.gantt-timeline {
+    position:relative; display:flex; min-height:40px;
+}
+.gantt-cell {
+    min-width:100px; border-right:1px solid rgba(255,255,255,.02);
+    flex-shrink:0; position:relative;
+}
+.gantt-cell.current { background:rgba(212,175,55,0.04); }
+.gantt-bar {
+    position:absolute; top:8px; height:24px;
+    border-radius:6px; display:flex; align-items:center;
+    padding:0 8px; font-size:.65rem; font-weight:600;
+    transition:var(--transition); cursor:pointer;
+    white-space:nowrap; overflow:hidden;
+}
+.gantt-bar:hover { filter:brightness(1.15); box-shadow:0 2px 12px rgba(0,0,0,.3); }
+.gantt-bar .progress-fill {
+    position:absolute; left:0; top:0; height:100%;
+    border-radius:6px; opacity:0.3;
+}
+
+/* ═══════ TEAM PAGE ═══════ */
+.team-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1.25rem; }
+.team-card {
+    background:var(--navy-mid); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.5rem;
+    transition:var(--transition);
+}
+.team-card:hover { border-color:var(--gold); }
+.team-card-header { display:flex; align-items:center; gap:12px; margin-bottom:1rem; }
+.team-avatar {
+    width:48px; height:48px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.2rem; font-weight:700; color:var(--navy);
+}
+.team-name { font-weight:700; font-size:1rem; }
+.team-role { font-size:.78rem; color:var(--text-dim); }
+.team-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; margin:1rem 0; }
+.team-stat {
+    text-align:center; padding:.5rem;
+    background:var(--navy); border-radius:8px;
+}
+.team-stat-val { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1rem; color:var(--gold); }
+.team-stat-lbl { font-size:.65rem; color:var(--text-muted); text-transform:uppercase; }
+
+.status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+.status-online { background:var(--green-light); box-shadow:0 0 8px rgba(76,175,80,.5); }
+.status-offline { background:var(--text-muted); }
+.status-busy { background:var(--orange); box-shadow:0 0 8px rgba(243,156,18,.4); }
+
+/* ═══════ DAILY UPDATES ═══════ */
+.updates-timeline { position:relative; padding-left:2rem; }
+.updates-timeline::before {
+    content:''; position:absolute; left:8px; top:0; bottom:0;
+    width:2px; background:var(--border);
+}
+.update-entry {
+    position:relative; margin-bottom:1.5rem;
+    background:var(--navy-mid); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.25rem;
+    transition:var(--transition);
+}
+.update-entry:hover { border-color:rgba(212,175,55,0.25); }
+.update-entry::before {
+    content:''; position:absolute; left:-1.65rem; top:1.5rem;
+    width:12px; height:12px; border-radius:50%;
+    background:var(--gold); border:2px solid var(--navy);
+}
+.update-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
+.update-author { display:flex; align-items:center; gap:8px; }
+.update-author-avatar {
+    width:28px; height:28px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.7rem; font-weight:700; color:var(--navy);
+}
+.update-author-name { font-weight:600; font-size:.9rem; }
+.update-time { font-size:.72rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+.update-body { font-size:.85rem; color:var(--text-dim); line-height:1.6; }
+.update-body strong { color:var(--text); }
+.update-attachments {
+    display:flex; gap:.5rem; margin-top:.75rem; flex-wrap:wrap;
+}
+.update-attachment {
+    display:flex; align-items:center; gap:6px; padding:.35rem .7rem;
+    background:var(--navy); border:1px solid var(--border);
+    border-radius:6px; font-size:.72rem; color:var(--text-dim);
+    cursor:pointer; transition:var(--transition);
+}
+.update-attachment:hover { border-color:var(--gold); color:var(--gold); }
+
+/* ═══════ FILES PAGE ═══════ */
+.files-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:1rem; }
+.file-card {
+    background:var(--navy-mid); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.25rem;
+    cursor:pointer; transition:var(--transition);
+    display:flex; flex-direction:column; gap:.75rem;
+}
+.file-card:hover { border-color:var(--gold); transform:translateY(-2px); }
+.file-icon { font-size:2.5rem; }
+.file-name { font-weight:600; font-size:.85rem; word-break:break-all; }
+.file-meta { font-size:.72rem; color:var(--text-muted); display:flex; justify-content:space-between; }
+
+.upload-zone {
+    border:2px dashed var(--border); border-radius:var(--radius);
+    padding:3rem; text-align:center; cursor:pointer;
+    transition:var(--transition); margin-bottom:1.5rem;
+}
+.upload-zone:hover, .upload-zone.drag-active {
+    border-color:var(--gold); background:var(--gold-dim);
+}
+.upload-zone-icon { font-size:3rem; margin-bottom:1rem; }
+.upload-zone-text { color:var(--text-dim); font-size:.9rem; }
+.upload-zone-sub { color:var(--text-muted); font-size:.75rem; margin-top:.5rem; }
+
+/* ═══════ POST UPDATE FORM ═══════ */
+.post-update-form {
+    background:var(--navy-mid); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.25rem; margin-bottom:2rem;
+}
+.post-update-form textarea {
+    width:100%; background:var(--navy); border:1px solid var(--border);
+    border-radius:8px; padding:.75rem; color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:.85rem;
+    resize:vertical; min-height:80px; outline:none;
+}
+.post-update-form textarea:focus { border-color:var(--gold); }
+.post-update-actions {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:.75rem;
+}
+.post-update-left { display:flex; gap:.5rem; }
+.attach-btn {
+    background:var(--navy); border:1px solid var(--border);
+    border-radius:6px; padding:.4rem .7rem; font-size:.75rem;
+    color:var(--text-dim); cursor:pointer; transition:var(--transition);
+    font-family:'DM Sans',sans-serif;
+}
+.attach-btn:hover { border-color:var(--gold); color:var(--gold); }
+
+/* ═══════ RESPONSIVE ═══════ */
+@media(max-width:1100px) {
+    .kanban-wrapper { grid-template-columns:repeat(2,1fr); }
+    .stats-ribbon { grid-template-columns:repeat(3,1fr); }
+}
+@media(max-width:768px) {
+    .kanban-wrapper { grid-template-columns:1fr; }
+    .stats-ribbon { grid-template-columns:repeat(2,1fr); }
+    .topnav { padding:0 1rem; }
+    .topnav-tabs { display:none; }
+    .page { padding:1rem; }
+    .form-row { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ TOP NAV ═══ -->
+<nav class="topnav">
+    <div class="topnav-brand">
+        <span class="star">✦</span> POLARIS <span style="color:var(--text);font-weight:400;font-size:.85rem;opacity:.5">Command Center</span>
+    </div>
+    <div class="topnav-tabs">
+        <button class="topnav-tab active" onclick="showPage('overview')">Overview</button>
+        <button class="topnav-tab" onclick="showPage('kanban')">Kanban</button>
+        <button class="topnav-tab" onclick="showPage('timeline')">Timeline</button>
+        <button class="topnav-tab" onclick="showPage('team')">Team</button>
+        <button class="topnav-tab" onclick="showPage('updates')">Updates</button>
+        <button class="topnav-tab" onclick="showPage('files')">Files</button>
+    </div>
+    <div class="topnav-right">
+        <span class="topnav-date" id="currentDate"></span>
+    </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PAGE: OVERVIEW                                  -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="page active" id="page-overview">
+    <div class="section-header">
+        <h1 class="section-title">Project <span>Overview</span></h1>
+        <button class="btn btn-gold" onclick="openModal('task')">+ New Task</button>
+    </div>
+
+    <div class="stats-ribbon" id="statsRibbon">
+        <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total Tasks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-value" id="statProgress">0</div>
+            <div class="stat-label">In Progress</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value" id="statDone">0</div>
+            <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value" id="statTeam">0</div>
+            <div class="stat-label">Team Members</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value" id="statPercent">0%</div>
+            <div class="stat-label">Completion</div>
+        </div>
+    </div>
+
+    <!-- Mini Kanban Preview -->
+    <div class="section-header" style="margin-top:1rem">
+        <h2 class="section-title" style="font-size:1.2rem">Recent <span>Activity</span></h2>
+        <button class="btn btn-ghost" onclick="showPage('kanban')">View Board →</button>
+    </div>
+    <div id="recentActivity" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PAGE: KANBAN                                    -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="page" id="page-kanban">
+    <div class="section-header">
+        <h1 class="section-title">Kanban <span>Board</span></h1>
+        <div style="display:flex;gap:.5rem">
+            <select id="filterAssignee" onchange="renderKanban()" style="padding:.5rem .75rem;background:var(--navy-mid);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.82rem;font-family:'DM Sans',sans-serif">
+                <option value="">All Members</option>
+            </select>
+            <button class="btn btn-gold" onclick="openModal('task')">+ New Task</button>
+        </div>
+    </div>
+    <div class="kanban-wrapper" id="kanbanBoard">
+        <!-- Columns injected by JS -->
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PAGE: TIMELINE / GANTT                          -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="page" id="page-timeline">
+    <div class="section-header">
+        <h1 class="section-title">Project <span>Timeline</span></h1>
+    </div>
+    <div class="gantt-container" id="ganttChart">
+        <!-- Gantt injected by JS -->
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PAGE: TEAM                                      -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="page" id="page-team">
+    <div class="section-header">
+        <h1 class="section-title">Team <span>Members</span></h1>
+        <button class="btn btn-gold" onclick="openModal('member')">+ Add Member</button>
+    </div>
+    <div class="team-grid" id="teamGrid"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PAGE: DAILY UPDATES                             -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="page" id="page-updates">
+    <div class="section-header">
+        <h1 class="section-title">Daily <span>Updates</span></h1>
+    </div>
+
+    <div class="post-update-form">
+        <textarea id="updateText" placeholder="Post a status update... What did you work on today?"></textarea>
+        <div class="post-update-actions">
+            <div class="post-update-left">
+                <button class="attach-btn" onclick="document.getElementById('updateFileInput').click()">📎 Attach File</button>
+                <input type="file" id="updateFileInput" multiple style="display:none" onchange="handleUpdateFiles(this)">
+                <span id="updateFileNames" style="font-size:.72rem;color:var(--text-muted)"></span>
+            </div>
+            <button class="btn btn-gold" onclick="postUpdate()">Post Update</button>
+        </div>
+    </div>
+
+    <div class="updates-timeline" id="updatesTimeline"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PAGE: FILES                                     -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="page" id="page-files">
+    <div class="section-header">
+        <h1 class="section-title">Project <span>Files</span></h1>
+    </div>
+
+    <div class="upload-zone" id="uploadZone"
+         onclick="document.getElementById('fileUploadInput').click()"
+         ondragover="event.preventDefault();this.classList.add('drag-active')"
+         ondragleave="this.classList.remove('drag-active')"
+         ondrop="handleFileDrop(event)">
+        <div class="upload-zone-icon">📁</div>
+        <div class="upload-zone-text">Drop files here or click to upload</div>
+        <div class="upload-zone-sub">Screenshots, code files, documents — any format</div>
+        <input type="file" id="fileUploadInput" multiple style="display:none" onchange="handleFileUpload(this)">
+    </div>
+
+    <div class="files-grid" id="filesGrid"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- MODAL: NEW TASK                                 -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalTask">
+    <div class="modal">
+        <h2>✦ New Task</h2>
+        <div class="form-group">
+            <label>Task Title</label>
+            <input id="taskTitle" placeholder="e.g., Fix Combined Ratio calculation">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Assignee</label>
+                <select id="taskAssignee"><option value="">Select developer...</option></select>
+            </div>
+            <div class="form-group">
+                <label>Priority</label>
+                <select id="taskPriority">
+                    <option value="high">🔴 High</option>
+                    <option value="medium" selected>🟡 Medium</option>
+                    <option value="low">🟢 Low</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Category</label>
+                <select id="taskCategory">
+                    <option value="frontend">Frontend</option>
+                    <option value="backend">Backend</option>
+                    <option value="data">Data</option>
+                    <option value="api">API</option>
+                    <option value="deploy">Deploy</option>
+                    <option value="design">Design</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Due Date</label>
+                <input type="date" id="taskDue">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Module</label>
+            <select id="taskModule">
+                <option value="admin-dashboard">Admin Dashboard</option>
+                <option value="client-portal">Client Portal</option>
+                <option value="gas-backend">GAS Backend (Κώδικας.gs)</option>
+                <option value="documents">Documents.gs</option>
+                <option value="email-system">Email System</option>
+                <option value="cbms-report">CBMS Report</option>
+                <option value="financial-analytics">Financial Analytics</option>
+                <option value="client-hierarchy">Client Hierarchy</option>
+                <option value="deployment">Deployment & GitHub</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <textarea id="taskDesc" placeholder="What needs to be done?"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Status</label>
+            <select id="taskStatus">
+                <option value="backlog">Backlog</option>
+                <option value="todo" selected>To Do</option>
+                <option value="progress">In Progress</option>
+                <option value="done">Done</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal('task')">Cancel</button>
+            <button class="btn btn-gold" onclick="saveTask()">Create Task</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- MODAL: ADD MEMBER                               -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalMember">
+    <div class="modal">
+        <h2>✦ Add Team Member</h2>
+        <div class="form-group">
+            <label>Full Name</label>
+            <input id="memberName" placeholder="e.g., Nikos Papadopoulos">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Role</label>
+                <select id="memberRole">
+                    <option value="Frontend Developer">Frontend Developer</option>
+                    <option value="Backend Developer">Backend Developer</option>
+                    <option value="Full Stack Developer">Full Stack Developer</option>
+                    <option value="UI/UX Designer">UI/UX Designer</option>
+                    <option value="QA Engineer">QA Engineer</option>
+                    <option value="DevOps">DevOps</option>
+                    <option value="Project Manager">Project Manager</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Color</label>
+                <select id="memberColor">
+                    <option value="#3498db">🔵 Blue</option>
+                    <option value="#e74c3c">🔴 Red</option>
+                    <option value="#2ecc71">🟢 Green</option>
+                    <option value="#f39c12">🟡 Orange</option>
+                    <option value="#9b59b6">🟣 Purple</option>
+                    <option value="#d4af37">🟡 Gold</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal('member')">Cancel</button>
+            <button class="btn btn-gold" onclick="saveMember()">Add Member</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA STORE (localStorage persistence)
+// ═══════════════════════════════════════════════════════
+const STORAGE_KEY = 'polaris_pm_data';
+
+function getDefaultData() {
+    return {
+        tasks: [
+            // Pre-loaded with actual Polaris tasks
+            { id:'t1', title:'Fix Combined Ratio calculation in admin-dashboard.html', assignee:'', priority:'high', category:'frontend', module:'admin-dashboard', status:'todo', due:'2026-03-28', desc:'Hardcoded offset and wrong value source identified. Fix prepared but not deployed due to version mismatch.', created:'2026-03-16T10:00:00' },
+            { id:'t2', title:'Fix ARPM annualization formula', assignee:'', priority:'high', category:'frontend', module:'financial-analytics', status:'todo', due:'2026-03-28', desc:'ARPM calculation uses wrong value source. Fix prepared alongside Combined Ratio.', created:'2026-03-16T10:00:00' },
+            { id:'t3', title:'Verify production version of admin-dashboard.html', assignee:'', priority:'high', category:'deploy', module:'deployment', status:'todo', due:'2026-03-20', desc:'Working file has ~268 fewer lines than production. Must confirm correct version before deploying Combined Ratio/ARPM fixes.', created:'2026-03-16T10:00:00' },
+            { id:'t4', title:'KPI audit: CROSSWORLD subsidiaries', assignee:'', priority:'medium', category:'data', module:'financial-analytics', status:'todo', due:'2026-04-04', desc:'163-member variance identified as pre-existing. Full audit of CROSSWORLD subsidiaries needed.', created:'2026-03-16T10:00:00' },
+            { id:'t5', title:'KPI audit: AIMS AGELS SHIPHOLDING', assignee:'', priority:'medium', category:'data', module:'financial-analytics', status:'todo', due:'2026-04-04', desc:'Systematic verification against Excel ground truth for all KPIs.', created:'2026-03-16T10:00:00' },
+            { id:'t6', title:'Backend: getCBMSReportData() aggregation', assignee:'', priority:'high', category:'backend', module:'cbms-report', status:'done', due:'2026-03-15', desc:'Fixed backend returning raw rows without period-based aggregation. Now returns structured response with data, aggregated, latest, periods.', created:'2026-03-10T10:00:00' },
+            { id:'t7', title:'Fix API_URL const scoping across script blocks', assignee:'', priority:'medium', category:'frontend', module:'admin-dashboard', status:'done', due:'2026-03-14', desc:'API_URL declared with const in one <script> block was inaccessible to loadCBMSReportData in separate block.', created:'2026-03-10T10:00:00' },
+            { id:'t8', title:'CORS/redirect fix for all KPI data loading', assignee:'', priority:'high', category:'api', module:'gas-backend', status:'done', due:'2026-03-12', desc:'Fixed via apiFetch helper with redirect:follow, applied across 60+ fetch calls.', created:'2026-03-08T10:00:00' },
+            { id:'t9', title:'Link CBMS_Report and FinancialData via Clients sheet', assignee:'', priority:'medium', category:'data', module:'client-hierarchy', status:'backlog', due:'', desc:'Two systems lack direct link. Bridging requires Clients reference sheet mapping.', created:'2026-03-16T10:00:00' },
+            { id:'t10', title:'Add client_id filtering to Hospitals sheet', assignee:'', priority:'low', category:'backend', module:'gas-backend', status:'backlog', due:'', desc:'Currently hospitals data lacks client-level filtering. Needed for per-client hospital analytics.', created:'2026-03-16T10:00:00' },
+            { id:'t11', title:'Deploy admin-dashboard.html to GitHub Pages', assignee:'', priority:'high', category:'deploy', module:'deployment', status:'todo', due:'2026-03-22', desc:'After confirming correct version and deploying backend first. Use polaris-deploy.bat script.', created:'2026-03-16T10:00:00' },
+            { id:'t12', title:'Test business card scanner with additional card types', assignee:'', priority:'low', category:'frontend', module:'other', status:'backlog', due:'', desc:'Tesseract.js OCR feature needs testing with varied card formats.', created:'2026-03-16T10:00:00' },
+            { id:'t13', title:'Client Portal: Replace mock category data with real CBMS data', assignee:'', priority:'medium', category:'frontend', module:'client-portal', status:'backlog', due:'', desc:'createCategoryCharts uses hardcoded mock data. Needs CBMS integration.', created:'2026-03-16T10:00:00' },
+            { id:'t14', title:'Client Portal: Replace mock hospital data with CBMS data', assignee:'', priority:'medium', category:'frontend', module:'client-portal', status:'backlog', due:'', desc:'createHospitalCharts and createGeoCharts use mock data.', created:'2026-03-16T10:00:00' },
+        ],
+        members: [
+            { id:'m1', name:'Apostolos (CEO)', role:'Project Manager', color:'#d4af37', status:'online' }
+        ],
+        updates: [
+            { id:'u1', author:'m1', text:'<strong>Project kickoff:</strong> Polaris production development begins. Pre-loaded all known tasks from development history. Key priorities: version verification, Combined Ratio/ARPM fixes, and KPI audits across all clients.', time:'2026-03-16T09:00:00', files:[] }
+        ],
+        files: [],
+        nextId: 15
+    };
+}
+
+let DATA = {};
+
+function loadData() {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        DATA = stored ? JSON.parse(stored) : getDefaultData();
+        // Ensure all fields exist
+        if(!DATA.tasks) DATA.tasks = [];
+        if(!DATA.members) DATA.members = [];
+        if(!DATA.updates) DATA.updates = [];
+        if(!DATA.files) DATA.files = [];
+        if(!DATA.nextId) DATA.nextId = 100;
+    } catch(e) {
+        DATA = getDefaultData();
+    }
+}
+
+function saveData() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.topnav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+    event.target.classList.add('active');
+    if(page === 'kanban') renderKanban();
+    if(page === 'timeline') renderGantt();
+    if(page === 'team') renderTeam();
+    if(page === 'updates') renderUpdates();
+    if(page === 'files') renderFiles();
+    if(page === 'overview') renderOverview();
+}
+
+// ═══════════════════════════════════════════════════════
+// OVERVIEW PAGE
+// ═══════════════════════════════════════════════════════
+function renderOverview() {
+    const tasks = DATA.tasks;
+    const total = tasks.length;
+    const done = tasks.filter(t=>t.status==='done').length;
+    const progress = tasks.filter(t=>t.status==='progress').length;
+    const pct = total ? Math.round(done/total*100) : 0;
+
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statProgress').textContent = progress;
+    document.getElementById('statDone').textContent = done;
+    document.getElementById('statTeam').textContent = DATA.members.length;
+    document.getElementById('statPercent').textContent = pct + '%';
+
+    // Recent activity: last 6 tasks with activity
+    const recent = [...tasks].sort((a,b) => (b.created||'').localeCompare(a.created||'')).slice(0,6);
+    const container = document.getElementById('recentActivity');
+    container.innerHTML = recent.map(t => {
+        const member = DATA.members.find(m=>m.id===t.assignee);
+        const statusColors = {backlog:'#556677',todo:'#3498db',progress:'#f39c12',done:'#4caf50'};
+        const statusLabels = {backlog:'Backlog',todo:'To Do',progress:'In Progress',done:'Done'};
+        return `<div class="kanban-card" style="border-left:3px solid ${statusColors[t.status]}">
+            <div class="card-title">${t.title}</div>
+            <div class="card-meta">
+                <span class="card-tag tag-${t.category}">${t.category}</span>
+                <span style="font-size:.7rem;color:${statusColors[t.status]};font-weight:600">${statusLabels[t.status]}</span>
+                ${member ? `<span class="card-assignee"><span class="avatar" style="background:${member.color}">${member.name.charAt(0)}</span>${member.name.split(' ')[0]}</span>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// KANBAN BOARD
+// ═══════════════════════════════════════════════════════
+const COLUMNS = [
+    { id:'backlog', label:'Backlog', icon:'📥', cls:'col-backlog' },
+    { id:'todo', label:'To Do', icon:'📋', cls:'col-todo' },
+    { id:'progress', label:'In Progress', icon:'⚡', cls:'col-progress' },
+    { id:'done', label:'Done', icon:'✅', cls:'col-done' }
+];
+
+function renderKanban() {
+    const board = document.getElementById('kanbanBoard');
+    const filterAssignee = document.getElementById('filterAssignee').value;
+
+    let tasks = DATA.tasks;
+    if(filterAssignee) tasks = tasks.filter(t => t.assignee === filterAssignee);
+
+    board.innerHTML = COLUMNS.map(col => {
+        const colTasks = tasks.filter(t => t.status === col.id);
+        return `<div class="kanban-col ${col.cls}">
+            <div class="kanban-col-header">
+                <div class="kanban-col-title">${col.icon} ${col.label}</div>
+                <span class="kanban-col-count">${colTasks.length}</span>
+            </div>
+            <div class="kanban-cards" data-status="${col.id}"
+                 ondragover="event.preventDefault();this.classList.add('drag-over')"
+                 ondragleave="this.classList.remove('drag-over')"
+                 ondrop="dropCard(event, '${col.id}')">
+                ${colTasks.map(t => renderCard(t)).join('')}
+            </div>
+            <button class="add-task-btn" onclick="openModalWithStatus('${col.id}')">+ Add task</button>
+        </div>`;
+    }).join('');
+
+    // Update filter dropdown
+    updateAssigneeDropdowns();
+}
+
+function renderCard(t) {
+    const member = DATA.members.find(m=>m.id===t.assignee);
+    return `<div class="kanban-card" draggable="true" ondragstart="dragCard(event,'${t.id}')" ondragend="this.classList.remove('dragging')">
+        <div class="card-priority priority-${t.priority}"></div>
+        <div class="card-title">${t.title}</div>
+        <div class="card-meta">
+            <span class="card-tag tag-${t.category}">${t.category}</span>
+            ${member ? `<span class="card-assignee"><span class="avatar" style="background:${member.color}">${member.name.charAt(0)}</span>${member.name.split(' ')[0]}</span>` : '<span class="card-assignee" style="opacity:.4">Unassigned</span>'}
+            ${t.due ? `<span class="card-due">${formatDate(t.due)}</span>` : ''}
+        </div>
+    </div>`;
+}
+
+let draggedTaskId = null;
+function dragCard(e, id) { draggedTaskId = id; e.target.classList.add('dragging'); }
+function dropCard(e, status) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    if(!draggedTaskId) return;
+    const task = DATA.tasks.find(t => t.id === draggedTaskId);
+    if(task) { task.status = status; saveData(); renderKanban(); renderOverview(); }
+    draggedTaskId = null;
+}
+
+// ═══════════════════════════════════════════════════════
+// GANTT CHART
+// ═══════════════════════════════════════════════════════
+function renderGantt() {
+    const container = document.getElementById('ganttChart');
+    // Generate 12 weeks starting from March 10, 2026
+    const startDate = new Date('2026-03-09');
+    const weeks = [];
+    for(let i=0; i<12; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i*7);
+        weeks.push(d);
+    }
+    const now = new Date();
+    const currentWeekIdx = weeks.findIndex((w,i) => {
+        const next = weeks[i+1] || new Date(w.getTime()+7*86400000);
+        return now >= w && now < next;
+    });
+
+    // Group tasks by module
+    const modules = {};
+    DATA.tasks.forEach(t => {
+        if(!modules[t.module]) modules[t.module] = [];
+        modules[t.module].push(t);
+    });
+
+    const moduleColors = {
+        'admin-dashboard':'#3498db', 'client-portal':'#2ecc71', 'gas-backend':'#9b59b6',
+        'documents':'#e67e22', 'email-system':'#1abc9c', 'cbms-report':'#e74c3c',
+        'financial-analytics':'#d4af37', 'client-hierarchy':'#f39c12', 'deployment':'#c0392b', 'other':'#7f8c8d'
+    };
+    const moduleLabels = {
+        'admin-dashboard':'Admin Dashboard', 'client-portal':'Client Portal', 'gas-backend':'GAS Backend',
+        'documents':'Documents.gs', 'email-system':'Email System', 'cbms-report':'CBMS Report',
+        'financial-analytics':'Financial Analytics', 'client-hierarchy':'Client Hierarchy', 'deployment':'Deployment', 'other':'Other'
+    };
+
+    let html = `<div class="gantt-header-row">
+        <div class="gantt-label-header">Module / Task</div>
+        <div class="gantt-timeline-header">${weeks.map((w,i) => `<div class="gantt-week ${i===currentWeekIdx?'current':''}">W${i+1}<br>${w.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>`).join('')}</div>
+    </div>`;
+
+    for(const [mod, tasks] of Object.entries(modules)) {
+        const color = moduleColors[mod] || '#888';
+        // Module header row
+        html += `<div class="gantt-row" style="background:rgba(255,255,255,.02)">
+            <div class="gantt-task-label" style="font-weight:700;font-size:.85rem">
+                <span class="dot" style="background:${color}"></span>${moduleLabels[mod] || mod}
+            </div>
+            <div class="gantt-timeline" style="display:flex">${weeks.map((w,i) => `<div class="gantt-cell ${i===currentWeekIdx?'current':''}"></div>`).join('')}</div>
+        </div>`;
+        // Task rows
+        tasks.forEach(t => {
+            const dueDate = t.due ? new Date(t.due) : null;
+            const createdDate = t.created ? new Date(t.created) : new Date();
+            // Calculate bar position
+            let barStart = Math.max(0, Math.floor((createdDate - startDate) / (7*86400000)));
+            let barEnd = dueDate ? Math.max(barStart+1, Math.ceil((dueDate - startDate) / (7*86400000))) : barStart + 2;
+            barStart = Math.min(barStart, 11);
+            barEnd = Math.min(barEnd, 12);
+            const barWidth = (barEnd - barStart) * 100;
+            const barLeft = barStart * 100;
+            const progressPct = t.status==='done'?100 : t.status==='progress'?50 : t.status==='todo'?10 : 0;
+            const opacity = t.status==='done' ? 0.5 : 1;
+
+            html += `<div class="gantt-row" style="opacity:${opacity}">
+                <div class="gantt-task-label">
+                    <span class="dot" style="background:${color}"></span>
+                    <span style="font-size:.78rem">${t.title.length > 30 ? t.title.slice(0,30)+'…' : t.title}</span>
+                </div>
+                <div class="gantt-timeline" style="display:flex;position:relative">
+                    ${weeks.map((w,i) => `<div class="gantt-cell ${i===currentWeekIdx?'current':''}"></div>`).join('')}
+                    <div class="gantt-bar" style="left:${barLeft}px;width:${barWidth}px;background:${color}40;color:${color};border:1px solid ${color}60" title="${t.title}">
+                        <div class="progress-fill" style="width:${progressPct}%;background:${color}"></div>
+                        ${barWidth >= 200 ? t.title.slice(0,20) : ''}
+                    </div>
+                </div>
+            </div>`;
+        });
+    }
+
+    container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════
+// TEAM
+// ═══════════════════════════════════════════════════════
+function renderTeam() {
+    const grid = document.getElementById('teamGrid');
+    grid.innerHTML = DATA.members.map(m => {
+        const tasks = DATA.tasks.filter(t=>t.assignee===m.id);
+        const done = tasks.filter(t=>t.status==='done').length;
+        const inProg = tasks.filter(t=>t.status==='progress').length;
+        const statusClass = m.status==='online'?'status-online' : m.status==='busy'?'status-busy':'status-offline';
+        return `<div class="team-card">
+            <div class="team-card-header">
+                <div class="team-avatar" style="background:${m.color}">${m.name.charAt(0)}</div>
+                <div>
+                    <div class="team-name"><span class="status-dot ${statusClass}"></span>${m.name}</div>
+                    <div class="team-role">${m.role}</div>
+                </div>
+            </div>
+            <div class="team-stats">
+                <div class="team-stat"><div class="team-stat-val">${tasks.length}</div><div class="team-stat-lbl">Tasks</div></div>
+                <div class="team-stat"><div class="team-stat-val">${inProg}</div><div class="team-stat-lbl">Active</div></div>
+                <div class="team-stat"><div class="team-stat-val">${done}</div><div class="team-stat-lbl">Done</div></div>
+            </div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+                ${tasks.filter(t=>t.status!=='done').slice(0,3).map(t => `<span class="card-tag tag-${t.category}" style="font-size:.6rem">${t.title.slice(0,25)}…</span>`).join('')}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// DAILY UPDATES
+// ═══════════════════════════════════════════════════════
+function renderUpdates() {
+    const timeline = document.getElementById('updatesTimeline');
+    const sorted = [...DATA.updates].sort((a,b) => b.time.localeCompare(a.time));
+    timeline.innerHTML = sorted.map(u => {
+        const member = DATA.members.find(m=>m.id===u.author);
+        const date = new Date(u.time);
+        return `<div class="update-entry">
+            <div class="update-header">
+                <div class="update-author">
+                    <div class="update-author-avatar" style="background:${member?.color||'#555'}">${member?.name?.charAt(0)||'?'}</div>
+                    <span class="update-author-name">${member?.name||'Unknown'}</span>
+                </div>
+                <span class="update-time">${date.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} ${date.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>
+            </div>
+            <div class="update-body">${u.text}</div>
+            ${u.files && u.files.length ? `<div class="update-attachments">${u.files.map(f => `<span class="update-attachment">📎 ${f}</span>`).join('')}</div>` : ''}
+        </div>`;
+    }).join('');
+}
+
+function postUpdate() {
+    const text = document.getElementById('updateText').value.trim();
+    if(!text) return;
+    const files = pendingUpdateFiles || [];
+    DATA.updates.push({
+        id: 'u' + DATA.nextId++,
+        author: DATA.members[0]?.id || 'm1',
+        text: text,
+        time: new Date().toISOString(),
+        files: files.map(f => f.name)
+    });
+    // Also add to files
+    files.forEach(f => {
+        DATA.files.push({ id:'f'+DATA.nextId++, name:f.name, size:f.size, type:f.type, date:new Date().toISOString(), uploader:DATA.members[0]?.id||'m1' });
+    });
+    saveData();
+    document.getElementById('updateText').value = '';
+    document.getElementById('updateFileNames').textContent = '';
+    pendingUpdateFiles = [];
+    renderUpdates();
+    renderOverview();
+}
+
+let pendingUpdateFiles = [];
+function handleUpdateFiles(input) {
+    pendingUpdateFiles = Array.from(input.files);
+    document.getElementById('updateFileNames').textContent = pendingUpdateFiles.map(f=>f.name).join(', ');
+}
+
+// ═══════════════════════════════════════════════════════
+// FILES
+// ═══════════════════════════════════════════════════════
+function renderFiles() {
+    const grid = document.getElementById('filesGrid');
+    const fileIcons = { 'html':'🌐','js':'📜','css':'🎨','gs':'⚙️','pdf':'📕','png':'🖼️','jpg':'🖼️','xlsx':'📊','docx':'📄','txt':'📝' };
+    const sorted = [...DATA.files].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    grid.innerHTML = sorted.map(f => {
+        const ext = f.name.split('.').pop()?.toLowerCase() || '';
+        const icon = fileIcons[ext] || '📁';
+        const size = f.size ? (f.size < 1024 ? f.size+'B' : f.size < 1048576 ? (f.size/1024).toFixed(1)+'KB' : (f.size/1048576).toFixed(1)+'MB') : '';
+        const member = DATA.members.find(m=>m.id===f.uploader);
+        return `<div class="file-card">
+            <div class="file-icon">${icon}</div>
+            <div class="file-name">${f.name}</div>
+            <div class="file-meta">
+                <span>${size}</span>
+                <span>${member?.name?.split(' ')[0]||''} · ${f.date ? new Date(f.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : ''}</span>
+            </div>
+        </div>`;
+    }).join('');
+    if(!sorted.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)">No files uploaded yet. Drop files above or use the Updates page to attach files.</div>';
+    }
+}
+
+function handleFileDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('drag-active');
+    const files = Array.from(e.dataTransfer.files);
+    addFiles(files);
+}
+function handleFileUpload(input) {
+    addFiles(Array.from(input.files));
+    input.value = '';
+}
+function addFiles(files) {
+    files.forEach(f => {
+        DATA.files.push({ id:'f'+DATA.nextId++, name:f.name, size:f.size, type:f.type, date:new Date().toISOString(), uploader:DATA.members[0]?.id||'m1' });
+    });
+    saveData();
+    renderFiles();
+}
+
+// ═══════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════
+function openModal(type) {
+    document.getElementById('modal' + type.charAt(0).toUpperCase()+type.slice(1)).classList.add('open');
+    if(type==='task') updateAssigneeDropdowns();
+}
+function closeModal(type) {
+    document.getElementById('modal' + type.charAt(0).toUpperCase()+type.slice(1)).classList.remove('open');
+}
+function openModalWithStatus(status) {
+    openModal('task');
+    document.getElementById('taskStatus').value = status;
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if(e.target === el) el.classList.remove('open'); });
+});
+
+function saveTask() {
+    const title = document.getElementById('taskTitle').value.trim();
+    if(!title) { document.getElementById('taskTitle').style.borderColor='var(--red)'; return; }
+    DATA.tasks.push({
+        id: 't' + DATA.nextId++,
+        title: title,
+        assignee: document.getElementById('taskAssignee').value,
+        priority: document.getElementById('taskPriority').value,
+        category: document.getElementById('taskCategory').value,
+        module: document.getElementById('taskModule').value,
+        status: document.getElementById('taskStatus').value,
+        due: document.getElementById('taskDue').value,
+        desc: document.getElementById('taskDesc').value,
+        created: new Date().toISOString()
+    });
+    saveData();
+    closeModal('task');
+    // Reset form
+    document.getElementById('taskTitle').value = '';
+    document.getElementById('taskDesc').value = '';
+    document.getElementById('taskDue').value = '';
+    renderKanban(); renderOverview();
+}
+
+function saveMember() {
+    const name = document.getElementById('memberName').value.trim();
+    if(!name) return;
+    DATA.members.push({
+        id: 'm' + DATA.nextId++,
+        name: name,
+        role: document.getElementById('memberRole').value,
+        color: document.getElementById('memberColor').value,
+        status: 'online'
+    });
+    saveData();
+    closeModal('member');
+    document.getElementById('memberName').value = '';
+    renderTeam(); updateAssigneeDropdowns(); renderOverview();
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function updateAssigneeDropdowns() {
+    const selects = [document.getElementById('taskAssignee'), document.getElementById('filterAssignee')];
+    selects.forEach(sel => {
+        if(!sel) return;
+        const val = sel.value;
+        const isFilter = sel.id === 'filterAssignee';
+        sel.innerHTML = `<option value="">${isFilter?'All Members':'Select developer...'}</option>` +
+            DATA.members.map(m => `<option value="${m.id}" ${m.id===val?'selected':''}>${m.name}</option>`).join('');
+    });
+}
+
+function formatDate(d) {
+    if(!d) return '';
+    const date = new Date(d);
+    return date.toLocaleDateString('en-GB', {day:'numeric',month:'short'});
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+function init() {
+    loadData();
+    // Set date
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    renderOverview();
+    updateAssigneeDropdowns();
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+    if(e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    if(e.ctrlKey && e.key === 'n') { e.preventDefault(); openModal('task'); }
+});
+
+init();
+</script>
+</body>
+</html>
